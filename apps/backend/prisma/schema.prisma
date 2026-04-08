@@ -1,0 +1,156 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  fullName     String
+  role         String   @default("super_admin")
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model VehicleCategory {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  sortOrder   Int       @default(0)
+  isPublished Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  vehicles    Vehicle[]
+}
+
+model Vehicle {
+  id               String          @id @default(cuid())
+  categoryId       String
+  name             String
+  slug             String          @unique
+  seatCount        Int
+  shortDescription String?
+  description      String?
+  features         String[]
+  isFeatured       Boolean         @default(false)
+  isPublished      Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  category         VehicleCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  images           VehicleImage[]
+  scheduleNotes    ScheduleNote[]
+  maintenanceLogs  VehicleMaintenance[]
+}
+
+model VehicleImage {
+  id        String   @id @default(cuid())
+  vehicleId String
+  imageUrl  String
+  altText   String?
+  isPrimary Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String?
+  icon        String?
+  sortOrder   Int      @default(0)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model BookingRequest {
+  id              String   @id @default(cuid())
+  customerName    String
+  phoneNumber     String
+  pickupLocation  String
+  dropoffLocation String
+  tripDate        DateTime?
+  passengerCount  Int?
+  note            String?
+  status          String   @default("new")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  notifications   NotificationLog[]
+  scheduleNotes   ScheduleNote[]
+}
+
+model SiteSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  group     String   @default("general")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model NotificationLog {
+  id           String          @id @default(cuid())
+  channel      String
+  eventType    String
+  status       String
+  recipient    String?
+  message      String?
+  errorMessage String?
+  bookingId    String?
+  createdAt    DateTime        @default(now())
+  booking      BookingRequest? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  @@index([channel, eventType, createdAt])
+  @@index([bookingId])
+}
+
+model ScheduleNote {
+  id              String         @id @default(cuid())
+  vehicleId       String
+  bookingRequestId String?
+  title           String
+  customerName    String?
+  phoneNumber     String?
+  tripDate        DateTime?
+  pickupLocation  String?
+  dropoffLocation String?
+  status          String         @default("scheduled")
+  note            String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  vehicle         Vehicle        @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  bookingRequest  BookingRequest? @relation(fields: [bookingRequestId], references: [id], onDelete: SetNull)
+
+  @@index([vehicleId, tripDate])
+  @@index([bookingRequestId])
+}
+
+model VehicleMaintenance {
+  id              String   @id @default(cuid())
+  vehicleId       String
+  title           String
+  maintenanceType String   @default("oil_change")
+  serviceDate     DateTime
+  nextServiceDate DateTime?
+  odometerKm      Int?
+  cost            Float?
+  status          String   @default("completed")
+  note            String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  vehicle         Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId, serviceDate])
+  @@index([maintenanceType, status])
+}

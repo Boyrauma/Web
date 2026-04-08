@@ -1,0 +1,21 @@
+{
+  "name": "dinh-dung-transport",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "apps/frontend",
+    "apps/admin",
+    "apps/backend"
+  ],
+  "scripts": {
+    "dev:frontend": "npm --workspace @dinhdung/frontend run dev",
+    "dev:admin": "npm --workspace @dinhdung/admin run dev",
+    "dev:backend": "npm --workspace @dinhdung/backend run dev",
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces",
+    "db:generate": "npm --workspace @dinhdung/backend run db:generate",
+    "db:migrate": "npm --workspace @dinhdung/backend run db:migrate",
+    "db:deploy": "npm --workspace @dinhdung/backend run db:deploy",
+    "db:seed": "npm --workspace @dinhdung/backend run db:seed"
+  }
+}

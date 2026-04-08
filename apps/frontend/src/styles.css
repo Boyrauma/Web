@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: "Manrope", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(230, 126, 34, 0.08), transparent 25%),
+    linear-gradient(180deg, #f8fafc 0%, #eef4fb 100%);
+}
+
+.hero-surface {
+  background:
+    linear-gradient(135deg, rgba(11, 31, 59, 0.96), rgba(12, 22, 36, 0.86)),
+    radial-gradient(circle at top right, rgba(230, 126, 34, 0.42), transparent 26%),
+    radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.08), transparent 30%);
+}
+
+.field {
+  width: 100%;
+  border-radius: 1rem;
+  border: 1px solid #cbd5e1;
+  padding: 0.95rem 1rem;
+  font: inherit;
+}
+
+.field:focus {
+  outline: 2px solid #e67e22;
+  outline-offset: 1px;
+}
+
+.display-serif {
+  font-family: "Prata", Georgia, serif;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+}
+
+.section-shell {
+  position: relative;
+}
+
+.section-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0)),
+    radial-gradient(circle at right top, rgba(26, 54, 93, 0.05), transparent 28%);
+  pointer-events: none;
+}
+
+.site-shell {
+  width: min(90vw, 1720px);
+}
+
+.site-shell-narrow {
+  width: min(90vw, 1480px);
+}
+
+.reveal-card {
+  animation: reveal-up 700ms ease both;
+}
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

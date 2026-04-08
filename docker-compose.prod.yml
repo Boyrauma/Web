@@ -1,0 +1,27 @@
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+
+  backend:
+    environment:
+      NODE_ENV: production
+      UPLOAD_DIR: /app/uploads
+      RUN_SEED_ON_BOOT: "false"
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-8080}:8080"
+
+  frontend:
+    environment:
+      NODE_ENV: production
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-5173}:80"
+
+  admin:
+    build:
+      args:
+        VITE_BASE_PATH: /admin/
+    environment:
+      NODE_ENV: production
+    ports:
+      - "127.0.0.1:${ADMIN_PORT:-5174}:80"
