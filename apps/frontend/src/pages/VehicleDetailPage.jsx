@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
@@ -52,7 +52,7 @@ export default function VehicleDetailPage() {
   const currentImage =
     gallery.find((image) => image.imageUrl === selectedImageUrl)?.fullUrl ??
     gallery[0]?.fullUrl ??
-    "/assets/xecountybonghoi.png";
+    "/assets/xecountybonghoi.jpg";
 
   useEffect(() => {
     applyDocumentBranding({
@@ -64,7 +64,7 @@ export default function VehicleDetailPage() {
   }, [vehicle?.name, settingsMap.browser_title, settingsMap.favicon_url, settingsMap.site_name]);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-transparent text-slate-900">
       <SiteHeader
         siteName={settingsMap.site_name}
         siteTagline={settingsMap.site_tagline}
@@ -90,7 +90,9 @@ export default function VehicleDetailPage() {
                 <img
                   src={currentImage}
                   alt={vehicle.name}
-                  className="h-[420px] w-full rounded-[2rem] object-cover shadow-sm"
+                  loading="lazy"
+                  decoding="async"
+                  className="h-[420px] w-full rounded-[2rem] object-cover shadow-[0_28px_70px_rgba(20,35,60,0.14)]"
                 />
                 <div className="flex flex-wrap gap-3">
                   {gallery.map((image) => (
@@ -107,6 +109,8 @@ export default function VehicleDetailPage() {
                       <img
                         src={image.fullUrl}
                         alt={image.altText ?? vehicle.name}
+                        loading="lazy"
+                        decoding="async"
                         className="h-20 w-24 object-cover"
                       />
                     </button>
@@ -114,7 +118,7 @@ export default function VehicleDetailPage() {
                 </div>
               </div>
 
-              <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+              <div className="rounded-[2rem] border border-[#e4d5bb] bg-white/92 p-8 shadow-[0_24px_70px_rgba(20,35,60,0.08)]">
                 <p className="text-sm font-bold uppercase tracking-[0.3em] text-brand-amber">
                   {vehicle.category?.name}
                 </p>
@@ -165,7 +169,7 @@ export default function VehicleDetailPage() {
                 <div className="mt-8 flex flex-wrap gap-3">
                   <a
                     href={`tel:${settingsMap.hotline ?? "0979860498"}`}
-                    className="rounded-2xl bg-brand-navy px-6 py-4 font-bold text-white transition hover:bg-brand-amber"
+                    className="rounded-2xl bg-[#14233c] px-6 py-4 font-bold text-white transition hover:bg-[#b88a3b]"
                   >
                     Gọi tư vấn
                   </a>
@@ -173,14 +177,14 @@ export default function VehicleDetailPage() {
                     href="/#booking"
                     className="rounded-2xl border border-brand-navy px-6 py-4 font-bold text-brand-navy transition hover:border-brand-amber hover:text-brand-amber"
                   >
-                    Yêu cầu báo giá
+                    Liên hệ ngay
                   </a>
                 </div>
               </div>
             </section>
 
             <section className="grid gap-6 lg:grid-cols-[1fr_0.95fr]">
-              <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+              <div className="rounded-[2rem] border border-[#e4d5bb] bg-white/92 p-8 shadow-[0_24px_70px_rgba(20,35,60,0.08)]">
                 <p className="text-sm font-bold uppercase tracking-[0.25em] text-brand-amber">
                   Lý do nên chọn dòng xe này
                 </p>
@@ -192,7 +196,7 @@ export default function VehicleDetailPage() {
                     </p>
                   </div>
                   <div className="rounded-[1.5rem] bg-slate-50 p-5">
-                    <h2 className="text-lg font-extrabold text-brand-navy">Hình ảnh chỉn chu</h2>
+                    <h2 className="text-lg font-extrabold text-brand-navy">Hình ảnh chỉnh chu</h2>
                     <p className="mt-2 text-sm leading-7 text-slate-600">
                       Thích hợp cho tiếp khách, sự kiện, cưới hỏi hoặc đoàn cần cảm giác chuyên nghiệp.
                     </p>
@@ -206,19 +210,19 @@ export default function VehicleDetailPage() {
                   <div className="rounded-[1.5rem] bg-slate-50 p-5">
                     <h2 className="text-lg font-extrabold text-brand-navy">Hỗ trợ nhanh</h2>
                     <p className="mt-2 text-sm leading-7 text-slate-600">
-                      Luồng quản trị đã tối ưu để báo giá, chốt lịch và phản hồi yêu cầu nhanh hơn.
+                      Luồng quản trị đã tối ưu để liên hệ, chốt lịch và phản hồi yêu cầu nhanh hơn.
                     </p>
                   </div>
                 </div>
               </div>
 
-              <aside className="rounded-[2rem] bg-brand-navy p-8 text-white shadow-premium">
+              <aside className="rounded-[2rem] bg-[#14233c] p-8 text-white shadow-premium">
                 <p className="text-sm font-bold uppercase tracking-[0.25em] text-brand-amber">
                   Cần chốt xe nhanh?
                 </p>
                 <h2 className="mt-3 text-3xl font-black">Liên hệ để giữ lịch trình phù hợp</h2>
                 <p className="mt-4 text-slate-200">
-                  Chỉ cần gọi hoặc gửi yêu cầu báo giá, hệ thống admin sẽ nhận booking và phản hồi
+                  Chỉ cần gọi hoặc gửi yêu cầu liên hệ, hệ thống admin sẽ nhận booking và phản hồi
                   để xác nhận ngay dòng xe phù hợp.
                 </p>
                 <div className="mt-6 space-y-3">
@@ -232,7 +236,7 @@ export default function VehicleDetailPage() {
                     href="/#booking"
                     className="block rounded-2xl border border-white/30 px-5 py-4 text-center font-bold text-white transition hover:bg-white/10"
                   >
-                    Gửi yêu cầu báo giá
+                    Gửi yêu cầu liên hệ
                   </a>
                 </div>
                 <div className="mt-8 grid gap-3">

@@ -1,5 +1,4 @@
 ﻿import { getBookingStatusClass, getBookingStatusLabel } from "../utils/bookingStatus";
-import QuickActions from "./QuickActions";
 
 const WEEKDAY_LABELS = ["Th 2", "Th 3", "Th 4", "Th 5", "Th 6", "Th 7", "CN"];
 
@@ -33,6 +32,8 @@ function formatDayKey(date) {
 }
 
 function formatDateTime(value) {
+  if (!value) return "Chưa có thời gian";
+
   return new Date(value).toLocaleString("vi-VN", {
     day: "2-digit",
     month: "2-digit",
@@ -41,16 +42,84 @@ function formatDateTime(value) {
   });
 }
 
-export default function DashboardTab({
-  stats,
-  bookings,
-  scheduleNotes,
-  handleOpenVehicleCategories,
-  handleOpenVehicles,
-  handleOpenBookings,
-  handleOpenScheduleNotes,
-  handleOpenVehicleMaintenances
-}) {
+function buildCalendarMap(scheduleNotes = [], bookings = []) {
+  const map = {};
+
+  for (const note of scheduleNotes) {
+    if (!note.tripDate) continue;
+    const key = formatDayKey(new Date(note.tripDate));
+    map[key] = [
+      ...(map[key] ?? []),
+      {
+        id: `schedule-${note.id}`,
+        kind: "schedule",
+        tripDate: note.tripDate,
+        title: note.title || "Lịch xe",
+        subtitle: note.vehicle?.name ?? note.customerName ?? "Chưa gán xe",
+        detail: note.customerName || note.phoneNumber || note.pickupLocation || "Lịch vận hành"
+      }
+    ];
+  }
+
+  for (const booking of bookings) {
+    if (!booking.tripDate) continue;
+    const key = formatDayKey(new Date(booking.tripDate));
+    map[key] = [
+      ...(map[key] ?? []),
+      {
+        id: `booking-${booking.id}`,
+        kind: "booking",
+        tripDate: booking.tripDate,
+        title: booking.customerName || "Booking mới",
+        subtitle: booking.phoneNumber || "Chưa có số điện thoại",
+        detail: `${booking.pickupLocation || "Chưa có điểm đón"} - ${booking.dropoffLocation || "Chưa có điểm trả"}`,
+        status: booking.status
+      }
+    ];
+  }
+
+  for (const key of Object.keys(map)) {
+    map[key].sort(
+      (left, right) => new Date(left.tripDate).getTime() - new Date(right.tripDate).getTime()
+    );
+  }
+
+  return map;
+}
+
+function renderCalendarItem(item) {
+  if (item.kind === "booking") {
+    return (
+      <div
+        key={item.id}
+        className="rounded-[0.85rem] border border-sky-100 bg-sky-50 px-2.5 py-2 text-xs text-sky-900"
+      >
+        <p className="font-bold">{item.title}</p>
+        <p className="mt-1 line-clamp-1 text-[11px] font-semibold text-sky-700">Booking từ web</p>
+        <p className="mt-1 line-clamp-1 text-[11px]">{item.detail}</p>
+        <p className="mt-1 text-[11px]">{formatDateTime(item.tripDate)}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      key={item.id}
+      className="rounded-[0.85rem] border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-admin-steel"
+    >
+      <p className="font-bold text-admin-ink">{item.subtitle}</p>
+      <p className="mt-1 line-clamp-1">{item.title}</p>
+      <p className="mt-1 line-clamp-1 text-[11px]">{item.detail}</p>
+      <p className="mt-1 text-[11px]">{formatDateTime(item.tripDate)}</p>
+    </div>
+  );
+}
+
+function formatRoute(booking) {
+  return `${booking.pickupLocation || "Chưa có điểm đón"} - ${booking.dropoffLocation || "Chưa có điểm trả"}`;
+}
+
+export default function DashboardTab({ stats, bookings, scheduleNotes, handleOpenBookings, handleOpenScheduleNotes }) {
   const today = new Date();
   const monthLabel = today.toLocaleDateString("vi-VN", {
     month: "long",
@@ -58,14 +127,7 @@ export default function DashboardTab({
   });
   const calendarDays = buildCalendarDays(today);
   const currentMonth = today.getMonth();
-  const calendarMap = (scheduleNotes ?? []).reduce((accumulator, note) => {
-    if (!note.tripDate) return accumulator;
-    const key = formatDayKey(new Date(note.tripDate));
-    accumulator[key] = [...(accumulator[key] ?? []), note].sort(
-      (left, right) => new Date(left.tripDate).getTime() - new Date(right.tripDate).getTime()
-    );
-    return accumulator;
-  }, {});
+  const calendarMap = buildCalendarMap(scheduleNotes, bookings);
 
   return (
     <>
@@ -80,21 +142,13 @@ export default function DashboardTab({
         ))}
       </section>
 
-      <QuickActions
-        handleOpenVehicleCategories={handleOpenVehicleCategories}
-        handleOpenVehicles={handleOpenVehicles}
-        handleOpenBookings={handleOpenBookings}
-        handleOpenScheduleNotes={handleOpenScheduleNotes}
-        handleOpenVehicleMaintenances={handleOpenVehicleMaintenances}
-      />
-
       <section className="mt-8 grid gap-6 2xl:grid-cols-[minmax(0,1.2fr)_420px]">
         <div className="admin-card rounded-[1.25rem] p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <h3 className="admin-title text-2xl font-extrabold text-admin-ink">Lịch xe tháng này</h3>
               <p className="mt-2 text-sm text-admin-steel">
-                Theo dõi nhanh xe đã đặt theo từng ngày để điều phối dễ hơn.
+                Hiển thị cả lịch xe đã tạo và booking từ website có ngày đi để điều phối nhanh hơn.
               </p>
             </div>
             <div className="text-right">
@@ -116,7 +170,7 @@ export default function DashboardTab({
             ))}
             {calendarDays.map((date) => {
               const dayKey = formatDayKey(date);
-              const dayNotes = calendarMap[dayKey] ?? [];
+              const dayItems = calendarMap[dayKey] ?? [];
               const isCurrentMonth = date.getMonth() === currentMonth;
               const isToday = formatDayKey(date) === formatDayKey(today);
               return (
@@ -130,30 +184,21 @@ export default function DashboardTab({
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-sm font-extrabold text-admin-ink">{date.getDate()}</span>
-                    {dayNotes.length ? (
+                    {dayItems.length ? (
                       <span className="rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-bold text-emerald-700">
-                        {dayNotes.length} lịch
+                        {dayItems.length} mục
                       </span>
                     ) : null}
                   </div>
                   <div className="mt-3 space-y-2">
-                    {dayNotes.slice(0, 2).map((note) => (
-                      <div
-                        key={note.id}
-                        className="rounded-[0.85rem] bg-slate-50 px-2.5 py-2 text-xs text-admin-steel"
-                      >
-                        <p className="font-bold text-admin-ink">{note.vehicle?.name ?? "Chưa gán xe"}</p>
-                        <p className="mt-1 line-clamp-1">{note.title}</p>
-                        <p className="mt-1 text-[11px]">{formatDateTime(note.tripDate)}</p>
-                      </div>
-                    ))}
-                    {dayNotes.length > 2 ? (
+                    {dayItems.slice(0, 2).map((item) => renderCalendarItem(item))}
+                    {dayItems.length > 2 ? (
                       <button
                         type="button"
                         onClick={handleOpenScheduleNotes}
                         className="text-xs font-bold text-admin-accent"
                       >
-                        Xem thêm {dayNotes.length - 2} lịch
+                        Xem thêm {dayItems.length - 2} mục
                       </button>
                     ) : null}
                   </div>
@@ -165,62 +210,75 @@ export default function DashboardTab({
 
         <div className="space-y-6">
           <div className="admin-card rounded-[1.25rem] p-6">
-            <h3 className="admin-title text-2xl font-extrabold text-admin-ink">Yêu cầu gần đây</h3>
-            <div className="mt-6 overflow-hidden rounded-[1rem] border border-slate-200">
-              <div className="hidden grid-cols-[minmax(0,1fr)_180px_minmax(0,1.2fr)_140px] gap-4 border-b border-slate-200 bg-slate-50 px-5 py-4 text-xs font-extrabold uppercase tracking-[0.18em] text-slate-500 lg:grid">
-                <div>Khách</div>
-                <div>Điện thoại</div>
-                <div>Lộ trình</div>
-                <div>Trạng thái</div>
-              </div>
+            <div className="flex items-center justify-between gap-4">
+              <h3 className="admin-title text-2xl font-extrabold text-admin-ink">Yêu cầu gần đây</h3>
+              <button
+                type="button"
+                onClick={handleOpenBookings}
+                className="text-sm font-bold text-admin-accent"
+              >
+                Xem tất cả
+              </button>
+            </div>
+            <div className="mt-6 space-y-3">
               {bookings.slice(0, 5).map((booking) => (
-                <div
+                <article
                   key={booking.id}
-                  className="grid gap-4 border-b border-slate-200 bg-white px-5 py-5 last:border-b-0 lg:grid-cols-[minmax(0,1fr)_180px_minmax(0,1.2fr)_140px] lg:items-center"
+                  className="rounded-[1rem] border border-slate-200 bg-white p-5"
                 >
-                  <div>
-                    <p className="text-lg font-extrabold text-admin-ink">{booking.customerName}</p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="break-words text-lg font-extrabold leading-8 text-admin-ink">
+                        {booking.customerName || "Chưa có tên khách"}
+                      </p>
+                      <p className="mt-1 text-sm text-admin-steel">
+                        {booking.tripDate ? formatDateTime(booking.tripDate) : "Chưa có ngày đi"}
+                      </p>
+                    </div>
+                    <span
+                      className={`admin-pill shrink-0 self-start ${getBookingStatusClass(booking.status)}`}
+                    >
+                      {getBookingStatusLabel(booking.status)}
+                    </span>
                   </div>
-                  <div className="text-sm font-semibold text-admin-steel">{booking.phoneNumber}</div>
-                  <div className="text-sm text-admin-steel">
-                    {booking.pickupLocation} - {booking.dropoffLocation}
+
+                  <div className="mt-4 grid gap-3">
+                    <div className="rounded-[0.9rem] bg-slate-50 px-4 py-3">
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
+                        Điện thoại
+                      </p>
+                      <p className="mt-2 break-words text-sm font-semibold text-admin-ink">
+                        {booking.phoneNumber || "Chưa có số điện thoại"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-[0.9rem] bg-slate-50 px-4 py-3">
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
+                        Lộ trình
+                      </p>
+                      <p className="mt-2 break-words text-sm font-semibold leading-6 text-admin-ink">
+                        {formatRoute(booking)}
+                      </p>
+                    </div>
+
+                    {booking.note ? (
+                      <div className="rounded-[0.9rem] bg-slate-50 px-4 py-3">
+                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
+                          Ghi chú
+                        </p>
+                        <p className="mt-2 break-words text-sm leading-6 text-admin-steel">
+                          {booking.note}
+                        </p>
+                      </div>
+                    ) : null}
                   </div>
-                  <span className={`admin-pill w-fit ${getBookingStatusClass(booking.status)}`}>
-                    {getBookingStatusLabel(booking.status)}
-                  </span>
-                </div>
+                </article>
               ))}
               {!bookings.length ? (
-                <div className="px-5 py-10 text-center text-sm text-admin-steel">
+                <div className="rounded-[1rem] border border-dashed border-slate-300 px-5 py-10 text-center text-sm text-admin-steel">
                   Chưa có booking nào.
                 </div>
               ) : null}
-            </div>
-          </div>
-
-          <div className="admin-card rounded-[1.25rem] p-6">
-            <p className="text-sm font-bold uppercase tracking-[0.3em] text-emerald-300">
-              Trạng thái hệ thống
-            </p>
-            <div className="mt-6 grid gap-4">
-              <div className="rounded-[1rem] border border-slate-200 bg-slate-50 p-5">
-                <p className="text-sm text-admin-steel">Backend API</p>
-                <p className="mt-2 text-2xl font-extrabold text-admin-ink">Sẵn sàng</p>
-              </div>
-              <div className="rounded-[1rem] border border-slate-200 bg-slate-50 p-5">
-                <p className="text-sm text-admin-steel">Public site</p>
-                <p className="mt-2 text-2xl font-extrabold text-admin-ink">Kết nối dữ liệu</p>
-              </div>
-              <div className="rounded-[1rem] border border-slate-200 bg-slate-50 p-5">
-                <p className="text-sm text-admin-steel">Lịch xe</p>
-                <button
-                  type="button"
-                  onClick={handleOpenScheduleNotes}
-                  className="mt-2 text-left text-2xl font-extrabold text-admin-ink"
-                >
-                  Mở lịch vận hành
-                </button>
-              </div>
             </div>
           </div>
         </div>

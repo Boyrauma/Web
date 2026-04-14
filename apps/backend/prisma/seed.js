@@ -1,20 +1,34 @@
-import bcrypt from "bcryptjs";
+﻿import bcrypt from "bcryptjs";
+import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
+
+dotenv.config();
 
 const prisma = new PrismaClient();
 
 async function main() {
-  const passwordHash = await bcrypt.hash("Admin@123456", 10);
+  const seedAdminEmail = process.env.SEED_ADMIN_EMAIL?.trim();
+  const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD?.trim();
 
-  await prisma.adminUser.upsert({
-    where: { email: "admin@dinhdung.local" },
-    update: {},
-    create: {
-      email: "admin@dinhdung.local",
-      passwordHash,
-      fullName: "Quản trị hệ thống"
-    }
-  });
+  if (seedAdminEmail && seedAdminPassword) {
+    const passwordHash = await bcrypt.hash(seedAdminPassword, 10);
+
+    await prisma.adminUser.upsert({
+      where: { email: seedAdminEmail },
+      update: {
+        passwordHash
+      },
+      create: {
+        email: seedAdminEmail,
+        passwordHash,
+        fullName: "Quan tri he thong"
+      }
+    });
+  } else {
+    console.warn(
+      "Skipping admin seed because SEED_ADMIN_EMAIL or SEED_ADMIN_PASSWORD is not configured."
+    );
+  }
 
   const categories = [
     {
@@ -175,42 +189,42 @@ async function main() {
   const vehicleImages = [
     {
       vehicleSlug: "toyota-innova",
-      imageUrl: "/uploads/vehicles/xe7cho.png",
+      imageUrl: "/image/vehicles/xe7cho.png",
       altText: "Toyota Innova",
       isPrimary: true,
       sortOrder: 0
     },
     {
       vehicleSlug: "toyota-innova",
-      imageUrl: "/uploads/vehicles/xe7cho2.png",
+      imageUrl: "/image/vehicles/xe7cho2.png",
       altText: "Toyota Innova phụ",
       isPrimary: false,
       sortOrder: 1
     },
     {
       vehicleSlug: "ford-transit",
-      imageUrl: "/uploads/vehicles/xe16cho.png",
+      imageUrl: "/image/vehicles/xe16cho.png",
       altText: "Ford Transit",
       isPrimary: true,
       sortOrder: 0
     },
     {
       vehicleSlug: "ford-transit",
-      imageUrl: "/uploads/vehicles/xe16cho2.png",
+      imageUrl: "/image/vehicles/xe16cho2.png",
       altText: "Ford Transit phụ",
       isPrimary: false,
       sortOrder: 1
     },
     {
       vehicleSlug: "county-29-cho",
-      imageUrl: "/uploads/vehicles/xecountybonghoi.png",
+      imageUrl: "/image/vehicles/xecountybonghoi.png",
       altText: "County 29 chỗ",
       isPrimary: true,
       sortOrder: 0
     },
     {
       vehicleSlug: "county-29-cho",
-      imageUrl: "/uploads/vehicles/xecountybonghoi2.png",
+      imageUrl: "/image/vehicles/xecountybonghoi2.png",
       altText: "County 29 chỗ phụ",
       isPrimary: false,
       sortOrder: 1

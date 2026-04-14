@@ -1,9 +1,14 @@
-import { Router } from "express";
+﻿import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../config/prisma.js";
 import { requireAdminAuth } from "../middlewares/authMiddleware.js";
-import { uploadBrandLogo, uploadVehicleImages } from "../middlewares/uploadMiddleware.js";
-import { verifyAdminToken } from "../utils/auth.js";
+import {
+  optimizeStoredImageFile,
+  removeUploadedFiles,
+  uploadBrandLogo,
+  uploadVehicleImages,
+  validateStoredImageFile
+} from "../middlewares/uploadMiddleware.js";
 import { publishBookingEvent, subscribeBookingEvents } from "../services/bookingEvents.js";
 import {
   fetchRecentTelegramLogs,
@@ -14,19 +19,11 @@ import {
 
 const router = Router();
 
-router.get("/booking-events", (request, response) => {
-  const token = typeof request.query.token === "string" ? request.query.token : "";
+function buildOptimizedCandidatePath(filePath = "") {
+  return filePath.replace(/\.[^.]+$/, ".webp");
+}
 
-  if (!token) {
-    return response.status(401).json({ message: "Unauthorized" });
-  }
-
-  try {
-    request.admin = verifyAdminToken(token);
-  } catch {
-    return response.status(401).json({ message: "Invalid token" });
-  }
-
+router.get("/booking-events", requireAdminAuth, (request, response) => {
   response.setHeader("Content-Type", "text/event-stream");
   response.setHeader("Cache-Control", "no-cache, no-transform");
   response.setHeader("Connection", "keep-alive");
@@ -50,16 +47,22 @@ router.get("/booking-events", (request, response) => {
 router.use(requireAdminAuth);
 
 router.post("/notifications/telegram/test", async (request, response) => {
-  const result = await sendTelegramTestMessage();
+  try {
+    const result = await sendTelegramTestMessage();
 
-  return response.json({
-    message:
-      result.recipientCount > 1
-        ? `Đã gửi tin nhắn test Telegram tới ${result.sentCount}/${result.recipientCount} chat${
-            result.failedRecipients?.length ? `, lỗi ${result.failedRecipients.length} chat` : ""
-          }.`
-        : "Đã gửi tin nhắn test Telegram."
-  });
+    return response.json({
+      message:
+        result.recipientCount > 1
+          ? `Đã gửi tin nhắn test Telegram tới ${result.sentCount}/${result.recipientCount} chat${
+              result.failedRecipients?.length ? `, lỗi ${result.failedRecipients.length} chat` : ""
+            }.`
+          : "Đã gửi tin nhắn test Telegram."
+    });
+  } catch (error) {
+    return response.status(400).json({
+      message: error?.message ?? "Không thể gửi test Telegram."
+    });
+  }
 });
 
 router.get("/notifications/logs", async (request, response) => {
@@ -113,7 +116,16 @@ router.delete("/booking-requests/:id", async (request, response) => {
 });
 
 router.get("/schedule-notes", async (request, response) => {
+  const scope = request.query.scope === "archived" ? "archived" : request.query.scope === "all" ? "all" : "active";
+  const where =
+    scope === "archived"
+      ? { archivedAt: { not: null } }
+      : scope === "all"
+        ? {}
+        : { archivedAt: null };
+
   const notes = await prisma.scheduleNote.findMany({
+    where,
     include: {
       vehicle: {
         select: {
@@ -154,7 +166,7 @@ router.post("/schedule-notes", async (request, response) => {
     data: {
       vehicleId: parsed.data.vehicleId,
       bookingRequestId: parsed.data.bookingRequestId || null,
-      title: parsed.data.title,
+      title: parsed.data.title?.trim() || "Ghi chú lịch xe",
       customerName: parsed.data.customerName ?? null,
       phoneNumber: parsed.data.phoneNumber ?? null,
       tripDate: parsed.data.tripDate ?? null,
@@ -203,7 +215,7 @@ router.patch("/schedule-notes/:id", async (request, response) => {
     data: {
       vehicleId: parsed.data.vehicleId,
       bookingRequestId: parsed.data.bookingRequestId || null,
-      title: parsed.data.title,
+      title: parsed.data.title?.trim() || "Ghi chú lịch xe",
       customerName: parsed.data.customerName ?? null,
       phoneNumber: parsed.data.phoneNumber ?? null,
       tripDate: parsed.data.tripDate ?? null,
@@ -238,11 +250,293 @@ router.patch("/schedule-notes/:id", async (request, response) => {
 });
 
 router.delete("/schedule-notes/:id", async (request, response) => {
-  await prisma.scheduleNote.delete({
-    where: { id: request.params.id }
+  await prisma.scheduleNote.update({
+    where: { id: request.params.id },
+    data: {
+      archivedAt: new Date()
+    }
   });
 
   return response.status(204).send();
+});
+
+router.post("/schedule-notes/:id/restore", async (request, response) => {
+  const note = await prisma.scheduleNote.update({
+    where: { id: request.params.id },
+    data: {
+      archivedAt: null
+    },
+    include: {
+      vehicle: {
+        select: {
+          id: true,
+          name: true,
+          seatCount: true
+        }
+      },
+      bookingRequest: {
+        select: {
+          id: true,
+          customerName: true,
+          phoneNumber: true,
+          tripDate: true,
+          pickupLocation: true,
+          dropoffLocation: true,
+          status: true
+        }
+      }
+    }
+  });
+
+  return response.json(note);
+});
+
+router.get("/vehicle-trip-payments", async (request, response) => {
+  const scope = request.query.scope === "archived" ? "archived" : request.query.scope === "all" ? "all" : "active";
+  const where =
+    scope === "archived"
+      ? { archivedAt: { not: null } }
+      : scope === "all"
+        ? {}
+        : { archivedAt: null };
+
+  const payments = await prisma.vehicleTripPayment.findMany({
+    where,
+    include: {
+      vehicle: {
+        select: {
+          id: true,
+          name: true,
+          seatCount: true
+        }
+      },
+      scheduleNote: {
+        select: {
+          id: true,
+          title: true,
+          customerName: true,
+          phoneNumber: true,
+          tripDate: true,
+          pickupLocation: true,
+          dropoffLocation: true,
+          status: true,
+          vehicleId: true,
+          bookingRequestId: true
+        }
+      },
+      bookingRequest: {
+        select: {
+          id: true,
+          customerName: true,
+          phoneNumber: true,
+          tripDate: true,
+          pickupLocation: true,
+          dropoffLocation: true,
+          status: true,
+          note: true
+        }
+      }
+    },
+    orderBy: [{ tripDate: "asc" }, { createdAt: "desc" }]
+  });
+
+  return response.json(payments);
+});
+
+router.post("/vehicle-trip-payments", async (request, response) => {
+  const parsed = vehicleTripPaymentSchema.safeParse(request.body);
+
+  if (!parsed.success) {
+    return response.status(400).json({
+      message: "Invalid vehicle trip payment payload",
+      errors: parsed.error.flatten()
+    });
+  }
+
+  const payment = await prisma.vehicleTripPayment.create({
+    data: {
+      vehicleId: parsed.data.vehicleId,
+      scheduleNoteId: parsed.data.scheduleNoteId || null,
+      bookingRequestId: parsed.data.bookingRequestId || null,
+      title: parsed.data.title?.trim() || "Tiền xe",
+      customerName: parsed.data.customerName ?? null,
+      phoneNumber: parsed.data.phoneNumber ?? null,
+      tripDate: parsed.data.tripDate ?? null,
+      pickupLocation: parsed.data.pickupLocation ?? null,
+      dropoffLocation: parsed.data.dropoffLocation ?? null,
+      amount: parsed.data.amount ?? null,
+      paymentStatus: parsed.data.paymentStatus ?? "unpaid",
+      collectedAt:
+        (parsed.data.paymentStatus ?? "unpaid") === "paid"
+          ? parsed.data.collectedAt ?? new Date()
+          : parsed.data.collectedAt ?? null,
+      note: parsed.data.note ?? null
+    },
+    include: {
+      vehicle: {
+        select: {
+          id: true,
+          name: true,
+          seatCount: true
+        }
+      },
+      scheduleNote: {
+        select: {
+          id: true,
+          title: true,
+          customerName: true,
+          phoneNumber: true,
+          tripDate: true,
+          pickupLocation: true,
+          dropoffLocation: true,
+          status: true,
+          vehicleId: true,
+          bookingRequestId: true
+        }
+      },
+      bookingRequest: {
+        select: {
+          id: true,
+          customerName: true,
+          phoneNumber: true,
+          tripDate: true,
+          pickupLocation: true,
+          dropoffLocation: true,
+          status: true,
+          note: true
+        }
+      }
+    }
+  });
+
+  return response.status(201).json(payment);
+});
+
+router.patch("/vehicle-trip-payments/:id", async (request, response) => {
+  const parsed = vehicleTripPaymentSchema.safeParse(request.body);
+
+  if (!parsed.success) {
+    return response.status(400).json({
+      message: "Invalid vehicle trip payment payload",
+      errors: parsed.error.flatten()
+    });
+  }
+
+  const payment = await prisma.vehicleTripPayment.update({
+    where: { id: request.params.id },
+    data: {
+      vehicleId: parsed.data.vehicleId,
+      scheduleNoteId: parsed.data.scheduleNoteId || null,
+      bookingRequestId: parsed.data.bookingRequestId || null,
+      title: parsed.data.title?.trim() || "Tiền xe",
+      customerName: parsed.data.customerName ?? null,
+      phoneNumber: parsed.data.phoneNumber ?? null,
+      tripDate: parsed.data.tripDate ?? null,
+      pickupLocation: parsed.data.pickupLocation ?? null,
+      dropoffLocation: parsed.data.dropoffLocation ?? null,
+      amount: parsed.data.amount ?? null,
+      paymentStatus: parsed.data.paymentStatus ?? "unpaid",
+      collectedAt:
+        (parsed.data.paymentStatus ?? "unpaid") === "paid"
+          ? parsed.data.collectedAt ?? new Date()
+          : parsed.data.collectedAt ?? null,
+      note: parsed.data.note ?? null
+    },
+    include: {
+      vehicle: {
+        select: {
+          id: true,
+          name: true,
+          seatCount: true
+        }
+      },
+      scheduleNote: {
+        select: {
+          id: true,
+          title: true,
+          customerName: true,
+          phoneNumber: true,
+          tripDate: true,
+          pickupLocation: true,
+          dropoffLocation: true,
+          status: true,
+          vehicleId: true,
+          bookingRequestId: true
+        }
+      },
+      bookingRequest: {
+        select: {
+          id: true,
+          customerName: true,
+          phoneNumber: true,
+          tripDate: true,
+          pickupLocation: true,
+          dropoffLocation: true,
+          status: true,
+          note: true
+        }
+      }
+    }
+  });
+
+  return response.json(payment);
+});
+
+router.delete("/vehicle-trip-payments/:id", async (request, response) => {
+  await prisma.vehicleTripPayment.update({
+    where: { id: request.params.id },
+    data: {
+      archivedAt: new Date()
+    }
+  });
+
+  return response.status(204).send();
+});
+
+router.post("/vehicle-trip-payments/:id/restore", async (request, response) => {
+  const payment = await prisma.vehicleTripPayment.update({
+    where: { id: request.params.id },
+    data: {
+      archivedAt: null
+    },
+    include: {
+      vehicle: {
+        select: {
+          id: true,
+          name: true,
+          seatCount: true
+        }
+      },
+      scheduleNote: {
+        select: {
+          id: true,
+          title: true,
+          customerName: true,
+          phoneNumber: true,
+          tripDate: true,
+          pickupLocation: true,
+          dropoffLocation: true,
+          status: true,
+          vehicleId: true,
+          bookingRequestId: true
+        }
+      },
+      bookingRequest: {
+        select: {
+          id: true,
+          customerName: true,
+          phoneNumber: true,
+          tripDate: true,
+          pickupLocation: true,
+          dropoffLocation: true,
+          status: true,
+          note: true
+        }
+      }
+    }
+  });
+
+  return response.json(payment);
 });
 
 router.get("/vehicle-maintenances", async (request, response) => {
@@ -275,9 +569,9 @@ router.post("/vehicle-maintenances", async (request, response) => {
   const maintenance = await prisma.vehicleMaintenance.create({
     data: {
       vehicleId: parsed.data.vehicleId,
-      title: parsed.data.title,
+      title: parsed.data.title?.trim() || "Bảo dưỡng xe",
       maintenanceType: parsed.data.maintenanceType,
-      serviceDate: parsed.data.serviceDate,
+      serviceDate: parsed.data.serviceDate ?? new Date(),
       nextServiceDate: parsed.data.nextServiceDate ?? null,
       odometerKm: parsed.data.odometerKm ?? null,
       cost: parsed.data.cost ?? null,
@@ -312,9 +606,9 @@ router.patch("/vehicle-maintenances/:id", async (request, response) => {
     where: { id: request.params.id },
     data: {
       vehicleId: parsed.data.vehicleId,
-      title: parsed.data.title,
+      title: parsed.data.title?.trim() || "Bảo dưỡng xe",
       maintenanceType: parsed.data.maintenanceType,
-      serviceDate: parsed.data.serviceDate,
+      serviceDate: parsed.data.serviceDate ?? new Date(),
       nextServiceDate: parsed.data.nextServiceDate ?? null,
       odometerKm: parsed.data.odometerKm ?? null,
       cost: parsed.data.cost ?? null,
@@ -464,6 +758,21 @@ const optionalNumberField = z.preprocess(
   z.coerce.number().optional().nullable()
 );
 
+const optionalStringField = z.preprocess(
+  (value) => (value === "" || value === null || value === undefined ? undefined : value),
+  z.string().optional().nullable()
+);
+
+const bookingUpdateSchema = z.object({
+  customerName: z.string().min(1),
+  phoneNumber: z.string().min(1),
+  pickupLocation: z.string().min(1),
+  dropoffLocation: z.string().min(1),
+  tripDate: optionalDateField,
+  note: optionalStringField,
+  status: z.string().min(1)
+});
+
 const siteSettingSchema = z.object({
   key: z.string().min(1),
   value: z.string(),
@@ -478,27 +787,43 @@ const vehicleImageSchema = z.object({
 
 const scheduleNoteSchema = z.object({
   vehicleId: z.string().min(1),
-  bookingRequestId: z.string().optional().nullable(),
-  title: z.string().min(1),
-  customerName: z.string().optional().nullable(),
-  phoneNumber: z.string().optional().nullable(),
+  bookingRequestId: optionalStringField,
+  title: optionalStringField,
+  customerName: optionalStringField,
+  phoneNumber: optionalStringField,
   tripDate: optionalDateField,
-  pickupLocation: z.string().optional().nullable(),
-  dropoffLocation: z.string().optional().nullable(),
+  pickupLocation: optionalStringField,
+  dropoffLocation: optionalStringField,
   status: z.string().min(1).optional(),
-  note: z.string().optional().nullable()
+  note: optionalStringField
 });
 
 const vehicleMaintenanceSchema = z.object({
   vehicleId: z.string().min(1),
-  title: z.string().min(1),
+  title: optionalStringField,
   maintenanceType: z.string().min(1),
-  serviceDate: z.coerce.date(),
+  serviceDate: optionalDateField,
   nextServiceDate: optionalDateField,
   odometerKm: optionalIntField,
   cost: optionalNumberField,
   status: z.string().min(1).optional(),
-  note: z.string().optional().nullable()
+  note: optionalStringField
+});
+
+const vehicleTripPaymentSchema = z.object({
+  vehicleId: z.string().min(1),
+  scheduleNoteId: optionalStringField,
+  bookingRequestId: optionalStringField,
+  title: optionalStringField,
+  customerName: optionalStringField,
+  phoneNumber: optionalStringField,
+  tripDate: optionalDateField,
+  pickupLocation: optionalStringField,
+  dropoffLocation: optionalStringField,
+  amount: optionalNumberField,
+  paymentStatus: z.string().min(1).optional(),
+  collectedAt: optionalDateField,
+  note: optionalStringField
 });
 
 router.get("/services", async (request, response) => {
@@ -653,16 +978,55 @@ router.post(
       return response.status(400).json({ message: "No files uploaded" });
     }
 
+    const fileList = Array.isArray(files) ? files : [];
+    const invalidFile = (
+      await Promise.all(
+        fileList.map(async (file) => ({
+          file,
+          isValid: await validateStoredImageFile(file.path)
+        }))
+      )
+    ).find((entry) => !entry.isValid);
+
+    if (invalidFile) {
+      await removeUploadedFiles(fileList);
+      return response.status(400).json({
+        message: "File tải lên không đúng định dạng ảnh hợp lệ."
+      });
+    }
+
+    let optimizedFiles;
+
+    try {
+      optimizedFiles = await Promise.all(
+        fileList.map((file) =>
+          optimizeStoredImageFile(file, {
+            maxWidth: 1920,
+            maxHeight: 1920,
+            quality: 82
+          })
+        )
+      );
+    } catch (error) {
+      await removeUploadedFiles([
+        ...fileList,
+        ...fileList.map((file) => buildOptimizedCandidatePath(file.path))
+      ]);
+      return response.status(400).json({
+        message: "Không thể xử lý ảnh tải lên."
+      });
+    }
+
     const existingCount = await prisma.vehicleImage.count({
       where: { vehicleId: request.params.id }
     });
 
     const createdImages = await prisma.$transaction(
-      files.map((file, index) =>
+      optimizedFiles.map((file, index) =>
         prisma.vehicleImage.create({
           data: {
             vehicleId: request.params.id,
-            imageUrl: `/uploads/vehicles/${file.filename}`,
+            imageUrl: `/image/vehicles/${file.filename}`,
             altText: file.originalname,
             isPrimary: existingCount === 0 && index === 0,
             sortOrder: existingCount + index
@@ -752,8 +1116,35 @@ router.post("/site-assets/logo", uploadBrandLogo.single("logo"), async (request,
     return response.status(400).json({ message: "Chưa có file logo được tải lên." });
   }
 
+  const isValidImage = await validateStoredImageFile(request.file.path);
+
+  if (!isValidImage) {
+    await removeUploadedFiles([request.file]);
+    return response.status(400).json({
+      message: "File tải lên không đúng định dạng ảnh hợp lệ."
+    });
+  }
+
+  let optimizedLogo;
+
+  try {
+    optimizedLogo = await optimizeStoredImageFile(request.file, {
+      maxWidth: 1200,
+      maxHeight: 1200,
+      quality: 84
+    });
+  } catch (error) {
+    await removeUploadedFiles([
+      request.file,
+      buildOptimizedCandidatePath(request.file.path)
+    ]);
+    return response.status(400).json({
+      message: "Không thể xử lý ảnh tải lên."
+    });
+  }
+
   return response.status(201).json({
-    imageUrl: `/uploads/branding/${request.file.filename}`
+    imageUrl: `/image/branding/${optimizedLogo.filename}`
   });
 });
 
@@ -808,4 +1199,37 @@ router.patch("/booking-requests/:id/status", async (request, response) => {
   return response.json(booking);
 });
 
+router.patch("/booking-requests/:id", async (request, response) => {
+  const parsed = bookingUpdateSchema.safeParse(request.body);
+
+  if (!parsed.success) {
+    return response.status(400).json({
+      message: "Invalid booking payload",
+      errors: parsed.error.flatten()
+    });
+  }
+
+  const booking = await prisma.bookingRequest.update({
+    where: { id: request.params.id },
+    data: {
+      customerName: parsed.data.customerName.trim(),
+      phoneNumber: parsed.data.phoneNumber.trim(),
+      pickupLocation: parsed.data.pickupLocation.trim(),
+      dropoffLocation: parsed.data.dropoffLocation.trim(),
+      tripDate: parsed.data.tripDate ?? null,
+      note: parsed.data.note ?? null,
+      status: parsed.data.status
+    }
+  });
+
+  publishBookingEvent("booking.updated", booking);
+  void sendBookingUpdatedTelegramNotification(booking).catch((error) => {
+    console.error("[telegram][booking.updated]", error.message);
+  });
+
+  return response.json(booking);
+});
+
 export default router;
+
+

@@ -1,4 +1,4 @@
-# Dinh Dung Transport
+﻿# Dinh Dung Transport
 
 Monorepo full-stack cho website nhà xe Định Dung, gồm:
 
@@ -35,35 +35,52 @@ Lưu ý dữ liệu:
 
 Các file production đã có sẵn:
 
-- [docker-compose.prod.yml](/Users/LENOVO/Downloads/Web/docker-compose.prod.yml)
-- [infra/nginx/nhaxedinhdung.info.vn.conf](/Users/LENOVO/Downloads/Web/infra/nginx/nhaxedinhdung.info.vn.conf)
-- [apps/frontend/.env.production](/Users/LENOVO/Downloads/Web/apps/frontend/.env.production)
+- `docker-compose.prod.yml`
+- `.env.production.example`
+- `infra/nginx/nhaxedinhdung.vn.conf`
+- `infra/nginx/admin.nhaxedinhdung.vn.conf`
 
 Luồng deploy khuyến nghị:
 
-1. Cập nhật `.env` trên server:
+1. Tạo `.env` trên server từ `.env.production.example`, sau đó cập nhật:
    - `NODE_ENV=production`
    - `JWT_SECRET` đủ mạnh
-   - `CORS_ORIGINS=https://nhaxedinhdung.info.vn,https://www.nhaxedinhdung.info.vn`
+   - `DATABASE_URL`
+   - `DIRECT_DATABASE_URL`
+   - `CORS_ORIGINS=https://nhaxedinhdung.vn,https://www.nhaxedinhdung.vn,https://admin.nhaxedinhdung.vn`
+   - `VITE_API_URL=/api`
+   - `RUN_SEED_ON_BOOT=false`
 2. Chạy stack production:
    - `docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d`
-   - hoặc cập nhật nhanh sau này:
-     - `docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d`
 3. Với DB hiện có:
    - `docker compose exec backend npx prisma migrate deploy`
-   - `docker compose exec backend node prisma/seed.js`
+   - chỉ chạy `docker compose exec backend node prisma/seed.js` khi cần seed máy mới
 4. Copy file Nginx domain vào Ubuntu:
-   - `/etc/nginx/sites-available/nhaxedinhdung.info.vn`
+   - `/etc/nginx/sites-available/nhaxedinhdung.vn`
+   - `/etc/nginx/sites-available/admin.nhaxedinhdung.vn`
 5. Bật site:
-   - `ln -s /etc/nginx/sites-available/nhaxedinhdung.info.vn /etc/nginx/sites-enabled/`
+   - `ln -s /etc/nginx/sites-available/nhaxedinhdung.vn /etc/nginx/sites-enabled/`
+   - `ln -s /etc/nginx/sites-available/admin.nhaxedinhdung.vn /etc/nginx/sites-enabled/`
    - `nginx -t`
    - `systemctl reload nginx`
 6. Cấp SSL bằng Certbot sau khi domain đã trỏ đúng về server
 
-## Tài khoản admin seed mặc định
+Lưu ý khi public:
 
-- Email: `admin@dinhdung.local`
-- Mật khẩu: `Admin@123456`
+- Frontend và admin hiện gọi API same-origin qua `/api`, không nên hard-code `http://localhost:8080/api` trên server public.
+- Ảnh upload được gọi qua URL public `/image/...`, vì vậy Nginx public phải proxy `/image/` về backend.
+- Backend vẫn lưu file vật lý trong thư mục `uploads`, nhưng website chỉ nên dùng URL `/image/...`.
+- Nếu admin chạy ở subdomain riêng, build production của admin phải dùng base path `/`, không dùng `/admin/`.
+
+## Seed admin an toàn
+
+- Không còn seed sẵn tài khoản admin mặc định.
+- Muốn tạo admin khi seed, hãy đặt biến môi trường:
+  - `SEED_ADMIN_EMAIL`
+  - `SEED_ADMIN_PASSWORD`
+- Ví dụ:
+  - `SEED_ADMIN_EMAIL=admin@example.com`
+  - `SEED_ADMIN_PASSWORD=<mat-khau-manh-rieng>`
 
 ## Migration
 

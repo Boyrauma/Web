@@ -20,7 +20,7 @@ services:
   admin:
     build:
       args:
-        VITE_BASE_PATH: /admin/
+        VITE_BASE_PATH: /
     environment:
       NODE_ENV: production
     ports:

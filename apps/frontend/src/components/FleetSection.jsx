@@ -1,27 +1,21 @@
-import { Link } from "react-router-dom";
-
-function dedupeImages(images) {
+﻿function dedupeImages(images) {
   return images.filter(
-    (image, index, array) => image.fullUrl && array.findIndex((item) => item.fullUrl === image.fullUrl) === index
+    (image, index, array) =>
+      image.fullUrl && array.findIndex((item) => item.fullUrl === image.fullUrl) === index
   );
 }
 
-export default function FleetSection({
-  vehicleCategories,
-  hotline,
-  resolveAssetUrl,
-  onOpenGallery
-}) {
+export default function FleetSection({ vehicleCategories, resolveAssetUrl, onOpenGallery }) {
   const fallbackGroups = [
     {
       title: "Xe 7 chỗ",
       description: "Innova, Fortuner sạch sẽ, phù hợp gia đình và công tác.",
-      images: [{ id: "fallback-7", fullUrl: "/assets/xe7cho.png", altText: "Xe 7 chỗ" }]
+      images: [{ id: "fallback-7", fullUrl: "/assets/xe7cho.jpg", altText: "Xe 7 chỗ" }]
     },
     {
       title: "Xe 16 chỗ",
       description: "Transit, Solati trần cao, thoải mái cho hành trình dài.",
-      images: [{ id: "fallback-16", fullUrl: "/assets/xe16cho.png", altText: "Xe 16 chỗ" }]
+      images: [{ id: "fallback-16", fullUrl: "/assets/xe16cho.jpg", altText: "Xe 16 chỗ" }]
     },
     {
       title: "Xe 29 - 35 chỗ",
@@ -29,7 +23,7 @@ export default function FleetSection({
       images: [
         {
           id: "fallback-35",
-          fullUrl: "/assets/xecountybonghoi.png",
+          fullUrl: "/assets/xecountybonghoi.jpg",
           altText: "Xe 29 - 35 chỗ"
         }
       ]
@@ -56,11 +50,10 @@ export default function FleetSection({
             : [
                 {
                   id: `${category.id}-fallback`,
-                  fullUrl: "/assets/xecountybonghoi.png",
+                  fullUrl: "/assets/xecountybonghoi.jpg",
                   altText: category.name
                 }
-              ],
-          slug: category.vehicles?.[0]?.slug
+              ]
         };
       })
     : fallbackGroups;
@@ -88,8 +81,10 @@ export default function FleetSection({
                 aria-label={`Mở bộ ảnh ${group.title}`}
               >
                 <img
-                  src={group.images[0]?.fullUrl ?? "/assets/xecountybonghoi.png"}
+                  src={group.images[0]?.fullUrl ?? "/assets/xecountybonghoi.jpg"}
                   alt={group.images[0]?.altText ?? group.title}
+                  loading="lazy"
+                  decoding="async"
                   className="h-64 w-full object-cover transition duration-300 group-hover:scale-[1.02]"
                 />
 
@@ -101,6 +96,8 @@ export default function FleetSection({
                           key={image.id ?? `${group.title}-${index}`}
                           src={image.fullUrl}
                           alt={image.altText ?? group.title}
+                          loading="lazy"
+                          decoding="async"
                           className="h-12 w-12 rounded-2xl border-2 border-white/90 object-cover shadow-lg"
                         />
                       ))}
@@ -124,22 +121,6 @@ export default function FleetSection({
                   >
                     Xem bộ ảnh
                   </button>
-
-                  <a
-                    href={`tel:${hotline ?? "0979860498"}`}
-                    className="inline-flex rounded-full bg-brand-navy px-5 py-3 text-sm font-bold text-white transition hover:bg-brand-amber"
-                  >
-                    Gọi tư vấn
-                  </a>
-
-                  {group.slug ? (
-                    <Link
-                      to={`/xe/${group.slug}`}
-                      className="inline-flex rounded-full border border-brand-navy px-5 py-3 text-sm font-bold text-brand-navy transition hover:border-brand-amber hover:text-brand-amber"
-                    >
-                      Xem chi tiết
-                    </Link>
-                  ) : null}
                 </div>
               </div>
             </article>

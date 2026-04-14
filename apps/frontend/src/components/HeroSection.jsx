@@ -1,65 +1,42 @@
-export default function HeroSection({ heroTitle, heroSubtitle, hotline, siteName }) {
+﻿export default function HeroSection({ heroTitle, heroSubtitle, siteName }) {
+  const legacyTitle = "Vạn dặm bình an, trọn vẹn niềm tin";
+  const legacySubtitle =
+    "Chuyên xe 4-7 chỗ, 16 chỗ, 29-35-45 chỗ cho du lịch, cưới hỏi, sự kiện và đưa đón sân bay tại Thanh Hóa.";
+  const resolvedSiteName = siteName ?? "Nhà xe Định Dung";
+  const isCustomTitle = heroTitle?.trim() && heroTitle.trim() !== legacyTitle;
+
+  const resolvedTitle = isCustomTitle ? heroTitle.trim() : "Đồng hành chỉn chu cùng";
+
+  const resolvedSubtitle =
+    heroSubtitle?.trim() && heroSubtitle.trim() !== legacySubtitle
+      ? heroSubtitle.trim()
+      : "Dịch vụ vận chuyển chuyên nghiệp, đúng hẹn và rõ ràng cho những hành trình cần sự an tâm.";
+
   return (
-    <section className="hero-surface overflow-hidden border-b-4 border-brand-amber">
-      <div className="site-shell mx-auto grid gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:py-24">
-        <div className="space-y-7">
-          <span className="inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.3em] text-brand-amber">
-            Thuê xe du lịch uy tín
-          </span>
-          <h2 className="display-serif max-w-4xl text-4xl leading-tight text-white sm:text-6xl">
-            {heroTitle ?? "Vạn dặm bình an, trọn vẹn niềm tin"}
-          </h2>
-          <p className="max-w-3xl text-lg leading-8 text-slate-100">
-            {heroSubtitle ??
-              "Chuyên xe 7 chỗ, 16 chỗ, 29-35 chỗ cho du lịch, cưới hỏi, sự kiện và đưa đón sân bay tại Thanh Hóa."}
-          </p>
-          <div className="grid max-w-3xl gap-4 sm:grid-cols-3">
-            <div className="glass-card rounded-[1.5rem] border border-white/10 p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-amber">
-                Hỗ trợ
-              </p>
-              <p className="mt-2 text-2xl font-extrabold text-white">24/7</p>
-            </div>
-            <div className="glass-card rounded-[1.5rem] border border-white/10 p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-amber">
-                Dòng xe
-              </p>
-              <p className="mt-2 text-2xl font-extrabold text-white">4 - 45</p>
-            </div>
-            <div className="glass-card rounded-[1.5rem] border border-white/10 p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-amber">
-                Ưu tiên
-              </p>
-              <p className="mt-2 text-2xl font-extrabold text-white">Đúng giờ</p>
-            </div>
+    <section className="hero-surface overflow-hidden border-b border-[#c8ab74]/50">
+      <div className="site-shell mx-auto px-4 py-14 sm:px-6 lg:py-20">
+        <div className="relative mx-auto max-w-[1080px] px-6 py-12 sm:px-10 lg:px-18 lg:py-16">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(211,178,119,0.12),transparent_24%),radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.05),transparent_22%)]" />
+            <div className="absolute right-[-50px] top-[-40px] h-52 w-52 rounded-full bg-[#d3b277]/10 blur-3xl" />
           </div>
-          <div className="flex flex-wrap gap-4">
-            <a
-              href={`tel:${hotline ?? "0979860498"}`}
-              className="rounded-2xl bg-white px-6 py-4 text-base font-bold text-brand-navy shadow-premium transition hover:-translate-y-0.5 hover:bg-slate-100"
-            >
-              Gọi ngay
-            </a>
-            <a
-              href="#booking"
-              className="rounded-2xl border border-white/30 px-6 py-4 text-base font-bold text-white transition hover:-translate-y-0.5 hover:bg-white/10"
-            >
-              Yêu cầu báo giá
-            </a>
-          </div>
-        </div>
-        <div className="glass-card rounded-[2rem] border border-white/15 p-6">
-          <img
-            src="/assets/xecountybonghoi2.png"
-            alt={`Xe ${siteName ?? "nhà xe"}`}
-            className="h-[420px] w-full rounded-[1.5rem] object-cover shadow-premium"
-          />
-          <div className="mt-4 rounded-[1.25rem] bg-white/10 p-4 text-white">
-            <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-amber">
-              Hình ảnh đội xe
-            </p>
-            <p className="mt-2 text-sm leading-7 text-slate-100">
-              Hình ảnh thật, xe đồng bộ và dễ lựa chọn cho từng nhu cầu từ cá nhân đến đoàn lớn.
+
+          <div className="relative mx-auto max-w-[900px] text-center">
+            <span className="inline-flex rounded-full border border-[#d3b277]/25 bg-white/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.28em] text-[#d9bb84]">
+              Nhà xe uy tín tại Thanh Hóa
+            </span>
+            <h2 className="display-serif mt-6 text-4xl leading-[1.08] text-white sm:text-5xl lg:text-[4.15rem]">
+              {isCustomTitle ? (
+                resolvedTitle
+              ) : (
+                <>
+                  {resolvedTitle}{" "}
+                  <span className="whitespace-nowrap">{resolvedSiteName}</span>
+                </>
+              )}
+            </h2>
+            <p className="mx-auto mt-6 max-w-[620px] text-base leading-8 text-slate-200 sm:text-lg">
+              {resolvedSubtitle}
             </p>
           </div>
         </div>

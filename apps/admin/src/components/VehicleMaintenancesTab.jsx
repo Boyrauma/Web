@@ -1,4 +1,7 @@
-﻿const maintenanceTypeOptions = [
+﻿import { useEffect, useMemo, useState } from "react";
+import AdminPagination, { PAGE_SIZE, getPageSlice } from "./AdminPagination";
+
+const maintenanceTypeOptions = [
   { value: "oil_change", label: "Thay dầu" },
   { value: "maintenance", label: "Bảo dưỡng chung" },
   { value: "inspection", label: "Kiểm tra định kỳ" },
@@ -9,6 +12,11 @@ const maintenanceStatusOptions = [
   { value: "scheduled", label: "Đã lên lịch" },
   { value: "completed", label: "Đã hoàn thành" },
   { value: "overdue", label: "Quá hạn" }
+];
+
+const maintenanceSortOptions = [
+  { value: "newest", label: "Ngày mới nhất" },
+  { value: "oldest", label: "Ngày cũ nhất" }
 ];
 
 function formatDate(value) {
@@ -53,6 +61,50 @@ export default function VehicleMaintenancesTab({
   handleDeleteMaintenance,
   resetMaintenanceForm
 }) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState("newest");
+  const [currentPage, setCurrentPage] = useState(1);
+  const visibleMaintenances = useMemo(() => {
+    const search = searchQuery.trim().toLowerCase();
+    const matchedItems = maintenances.filter((item) => {
+      if (!search) return true;
+
+      const content = [
+        item.title,
+        item.vehicle?.name,
+        item.note,
+        getTypeLabel(item.maintenanceType),
+        getStatusLabel(item.status)
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return content.includes(search);
+    });
+
+    return [...matchedItems].sort((left, right) => {
+      const leftTime = new Date(left.serviceDate ?? left.createdAt ?? 0).getTime();
+      const rightTime = new Date(right.serviceDate ?? right.createdAt ?? 0).getTime();
+      return sortOrder === "oldest" ? leftTime - rightTime : rightTime - leftTime;
+    });
+  }, [maintenances, searchQuery, sortOrder]);
+  const totalPages = Math.max(1, Math.ceil(visibleMaintenances.length / PAGE_SIZE));
+  const paginatedMaintenances = useMemo(
+    () => getPageSlice(visibleMaintenances, currentPage, PAGE_SIZE),
+    [currentPage, visibleMaintenances]
+  );
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, sortOrder]);
+
   return (
     <section className="mt-8 grid gap-6 xl:grid-cols-[430px_minmax(0,1fr)]">
       <form onSubmit={handleCreateMaintenance} className="admin-card rounded-[1.25rem] p-6">
@@ -134,7 +186,7 @@ export default function VehicleMaintenancesTab({
             </label>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
             <label className="space-y-2">
               <span className="text-sm font-bold text-admin-ink">Ngày thực hiện</span>
               <input
@@ -146,7 +198,7 @@ export default function VehicleMaintenancesTab({
               />
             </label>
             <label className="space-y-2">
-              <span className="text-sm font-bold text-admin-ink">Ngày bảo dưỡng tiếp theo</span>
+              <span className="text-sm font-bold text-admin-ink">Ngày kế tiếp</span>
               <input
                 className="admin-field"
                 type="date"
@@ -214,12 +266,44 @@ export default function VehicleMaintenancesTab({
             </p>
           </div>
           <span className="admin-pill bg-slate-100 text-slate-700">
-            {maintenances.length} mục
+            {visibleMaintenances.length} mục
           </span>
         </div>
 
+        <div className="mt-6 rounded-[1rem] border border-slate-200 bg-slate-50/80 p-4">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-admin-accent">
+            Bộ lọc bảo dưỡng
+          </p>
+          <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_220px] xl:items-end">
+            <label className="space-y-2">
+              <span className="text-sm font-bold text-admin-ink">Tìm kiếm</span>
+              <input
+                className="admin-field"
+                placeholder="Hạng mục, xe, ghi chú..."
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+              />
+            </label>
+
+            <label className="space-y-2">
+              <span className="text-sm font-bold text-admin-ink">Sắp xếp</span>
+              <select
+                className="admin-select"
+                value={sortOrder}
+                onChange={(event) => setSortOrder(event.target.value)}
+              >
+                {maintenanceSortOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </div>
+
         <div className="mt-6 space-y-4">
-          {maintenances.map((item) => (
+          {paginatedMaintenances.map((item) => (
             <div
               key={item.id}
               className="rounded-[1.25rem] border border-slate-200 bg-slate-50/70 p-5"
@@ -236,8 +320,8 @@ export default function VehicleMaintenancesTab({
                 </span>
               </div>
 
-              <div className="mt-4 grid gap-3 md:grid-cols-3">
-                <div className="rounded-[1rem] bg-white px-4 py-3">
+              <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                <div className="min-w-0 rounded-[1rem] bg-white px-4 py-3">
                   <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
                     Ngày thực hiện
                   </p>
@@ -245,15 +329,15 @@ export default function VehicleMaintenancesTab({
                     {formatDate(item.serviceDate)}
                   </p>
                 </div>
-                <div className="rounded-[1rem] bg-white px-4 py-3">
+                <div className="min-w-0 rounded-[1rem] bg-white px-4 py-3">
                   <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-                    Mốc tiếp theo
+                    Ngày kế tiếp
                   </p>
                   <p className="mt-2 text-sm font-semibold text-admin-ink">
                     {formatDate(item.nextServiceDate)}
                   </p>
                 </div>
-                <div className="rounded-[1rem] bg-white px-4 py-3">
+                <div className="min-w-0 rounded-[1rem] bg-white px-4 py-3">
                   <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
                     Chi phí
                   </p>
@@ -292,12 +376,19 @@ export default function VehicleMaintenancesTab({
             </div>
           ))}
 
-          {maintenances.length ? null : (
+          {visibleMaintenances.length ? null : (
             <div className="rounded-[1.5rem] border border-dashed border-slate-300 px-5 py-10 text-center text-sm text-admin-steel">
               Chưa có lịch bảo dưỡng nào.
             </div>
           )}
         </div>
+
+        <AdminPagination
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+          totalItems={visibleMaintenances.length}
+          itemLabel="bảo dưỡng"
+        />
       </div>
     </section>
   );

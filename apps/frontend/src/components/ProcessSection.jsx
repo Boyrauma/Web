@@ -1,6 +1,6 @@
-const steps = [
+﻿const steps = [
   "Gửi yêu cầu hoặc gọi hotline",
-  "Nhận tư vấn xe phù hợp và báo giá nhanh",
+  "Nhận tư vấn xe phù hợp và liên hệ xác nhận nhanh",
   "Chốt lịch, điểm đón và triển khai chuyến đi"
 ];
 

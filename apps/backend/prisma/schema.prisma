@@ -48,6 +48,7 @@ model Vehicle {
   images           VehicleImage[]
   scheduleNotes    ScheduleNote[]
   maintenanceLogs  VehicleMaintenance[]
+  tripPayments     VehicleTripPayment[]
 }
 
 model VehicleImage {
@@ -88,6 +89,7 @@ model BookingRequest {
   updatedAt       DateTime @updatedAt
   notifications   NotificationLog[]
   scheduleNotes   ScheduleNote[]
+  tripPayments    VehicleTripPayment[]
 }
 
 model SiteSetting {
@@ -127,13 +129,44 @@ model ScheduleNote {
   dropoffLocation String?
   status          String         @default("scheduled")
   note            String?
+  archivedAt      DateTime?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   vehicle         Vehicle        @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   bookingRequest  BookingRequest? @relation(fields: [bookingRequestId], references: [id], onDelete: SetNull)
+  tripPayment     VehicleTripPayment?
 
   @@index([vehicleId, tripDate])
   @@index([bookingRequestId])
+  @@index([archivedAt, tripDate])
+}
+
+model VehicleTripPayment {
+  id              String         @id @default(cuid())
+  vehicleId       String
+  scheduleNoteId  String?        @unique
+  bookingRequestId String?       @unique
+  title           String
+  customerName    String?
+  phoneNumber     String?
+  tripDate        DateTime?
+  pickupLocation  String?
+  dropoffLocation String?
+  amount          Float?
+  paymentStatus   String         @default("unpaid")
+  collectedAt     DateTime?
+  note            String?
+  archivedAt      DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  vehicle         Vehicle        @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  scheduleNote    ScheduleNote?  @relation(fields: [scheduleNoteId], references: [id], onDelete: SetNull)
+  bookingRequest  BookingRequest? @relation(fields: [bookingRequestId], references: [id], onDelete: SetNull)
+
+  @@index([vehicleId, tripDate])
+  @@index([paymentStatus, tripDate])
+  @@index([bookingRequestId])
+  @@index([archivedAt, tripDate])
 }
 
 model VehicleMaintenance {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import BookingSection from "../components/BookingSection";
 import FaqSection from "../components/FaqSection";
 import FleetSection from "../components/FleetSection";
@@ -10,7 +10,6 @@ import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
 import StickyContactBar from "../components/StickyContactBar";
 import TestimonialSection from "../components/TestimonialSection";
-import TrustStrip from "../components/TrustStrip";
 import VehicleGalleryLightbox from "../components/VehicleGalleryLightbox";
 import VehicleShowcaseSection from "../components/VehicleShowcaseSection";
 import WhyChooseSection from "../components/WhyChooseSection";
@@ -196,12 +195,15 @@ export default function HomePage() {
           hotline={settingsMap.hotline}
           siteName={settingsMap.site_name}
         />
-        <TrustStrip />
-        <ServicesSection services={services} error={pageState.error} />
+        <ServicesSection
+          services={services}
+          error={pageState.error}
+          hotline={settingsMap.hotline}
+          address={settingsMap.address}
+        />
         <WhyChooseSection />
         <FleetSection
           vehicleCategories={vehicleCategories}
-          hotline={settingsMap.hotline}
           resolveAssetUrl={resolveAssetUrl}
           onOpenGallery={handleOpenFleetGallery}
         />

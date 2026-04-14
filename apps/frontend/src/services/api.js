@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080/api";
+﻿const API_URL = import.meta.env.VITE_API_URL ?? "/api";
 const API_BASE_URL = API_URL.replace(/\/api\/?$/, "");
 
 async function readJsonResponse(response) {
@@ -21,6 +21,10 @@ export function resolveAssetUrl(path) {
   }
 
   if (/^https?:\/\//.test(path)) {
+    return path;
+  }
+
+  if (path.startsWith("/")) {
     return path;
   }
 

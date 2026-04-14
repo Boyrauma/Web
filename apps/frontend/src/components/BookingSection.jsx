@@ -1,4 +1,4 @@
-export default function BookingSection({
+﻿export default function BookingSection({
   hotline,
   address,
   formData,
@@ -8,15 +8,15 @@ export default function BookingSection({
 }) {
   return (
     <section id="booking" className="site-shell mx-auto px-4 py-16 sm:px-6">
-      <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
+      <div className="grid gap-8 lg:grid-cols-[0.82fr_1.18fr]">
         <div className="space-y-5">
           <p className="text-sm font-bold uppercase tracking-[0.3em] text-brand-amber">Liên hệ</p>
-          <h3 className="text-3xl font-black uppercase text-brand-navy">Yêu cầu báo giá nhanh</h3>
+          <h3 className="text-3xl font-black uppercase text-brand-navy">Liên hệ để giữ lịch trình phù hợp</h3>
           <p className="text-slate-600">
-            Gửi yêu cầu trực tiếp, hệ thống sẽ lưu lại để admin xử lý và gọi lại xác nhận lịch
-            trình, số người và dòng xe phù hợp.
+            Gửi yêu cầu trực tiếp để bộ phận điều hành rà lại lịch trình, số khách và dòng xe phù
+            hợp trước khi xác nhận chuyến.
           </p>
-          <div className="rounded-[2rem] bg-brand-navy p-6 text-white shadow-premium">
+          <div className="rounded-[2rem] bg-[#14233c] p-6 text-white shadow-premium">
             <p className="text-sm uppercase tracking-[0.25em] text-brand-amber">Hotline</p>
             <a href={`tel:${hotline ?? "0979860498"}`} className="mt-3 block text-3xl font-black">
               {hotline ?? "0979 860 498"}
@@ -29,27 +29,47 @@ export default function BookingSection({
                 Tư vấn nhanh theo lịch trình
               </div>
               <div className="rounded-2xl bg-white/10 px-4 py-3 text-sm font-semibold text-slate-100">
-                Chốt chuyến dễ cho đoàn lớn
+                Chốt chuyến gọn cho đoàn riêng
               </div>
             </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="rounded-[1.5rem] border border-[#e6dbc7] bg-white/90 p-4 shadow-[0_18px_45px_rgba(20,35,60,0.06)]">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-amber">
                 Thời gian phản hồi
               </p>
-              <p className="mt-2 text-lg font-extrabold text-brand-navy">Trong giờ làm việc</p>
+              <p className="mt-2 text-lg font-extrabold text-brand-navy">Ưu tiên trong giờ làm việc</p>
               <p className="mt-2 text-sm text-slate-600">
-                Booking mới sẽ được ưu tiên gọi lại để xác nhận lịch trình và dòng xe.
+                Yêu cầu có lịch đi, số người và điểm đón rõ sẽ được ưu tiên xác nhận nhanh hơn.
               </p>
             </div>
-            <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="rounded-[1.5rem] border border-[#e6dbc7] bg-white/90 p-4 shadow-[0_18px_45px_rgba(20,35,60,0.06)]">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-amber">
                 Phù hợp
               </p>
-              <p className="mt-2 text-lg font-extrabold text-brand-navy">Cá nhân đến đoàn lớn</p>
+              <p className="mt-2 text-lg font-extrabold text-brand-navy">Từ gia đình đến doanh nghiệp</p>
               <p className="mt-2 text-sm text-slate-600">
-                Từ xe gia đình đến xe 45 chỗ cho tour, cưới hỏi, sự kiện và công tác.
+                Từ xe gia đình đến xe 45 chỗ cho công tác, tour riêng, sự kiện và cưới hỏi.
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-[1.5rem] border border-[#e6dbc7] bg-[#fffaf2] p-4">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-amber">Hồ sơ chuyến</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Ghi rõ ngày đi, số khách, điểm đón và điểm trả để việc điều phối đạt độ chính xác cao.
+              </p>
+            </div>
+            <div className="rounded-[1.5rem] border border-[#e6dbc7] bg-[#fffaf2] p-4">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-amber">Điều phối xe</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Xe được sắp theo quy mô đoàn và tính chất chuyến đi để giữ trải nghiệm ổn định, lịch sự.
+              </p>
+            </div>
+            <div className="rounded-[1.5rem] border border-[#e6dbc7] bg-[#fffaf2] p-4">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-amber">Xác nhận lịch</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Bộ phận điều hành sẽ rà lại lịch trình trước khi chốt chuyến và bố trí xe phù hợp.
               </p>
             </div>
           </div>
@@ -57,7 +77,7 @@ export default function BookingSection({
 
         <form
           onSubmit={handleSubmit}
-          className="grid gap-4 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm md:grid-cols-2"
+          className="grid gap-4 rounded-[2rem] border border-[#e4d5bb] bg-white/92 p-6 shadow-[0_24px_70px_rgba(20,35,60,0.08)] md:grid-cols-2"
         >
           <label className="space-y-2">
             <span className="text-sm font-bold text-brand-navy">Họ và tên</span>
@@ -131,10 +151,10 @@ export default function BookingSection({
           </label>
           <button
             type="submit"
-            className="rounded-2xl bg-brand-amber px-6 py-4 font-bold text-white transition hover:bg-brand-navy md:col-span-2"
+            className="rounded-2xl bg-[#b88a3b] px-6 py-4 font-bold text-white transition hover:bg-brand-navy md:col-span-2"
             disabled={submitState.loading}
           >
-            {submitState.loading ? "Đang gửi..." : "Gửi yêu cầu"}
+            {submitState.loading ? "Đang gửi..." : "Liên hệ ngay"}
           </button>
           {submitState.message ? (
             <p className="md:col-span-2 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">

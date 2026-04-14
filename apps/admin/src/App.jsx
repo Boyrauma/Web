@@ -1,12 +1,14 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import BookingsTab from "./components/BookingsTab";
+import DataArchiveTab from "./components/DataArchiveTab";
 import DashboardTab from "./components/DashboardTab";
 import LoginView from "./components/LoginView";
-import ScheduleNotesTab from "./components/ScheduleNotesTab";
+import ScheduleNotesManager from "./components/ScheduleNotesManager";
 import ServicesTab from "./components/ServicesTab";
 import SettingsTab from "./components/SettingsTab";
 import VehicleCategoriesTab from "./components/VehicleCategoriesTab";
 import VehicleMaintenancesTab from "./components/VehicleMaintenancesTab";
+import VehicleTripPaymentsTab from "./components/VehicleTripPaymentsTab";
 import VehiclesTab from "./components/VehiclesTab";
 import {
   changeAdminPassword,
@@ -15,6 +17,7 @@ import {
   createScheduleNote,
   createSiteSetting,
   createVehicleMaintenance,
+  createVehicleTripPayment,
   createVehicleCategory,
   createService,
   createVehicle,
@@ -22,13 +25,16 @@ import {
   deleteScheduleNote,
   deleteSiteSetting,
   deleteVehicleMaintenance,
+  deleteVehicleTripPayment,
   deleteVehicleCategory,
   deleteService,
   deleteVehicle,
   deleteVehicleImage,
   fetchAdminBookings,
   fetchAdminDashboard,
+  fetchCurrentAdminSession,
   fetchScheduleNotes,
+  fetchVehicleTripPayments,
   fetchNotificationLogs,
   fetchAdminServices,
   fetchPublicSiteSettings,
@@ -38,13 +44,16 @@ import {
   fetchVehicles,
   getStoredToken,
   loginAdmin,
+  logoutAdmin,
   resolveAdminAssetUrl,
   sendTelegramTest,
   storeToken,
+  updateBooking,
   updateBookingStatus,
   updateScheduleNote,
   updateVehicleCategory,
   updateVehicleMaintenance,
+  updateVehicleTripPayment,
   updateService,
   updateSiteSetting,
   uploadSiteLogo,
@@ -60,6 +69,8 @@ const tabs = [
   { id: "vehicle-categories", label: "Nhóm xe", eyebrow: "Phân loại" },
   { id: "vehicles", label: "Xe", eyebrow: "Đội xe" },
   { id: "schedule-notes", label: "Lịch xe", eyebrow: "Vận hành" },
+  { id: "vehicle-trip-payments", label: "Tiền xe", eyebrow: "Thu tiền" },
+  { id: "data-archive", label: "Dữ liệu", eyebrow: "Lưu trữ" },
   { id: "vehicle-maintenances", label: "Bảo dưỡng xe", eyebrow: "Bảo trì" },
   { id: "bookings", label: "Booking", eyebrow: "Khách hàng" },
   { id: "services", label: "Dịch vụ", eyebrow: "Public site" },
@@ -123,11 +134,29 @@ const maintenanceFormInitial = {
   note: ""
 };
 
+const tripPaymentFormInitial = {
+  scheduleNoteId: "",
+  bookingRequestId: "",
+  vehicleId: "",
+  title: "",
+  customerName: "",
+  phoneNumber: "",
+  tripDate: "",
+  pickupLocation: "",
+  dropoffLocation: "",
+  amount: "",
+  paymentStatus: "unpaid",
+  note: ""
+};
+const SESSION_TOKEN = "__session__";
+
 function getTabDescription(tabId) {
   if (tabId === "dashboard") return "Tổng quan nhanh.";
   if (tabId === "vehicle-categories") return "Phân loại đội xe.";
   if (tabId === "vehicles") return "Quản lý xe và ảnh.";
   if (tabId === "schedule-notes") return "Theo dõi xe đã đặt.";
+  if (tabId === "vehicle-trip-payments") return "Theo dõi xe nào đã thu và chưa thu tiền.";
+  if (tabId === "data-archive") return "Tra cứu lịch xe và tiền xe theo ngày hoặc tên xe.";
   if (tabId === "vehicle-maintenances") return "Nhật ký thay dầu, bảo dưỡng.";
   if (tabId === "bookings") return "Xử lý yêu cầu khách.";
   if (tabId === "services") return "Nội dung dịch vụ public.";
@@ -168,8 +197,8 @@ function toDateInputValue(value) {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [token, setToken] = useState(() => getStoredToken());
+  const [authReady, setAuthReady] = useState(false);
   const [loginForm, setLoginForm] = useState({
     email: "",
     password: ""
@@ -180,6 +209,9 @@ export default function App() {
   const [bookings, setBookings] = useState([]);
   const [bookingStatusFilter, setBookingStatusFilter] = useState("all");
   const [scheduleNotes, setScheduleNotes] = useState([]);
+  const [archivedScheduleNotes, setArchivedScheduleNotes] = useState([]);
+  const [vehicleTripPayments, setVehicleTripPayments] = useState([]);
+  const [archivedVehicleTripPayments, setArchivedVehicleTripPayments] = useState([]);
   const [vehicleMaintenances, setVehicleMaintenances] = useState([]);
   const [services, setServices] = useState([]);
   const [vehicleCategories, setVehicleCategories] = useState([]);
@@ -192,6 +224,8 @@ export default function App() {
   const [settingForm, setSettingForm] = useState(settingFormInitial);
   const [scheduleNoteForm, setScheduleNoteForm] = useState(scheduleNoteFormInitial);
   const [editingScheduleNoteId, setEditingScheduleNoteId] = useState("");
+  const [tripPaymentForm, setTripPaymentForm] = useState(tripPaymentFormInitial);
+  const [editingTripPaymentId, setEditingTripPaymentId] = useState("");
   const [maintenanceForm, setMaintenanceForm] = useState(maintenanceFormInitial);
   const [editingMaintenanceId, setEditingMaintenanceId] = useState("");
   const [categoryForm, setCategoryForm] = useState(categoryFormInitial);
@@ -204,6 +238,7 @@ export default function App() {
   const [savingVehicle, setSavingVehicle] = useState(false);
   const [savingCategory, setSavingCategory] = useState(false);
   const [savingScheduleNote, setSavingScheduleNote] = useState(false);
+  const [savingTripPayment, setSavingTripPayment] = useState(false);
   const [savingMaintenance, setSavingMaintenance] = useState(false);
   const [savingSettingId, setSavingSettingId] = useState("");
   const [savingNewSetting, setSavingNewSetting] = useState(false);
@@ -226,7 +261,36 @@ export default function App() {
   const [highlightedBookingIds, setHighlightedBookingIds] = useState([]);
 
   useEffect(() => {
-    if (token) return;
+    let ignore = false;
+
+    async function restoreAdminSession() {
+      try {
+        const session = await fetchCurrentAdminSession();
+
+        if (!ignore) {
+          setToken(session.admin ? SESSION_TOKEN : null);
+        }
+      } catch {
+        if (!ignore) {
+          clearToken();
+          setToken(null);
+        }
+      } finally {
+        if (!ignore) {
+          setAuthReady(true);
+        }
+      }
+    }
+
+    restoreAdminSession();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!authReady || token) return;
 
     let ignore = false;
 
@@ -248,7 +312,7 @@ export default function App() {
     return () => {
       ignore = true;
     };
-  }, [token]);
+  }, [authReady, token]);
 
   useEffect(() => {
     if (!token) return;
@@ -261,6 +325,9 @@ export default function App() {
           dashboardData,
           bookingData,
           scheduleNoteData,
+          archivedScheduleNoteData,
+          tripPaymentData,
+          archivedTripPaymentData,
           maintenanceData,
           serviceData,
           categoryData,
@@ -270,7 +337,10 @@ export default function App() {
         ] = await Promise.all([
           fetchAdminDashboard(token),
           fetchAdminBookings(token),
-          fetchScheduleNotes(token),
+          fetchScheduleNotes(token, "active"),
+          fetchScheduleNotes(token, "archived"),
+          fetchVehicleTripPayments(token, "active"),
+          fetchVehicleTripPayments(token, "archived"),
           fetchVehicleMaintenances(token),
           fetchAdminServices(token),
           fetchVehicleCategories(token),
@@ -283,6 +353,9 @@ export default function App() {
           setDashboard(dashboardData);
           setBookings(bookingData);
           setScheduleNotes(scheduleNoteData);
+          setArchivedScheduleNotes(archivedScheduleNoteData);
+          setVehicleTripPayments(tripPaymentData);
+          setArchivedVehicleTripPayments(archivedTripPaymentData);
           setVehicleMaintenances(maintenanceData);
           setServices(serviceData);
           setVehicleCategories(categoryData);
@@ -294,6 +367,18 @@ export default function App() {
           setVehicleForm((current) => ({
             ...current,
             categoryId: current.categoryId || categoryData[0]?.id || ""
+          }));
+          setScheduleNoteForm((current) => ({
+            ...current,
+            vehicleId: current.vehicleId || vehicleData[0]?.id || ""
+          }));
+          setTripPaymentForm((current) => ({
+            ...current,
+            vehicleId: current.vehicleId || vehicleData[0]?.id || ""
+          }));
+          setMaintenanceForm((current) => ({
+            ...current,
+            vehicleId: current.vehicleId || vehicleData[0]?.id || ""
           }));
         }
       } catch (error) {
@@ -345,6 +430,9 @@ export default function App() {
     [siteSettings]
   );
   const adminLogoUrl = settingsMap.logo_url ? resolveAdminAssetUrl(settingsMap.logo_url) : "";
+  const adminSiteName = settingsMap.site_name ?? "Nhà xe";
+  const adminBrandLine =
+    adminSiteName.startsWith("Nhà xe ") ? adminSiteName.slice("Nhà xe ".length) : adminSiteName;
 
   const activeTabMeta = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
 
@@ -449,6 +537,9 @@ export default function App() {
       dashboardData,
       bookingData,
       scheduleNoteData,
+      archivedScheduleNoteData,
+      tripPaymentData,
+      archivedTripPaymentData,
       maintenanceData,
       serviceData,
       categoryData,
@@ -459,7 +550,10 @@ export default function App() {
       await Promise.all([
         fetchAdminDashboard(token),
         fetchAdminBookings(token),
-        fetchScheduleNotes(token),
+        fetchScheduleNotes(token, "active"),
+        fetchScheduleNotes(token, "archived"),
+        fetchVehicleTripPayments(token, "active"),
+        fetchVehicleTripPayments(token, "archived"),
         fetchVehicleMaintenances(token),
         fetchAdminServices(token),
         fetchVehicleCategories(token),
@@ -471,6 +565,9 @@ export default function App() {
     setDashboard(dashboardData);
     setBookings(bookingData);
     setScheduleNotes(scheduleNoteData);
+    setArchivedScheduleNotes(archivedScheduleNoteData);
+    setVehicleTripPayments(tripPaymentData);
+    setArchivedVehicleTripPayments(archivedTripPaymentData);
     setVehicleMaintenances(maintenanceData);
     setServices(serviceData);
     setVehicleCategories(categoryData);
@@ -478,6 +575,18 @@ export default function App() {
     setSiteSettings(settingData);
     setNotificationLogs(notificationLogData);
     setSelectedVehicleId((current) => current || vehicleData[0]?.id || "");
+    setScheduleNoteForm((current) => ({
+      ...current,
+      vehicleId: current.vehicleId || vehicleData[0]?.id || ""
+    }));
+    setTripPaymentForm((current) => ({
+      ...current,
+      vehicleId: current.vehicleId || vehicleData[0]?.id || ""
+    }));
+    setMaintenanceForm((current) => ({
+      ...current,
+      vehicleId: current.vehicleId || vehicleData[0]?.id || ""
+    }));
   }
 
   async function reloadBookingRealtimeData() {
@@ -516,8 +625,9 @@ export default function App() {
 
     try {
       const data = await loginAdmin(loginForm);
-      storeToken(data.token);
-      setToken(data.token);
+      storeToken(null);
+      setToken(data.admin ? SESSION_TOKEN : null);
+      setAuthReady(true);
       setAuthState({ loading: false, error: "" });
       notifySuccess("Đăng nhập thành công.");
     } catch (error) {
@@ -526,12 +636,19 @@ export default function App() {
     }
   }
 
-  function handleLogout() {
+  async function handleLogout() {
+    try {
+      await logoutAdmin();
+    } catch {}
+
     clearToken();
     setToken(null);
     setDashboard(null);
     setBookings([]);
     setScheduleNotes([]);
+    setArchivedScheduleNotes([]);
+    setVehicleTripPayments([]);
+    setArchivedVehicleTripPayments([]);
     setVehicleMaintenances([]);
     setServices([]);
     setVehicles([]);
@@ -606,6 +723,28 @@ export default function App() {
     }
   }
 
+  async function handleInlineUpdateBooking(id, payload) {
+    setPageError("");
+
+    try {
+      await updateBooking(token, id, {
+        customerName: payload.customerName.trim(),
+        phoneNumber: payload.phoneNumber.trim(),
+        pickupLocation: payload.pickupLocation.trim(),
+        dropoffLocation: payload.dropoffLocation.trim(),
+        tripDate: payload.tripDate || "",
+        note: payload.note ?? "",
+        status: payload.status
+      });
+      await reloadData();
+      scheduleNotificationLogRefresh(5200);
+      notifySuccess("Đã cập nhật booking.");
+    } catch (error) {
+      notifyError(error, "Không thể cập nhật booking.");
+      throw error;
+    }
+  }
+
   async function handleDeleteBooking(id) {
     if (!window.confirm("Xóa yêu cầu booking này?")) return;
     try {
@@ -647,6 +786,11 @@ export default function App() {
     resetScheduleNoteForm();
   }
 
+  function openVehicleTripPaymentsTab() {
+    setActiveTab("vehicle-trip-payments");
+    resetTripPaymentForm();
+  }
+
   function openVehicleMaintenancesTab() {
     setActiveTab("vehicle-maintenances");
     resetMaintenanceForm();
@@ -656,7 +800,7 @@ export default function App() {
     setActiveTab("schedule-notes");
     setEditingScheduleNoteId("");
     setScheduleNoteForm({
-      vehicleId: "",
+      vehicleId: vehicles[0]?.id || "",
       bookingRequestId: booking.id,
       title: `Giữ lịch cho ${booking.customerName}`,
       customerName: booking.customerName ?? "",
@@ -671,6 +815,36 @@ export default function App() {
 
   function handleScheduleNoteFormChange(event) {
     const { name, value } = event.target;
+
+    if (name === "bookingRequestId") {
+      const selectedBooking = bookings.find((booking) => booking.id === value);
+
+      setScheduleNoteForm((current) => {
+        if (!selectedBooking) {
+          return {
+            ...current,
+            bookingRequestId: value
+          };
+        }
+
+        return {
+          ...current,
+          bookingRequestId: value,
+          title: selectedBooking.customerName
+            ? `Giữ lịch cho ${selectedBooking.customerName}`
+            : current.title,
+          customerName: selectedBooking.customerName ?? "",
+          phoneNumber: selectedBooking.phoneNumber ?? "",
+          tripDate: toDateTimeLocalValue(selectedBooking.tripDate),
+          pickupLocation: selectedBooking.pickupLocation ?? "",
+          dropoffLocation: selectedBooking.dropoffLocation ?? "",
+          note: selectedBooking.note ?? current.note
+        };
+      });
+
+      return;
+    }
+
     setScheduleNoteForm((current) => ({
       ...current,
       [name]: value
@@ -679,7 +853,10 @@ export default function App() {
 
   function resetScheduleNoteForm() {
     setEditingScheduleNoteId("");
-    setScheduleNoteForm(scheduleNoteFormInitial);
+    setScheduleNoteForm({
+      ...scheduleNoteFormInitial,
+      vehicleId: vehicles[0]?.id || ""
+    });
   }
 
   async function handleCreateScheduleNote(event) {
@@ -688,16 +865,20 @@ export default function App() {
     setPageError("");
 
     try {
+      const payload = {
+        ...scheduleNoteForm,
+        bookingRequestId: scheduleNoteForm.bookingRequestId || null,
+        title:
+          scheduleNoteForm.title.trim() ||
+          (scheduleNoteForm.customerName.trim()
+            ? `Giữ lịch cho ${scheduleNoteForm.customerName.trim()}`
+            : "Ghi chú lịch xe")
+      };
+
       if (editingScheduleNoteId) {
-        await updateScheduleNote(token, editingScheduleNoteId, {
-          ...scheduleNoteForm,
-          bookingRequestId: scheduleNoteForm.bookingRequestId || null
-        });
+        await updateScheduleNote(token, editingScheduleNoteId, payload);
       } else {
-        await createScheduleNote(token, {
-          ...scheduleNoteForm,
-          bookingRequestId: scheduleNoteForm.bookingRequestId || null
-        });
+        await createScheduleNote(token, payload);
       }
 
       resetScheduleNoteForm();
@@ -729,18 +910,241 @@ export default function App() {
     });
   }
 
+  async function handleInlineUpdateScheduleNote(id, payload) {
+    setPageError("");
+
+    try {
+      await updateScheduleNote(token, id, {
+        ...payload,
+        bookingRequestId: payload.bookingRequestId || null,
+        title:
+          payload.title.trim() ||
+          (payload.customerName.trim()
+            ? `Giữ lịch cho ${payload.customerName.trim()}`
+            : "Ghi chú lịch xe")
+      });
+      if (editingScheduleNoteId === id) resetScheduleNoteForm();
+      await reloadData();
+      notifySuccess("Đã cập nhật lịch xe.");
+    } catch (error) {
+      notifyError(error, "Không thể cập nhật lịch xe.");
+      throw error;
+    }
+  }
+
   async function handleDeleteScheduleNote(id) {
-    if (!window.confirm("Xóa lịch xe này?")) return;
+    if (!window.confirm("Xóa lịch xe này khỏi danh sách hiện tại? Dữ liệu vẫn được giữ trong mục Dữ liệu.")) return;
 
     try {
       await deleteScheduleNote(token, id);
       if (editingScheduleNoteId === id) resetScheduleNoteForm();
       await reloadData();
-      notifySuccess("Đã xóa lịch xe.");
+      notifySuccess("Đã chuyển lịch xe sang mục Dữ liệu.");
     } catch (error) {
-      notifyError(error, "Không thể xóa lịch xe.");
+      notifyError(error, "Không thể chuyển lịch xe sang mục Dữ liệu.");
     }
   }
+
+  function handleCreateTripPaymentFromSchedule(note) {
+    setActiveTab("vehicle-trip-payments");
+    setEditingTripPaymentId("");
+    setTripPaymentForm({
+      scheduleNoteId: note.id,
+      bookingRequestId: note.bookingRequestId ?? "",
+      vehicleId: note.vehicleId,
+      title: note.title?.trim() ? `Tiền xe - ${note.title}` : "Tiền xe",
+      customerName: note.customerName ?? note.bookingRequest?.customerName ?? "",
+      phoneNumber: note.phoneNumber ?? note.bookingRequest?.phoneNumber ?? "",
+      tripDate: toDateTimeLocalValue(note.tripDate),
+      pickupLocation: note.pickupLocation ?? note.bookingRequest?.pickupLocation ?? "",
+      dropoffLocation: note.dropoffLocation ?? note.bookingRequest?.dropoffLocation ?? "",
+      amount: "",
+      paymentStatus: "unpaid",
+      note: note.note ?? note.bookingRequest?.note ?? ""
+    });
+  }
+
+  function handleCreateTripPaymentFromBooking(booking) {
+    const linkedScheduleNote =
+      scheduleNotes.find((note) => note.bookingRequestId === booking.id) ?? null;
+
+    setActiveTab("vehicle-trip-payments");
+    setEditingTripPaymentId("");
+    setTripPaymentForm({
+      scheduleNoteId: linkedScheduleNote?.id ?? "",
+      bookingRequestId: booking.id,
+      vehicleId: linkedScheduleNote?.vehicleId ?? vehicles[0]?.id ?? "",
+      title: booking.customerName?.trim() ? `Tiền xe - ${booking.customerName.trim()}` : "Tiền xe",
+      customerName: booking.customerName ?? "",
+      phoneNumber: booking.phoneNumber ?? "",
+      tripDate: toDateTimeLocalValue(booking.tripDate),
+      pickupLocation: booking.pickupLocation ?? "",
+      dropoffLocation: booking.dropoffLocation ?? "",
+      amount: "",
+      paymentStatus: "unpaid",
+      note: booking.note ?? ""
+    });
+  }
+
+  function handleTripPaymentFormChange(event) {
+    const { name, value } = event.target;
+
+    if (name === "bookingRequestId") {
+      const selectedBooking = bookings.find((booking) => booking.id === value);
+      const linkedScheduleNote =
+        scheduleNotes.find((note) => note.bookingRequestId === value) ?? null;
+
+      setTripPaymentForm((current) => {
+        if (!selectedBooking) {
+          return {
+            ...current,
+            bookingRequestId: value,
+            scheduleNoteId: ""
+          };
+        }
+
+        return {
+          ...current,
+          bookingRequestId: value,
+          scheduleNoteId: linkedScheduleNote?.id ?? "",
+          vehicleId: linkedScheduleNote?.vehicleId ?? current.vehicleId,
+          title: selectedBooking.customerName?.trim()
+            ? `Tiền xe - ${selectedBooking.customerName.trim()}`
+            : current.title,
+          customerName: selectedBooking.customerName ?? "",
+          phoneNumber: selectedBooking.phoneNumber ?? "",
+          tripDate: toDateTimeLocalValue(selectedBooking.tripDate),
+          pickupLocation: selectedBooking.pickupLocation ?? "",
+          dropoffLocation: selectedBooking.dropoffLocation ?? "",
+          note: current.note || linkedScheduleNote?.note || selectedBooking.note || ""
+        };
+      });
+
+      return;
+    }
+
+    setTripPaymentForm((current) => ({
+      ...current,
+      [name]: value
+    }));
+  }
+
+  function resetTripPaymentForm() {
+    setEditingTripPaymentId("");
+    setTripPaymentForm({
+      ...tripPaymentFormInitial,
+      vehicleId: vehicles[0]?.id || ""
+    });
+  }
+
+  async function handleCreateTripPayment(event) {
+    event.preventDefault();
+    setSavingTripPayment(true);
+    setPageError("");
+
+    try {
+      const payload = {
+        ...tripPaymentForm,
+        scheduleNoteId: tripPaymentForm.scheduleNoteId || null,
+        bookingRequestId: tripPaymentForm.bookingRequestId || null,
+        title:
+          tripPaymentForm.title.trim() ||
+          (tripPaymentForm.customerName.trim()
+            ? `Tiền xe ${tripPaymentForm.customerName.trim()}`
+            : "Tiền xe"),
+        amount: tripPaymentForm.amount === "" ? "" : Number(tripPaymentForm.amount)
+      };
+
+      if (editingTripPaymentId) {
+        await updateVehicleTripPayment(token, editingTripPaymentId, payload);
+      } else {
+        await createVehicleTripPayment(token, payload);
+      }
+
+      resetTripPaymentForm();
+      await reloadData();
+      notifySuccess(
+        editingTripPaymentId ? "Đã cập nhật phiếu tiền xe." : "Đã tạo phiếu tiền xe."
+      );
+    } catch (error) {
+      notifyError(error, "Không thể lưu phiếu tiền xe.");
+    } finally {
+      setSavingTripPayment(false);
+    }
+  }
+
+  function handleEditTripPayment(payment) {
+    setActiveTab("vehicle-trip-payments");
+    setEditingTripPaymentId(payment.id);
+    setTripPaymentForm({
+      scheduleNoteId: payment.scheduleNoteId ?? "",
+      bookingRequestId: payment.bookingRequestId ?? payment.scheduleNote?.bookingRequestId ?? "",
+      vehicleId: payment.vehicleId,
+      title: payment.title ?? "",
+      customerName:
+        payment.customerName ??
+        payment.scheduleNote?.customerName ??
+        payment.bookingRequest?.customerName ??
+        "",
+      phoneNumber:
+        payment.phoneNumber ??
+        payment.scheduleNote?.phoneNumber ??
+        payment.bookingRequest?.phoneNumber ??
+        "",
+      tripDate: toDateTimeLocalValue(payment.tripDate),
+      pickupLocation:
+        payment.pickupLocation ??
+        payment.scheduleNote?.pickupLocation ??
+        payment.bookingRequest?.pickupLocation ??
+        "",
+      dropoffLocation:
+        payment.dropoffLocation ??
+        payment.scheduleNote?.dropoffLocation ??
+        payment.bookingRequest?.dropoffLocation ??
+        "",
+      amount: payment.amount ?? "",
+      paymentStatus: payment.paymentStatus ?? "unpaid",
+      note: payment.note ?? ""
+    });
+  }
+
+  async function handleInlineUpdateTripPayment(id, payload) {
+    setPageError("");
+
+    try {
+      const normalizedPayload = {
+        ...payload,
+        scheduleNoteId: payload.scheduleNoteId || null,
+        bookingRequestId: payload.bookingRequestId || null,
+        title:
+          payload.title.trim() ||
+          (payload.customerName.trim() ? `Tiền xe ${payload.customerName.trim()}` : "Tiền xe"),
+        amount: payload.amount === "" ? "" : Number(payload.amount)
+      };
+
+      await updateVehicleTripPayment(token, id, normalizedPayload);
+      if (editingTripPaymentId === id) resetTripPaymentForm();
+      await reloadData();
+      notifySuccess("Đã cập nhật phiếu tiền xe.");
+    } catch (error) {
+      notifyError(error, "Không thể cập nhật phiếu tiền xe.");
+      throw error;
+    }
+  }
+
+  async function handleDeleteTripPayment(id) {
+    if (!window.confirm("Xóa phiếu tiền xe này khỏi danh sách hiện tại? Dữ liệu vẫn được giữ trong mục Dữ liệu.")) return;
+
+    try {
+      await deleteVehicleTripPayment(token, id);
+      if (editingTripPaymentId === id) resetTripPaymentForm();
+      await reloadData();
+      notifySuccess("Đã chuyển phiếu tiền xe sang mục Dữ liệu.");
+    } catch (error) {
+      notifyError(error, "Không thể chuyển phiếu tiền xe sang mục Dữ liệu.");
+    }
+  }
+
   function handleMaintenanceFormChange(event) {
     const { name, value } = event.target;
     setMaintenanceForm((current) => ({
@@ -751,7 +1155,10 @@ export default function App() {
 
   function resetMaintenanceForm() {
     setEditingMaintenanceId("");
-    setMaintenanceForm(maintenanceFormInitial);
+    setMaintenanceForm({
+      ...maintenanceFormInitial,
+      vehicleId: vehicles[0]?.id || ""
+    });
   }
 
   async function handleCreateMaintenance(event) {
@@ -760,10 +1167,18 @@ export default function App() {
     setPageError("");
 
     try {
+      const payload = {
+        ...maintenanceForm,
+        title:
+          maintenanceForm.title.trim() ||
+          (maintenanceForm.note.trim() ? "Ghi chú bảo dưỡng" : "Bảo dưỡng xe"),
+        serviceDate: maintenanceForm.serviceDate || ""
+      };
+
       if (editingMaintenanceId) {
-        await updateVehicleMaintenance(token, editingMaintenanceId, maintenanceForm);
+        await updateVehicleMaintenance(token, editingMaintenanceId, payload);
       } else {
-        await createVehicleMaintenance(token, maintenanceForm);
+        await createVehicleMaintenance(token, payload);
       }
 
       resetMaintenanceForm();
@@ -1298,6 +1713,21 @@ export default function App() {
     }
   }
 
+  if (!authReady) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-admin-sand px-6 text-admin-ink">
+        <div className="rounded-[2rem] border border-admin-line bg-white px-8 py-10 text-center shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+          <p className="text-sm font-bold uppercase tracking-[0.3em] text-admin-accent">
+            Admin Panel
+          </p>
+          <p className="mt-4 text-base font-semibold text-slate-600">
+            Đang kiểm tra phiên đăng nhập...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (!token) {
     return (
       <LoginView
@@ -1339,49 +1769,23 @@ export default function App() {
         ))}
       </div>
 
-      <div
-        className={`grid h-screen w-full ${
-          isSidebarCollapsed
-            ? "lg:grid-cols-[96px_minmax(0,1fr)]"
-            : "lg:grid-cols-[280px_minmax(0,1fr)]"
-        }`}
-      >
+      <div className="grid h-screen w-full lg:grid-cols-[280px_minmax(0,1fr)]">
         <aside className="admin-sidebar admin-scrollbar flex h-full flex-col overflow-y-auto px-4 py-5 text-white">
-          <p
-            className="pl-1 text-left text-xs font-bold uppercase tracking-[0.35em] text-emerald-300"
-          >
-            Admin Panel
-          </p>
-          {isSidebarCollapsed ? (
-            <div className="admin-title mt-4 flex h-12 items-center justify-start overflow-hidden rounded-2xl bg-white px-3 text-xl font-extrabold text-slate-950">
-              {adminLogoUrl ? (
-                <img
-                  src={adminLogoUrl}
-                  alt={settingsMap.site_name ?? "Logo nhà xe"}
-                  className="h-8 w-auto object-contain"
-                />
-              ) : (
-                <span>{(settingsMap.site_name ?? "N").charAt(0)}</span>
-              )}
-            </div>
-          ) : (
-            <div className="mt-4 flex items-center gap-3 pl-1">
-              {adminLogoUrl ? (
-                <img
-                  src={adminLogoUrl}
-                  alt={settingsMap.site_name ?? "Logo nhà xe"}
-                  className="h-12 w-auto max-w-[140px] rounded-xl bg-white/95 p-2 object-contain"
-                />
-              ) : (
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-xl font-extrabold text-slate-950">
-                  {(settingsMap.site_name ?? "N").charAt(0)}
-                </div>
-              )}
-              <h1 className="admin-title text-left text-3xl font-extrabold text-white">
-                {settingsMap.site_name ?? "Nhà xe"}
+            <p
+              className="pl-1 text-left text-xs font-bold uppercase tracking-[0.35em] text-emerald-300"
+            >
+              Admin Panel
+            </p>
+            <div className="mt-4 pl-1 text-left">
+              {adminBrandLine !== adminSiteName ? (
+                <p className="text-xs font-bold uppercase tracking-[0.28em] text-slate-300">
+                  Nhà xe
+                </p>
+              ) : null}
+              <h1 className="admin-title mt-1 whitespace-nowrap text-left text-[1.75rem] font-extrabold leading-none text-white">
+                {adminBrandLine}
               </h1>
             </div>
-          )}
 
           <nav className="mt-8 space-y-2">
             {tabs.map((tab) => (
@@ -1395,45 +1799,18 @@ export default function App() {
                     : "bg-transparent text-slate-300 hover:bg-white/5 hover:text-white"
                 }`}
               >
-                {isSidebarCollapsed ? (
-                  <p className="pl-0.5 text-left text-xs font-extrabold uppercase tracking-[0.18em]">
-                    {tab.label.slice(0, 3)}
+                <>
+                  <p className="pl-0.5 text-left text-[11px] font-bold uppercase tracking-[0.3em] opacity-80">
+                    {tab.eyebrow}
                   </p>
-                ) : (
-                  <>
-                    <p className="pl-0.5 text-left text-[11px] font-bold uppercase tracking-[0.3em] opacity-80">
-                      {tab.eyebrow}
-                    </p>
-                    <p className="mt-1 pl-0.5 text-left text-base font-extrabold">{tab.label}</p>
-                  </>
-                )}
+                  <p className="mt-1 pl-0.5 text-left text-base font-extrabold">{tab.label}</p>
+                </>
               </button>
             ))}
           </nav>
 
-          {!isSidebarCollapsed ? (
-            <div className="mt-8 rounded-[1rem] border border-white/10 bg-white/5 px-4 py-4 text-left text-white">
-              <p className="text-xs font-bold uppercase tracking-[0.25em] text-emerald-300">
-                Thương hiệu
-              </p>
-              {adminLogoUrl ? (
-                <img
-                  src={adminLogoUrl}
-                  alt={settingsMap.site_name ?? "Logo nhà xe"}
-                  className="mt-4 h-14 w-auto max-w-full rounded-xl bg-white/95 p-2 object-contain"
-                />
-              ) : null}
-              <p className="mt-3 text-lg font-extrabold">
-                {settingsMap.site_name ?? "Nhà xe"}
-              </p>
-              <p className="mt-2 text-sm text-slate-300">
-                {settingsMap.hotline ?? "Cập nhật hotline trong Nội dung web"}
-              </p>
-            </div>
-          ) : null}
-
-          <div className={`mt-auto pt-6 ${isSidebarCollapsed ? "space-y-2" : "space-y-3"}`}>
-            {passwordState.open && !isSidebarCollapsed ? (
+          <div className="mt-auto space-y-3 pt-6">
+            {passwordState.open ? (
               <form
                 onSubmit={handleChangePasswordSubmit}
                 className="rounded-[1rem] border border-white/10 bg-white/5 px-4 py-4 text-left"
@@ -1497,15 +1874,13 @@ export default function App() {
               </form>
             ) : null}
 
-            <div className={`${isSidebarCollapsed ? "space-y-2" : "grid grid-cols-2 gap-2"}`}>
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={togglePasswordPanel}
                 className="w-full rounded-[1rem] border border-teal-400/20 bg-teal-500/15 px-4 py-3 text-white transition hover:bg-teal-500/20"
               >
-                <p className="text-center text-sm font-extrabold">
-                  {isSidebarCollapsed ? "Mật khẩu" : "Đổi mật khẩu"}
-                </p>
+                <p className="text-center text-sm font-extrabold">Đổi mật khẩu</p>
               </button>
 
               <button
@@ -1524,27 +1899,18 @@ export default function App() {
         <main className="flex h-full min-h-0 flex-col gap-4 overflow-hidden p-4 lg:p-6">
           <header className="admin-panel shrink-0 rounded-[1.25rem] p-5">
             <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsSidebarCollapsed((current) => !current)}
-                  className="admin-button-ghost"
-                >
-                  {isSidebarCollapsed ? "Mở menu" : "Thu gọn"}
-                </button>
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.35em] text-admin-accent">
-                    {activeTabMeta.eyebrow}
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.35em] text-admin-accent">
+                  {activeTabMeta.eyebrow}
+                </p>
+                <h2 className="admin-title mt-3 text-4xl font-extrabold text-admin-ink">
+                  {activeTabMeta.label}
+                </h2>
+                {getTabDescription(activeTab) ? (
+                  <p className="mt-2 text-sm font-medium text-admin-steel">
+                    {getTabDescription(activeTab)}
                   </p>
-                  <h2 className="admin-title mt-3 text-4xl font-extrabold text-admin-ink">
-                    {activeTabMeta.label}
-                  </h2>
-                  {getTabDescription(activeTab) ? (
-                    <p className="mt-2 text-sm font-medium text-admin-steel">
-                      {getTabDescription(activeTab)}
-                    </p>
-                  ) : null}
-                </div>
+                ) : null}
               </div>
             </div>
           </header>
@@ -1561,12 +1927,8 @@ export default function App() {
                 stats={stats}
                 bookings={bookings}
                 scheduleNotes={scheduleNotes}
-                vehicleMaintenances={vehicleMaintenances}
-                handleOpenVehicleCategories={openVehicleCategoriesTab}
-                handleOpenVehicles={openVehiclesTab}
                 handleOpenBookings={openBookingsTab}
                 handleOpenScheduleNotes={openScheduleNotesTab}
-                handleOpenVehicleMaintenances={openVehicleMaintenancesTab}
               />
             ) : null}
             {activeTab === "vehicle-categories" ? (
@@ -1584,15 +1946,16 @@ export default function App() {
               />
             ) : null}
             {activeTab === "bookings" ? (
-              <BookingsTab
-                bookings={bookings}
-                highlightedBookingIds={highlightedBookingIds}
-                bookingStatusFilter={bookingStatusFilter}
-                handleBookingStatusFilterChange={handleBookingStatusFilterChange}
-                handleBookingStatusChange={handleBookingStatusChange}
-                handleDeleteBooking={handleDeleteBooking}
-                handleCreateScheduleFromBooking={handleCreateScheduleFromBooking}
-              />
+                <BookingsTab
+                  bookings={bookings}
+                  highlightedBookingIds={highlightedBookingIds}
+                  bookingStatusFilter={bookingStatusFilter}
+                  handleBookingStatusFilterChange={handleBookingStatusFilterChange}
+                  handleBookingStatusChange={handleBookingStatusChange}
+                  handleInlineUpdateBooking={handleInlineUpdateBooking}
+                  handleDeleteBooking={handleDeleteBooking}
+                  handleCreateScheduleFromBooking={handleCreateScheduleFromBooking}
+                />
             ) : null}
             {activeTab === "services" ? (
               <ServicesTab
@@ -1636,18 +1999,54 @@ export default function App() {
               />
             ) : null}
             {activeTab === "schedule-notes" ? (
-              <ScheduleNotesTab
+              <ScheduleNotesManager
                 notes={scheduleNotes}
                 vehicles={vehicles}
                 bookings={bookings}
+                payments={vehicleTripPayments}
                 scheduleNoteForm={scheduleNoteForm}
                 editingScheduleNoteId={editingScheduleNoteId}
-                savingScheduleNote={savingScheduleNote}
-                handleScheduleNoteFormChange={handleScheduleNoteFormChange}
-                handleCreateScheduleNote={handleCreateScheduleNote}
-                handleEditScheduleNote={handleEditScheduleNote}
+                  savingScheduleNote={savingScheduleNote}
+                  handleScheduleNoteFormChange={handleScheduleNoteFormChange}
+                  handleCreateScheduleNote={handleCreateScheduleNote}
+                  handleEditScheduleNote={handleEditScheduleNote}
+                  handleInlineUpdateScheduleNote={handleInlineUpdateScheduleNote}
+                  handleInlineUpdateBooking={handleInlineUpdateBooking}
+                  handleDeleteScheduleNote={handleDeleteScheduleNote}
+                  resetScheduleNoteForm={resetScheduleNoteForm}
+                handleCreateScheduleFromBooking={handleCreateScheduleFromBooking}
+                handleCreateTripPaymentFromSchedule={handleCreateTripPaymentFromSchedule}
+                handleEditTripPayment={handleEditTripPayment}
+                handleDeleteBooking={handleDeleteBooking}
+              />
+            ) : null}
+            {activeTab === "vehicle-trip-payments" ? (
+              <VehicleTripPaymentsTab
+                payments={vehicleTripPayments}
+                scheduleNotes={scheduleNotes}
+                bookings={bookings}
+                vehicles={vehicles}
+                tripPaymentForm={tripPaymentForm}
+                editingTripPaymentId={editingTripPaymentId}
+                savingTripPayment={savingTripPayment}
+                handleTripPaymentFormChange={handleTripPaymentFormChange}
+                handleCreateTripPayment={handleCreateTripPayment}
+                handleEditTripPayment={handleEditTripPayment}
+                handleInlineUpdateTripPayment={handleInlineUpdateTripPayment}
+                handleDeleteTripPayment={handleDeleteTripPayment}
+                resetTripPaymentForm={resetTripPaymentForm}
+                handleCreateTripPaymentFromSchedule={handleCreateTripPaymentFromSchedule}
+                handleCreateTripPaymentFromBooking={handleCreateTripPaymentFromBooking}
+                handleDeleteBooking={handleDeleteBooking}
                 handleDeleteScheduleNote={handleDeleteScheduleNote}
-                resetScheduleNoteForm={resetScheduleNoteForm}
+              />
+            ) : null}
+            {activeTab === "data-archive" ? (
+              <DataArchiveTab
+                notes={scheduleNotes}
+                archivedNotes={archivedScheduleNotes}
+                payments={vehicleTripPayments}
+                archivedPayments={archivedVehicleTripPayments}
               />
             ) : null}
             {activeTab === "vehicle-maintenances" ? (

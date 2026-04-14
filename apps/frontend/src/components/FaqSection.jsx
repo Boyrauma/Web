@@ -1,4 +1,4 @@
-const faqs = [
+﻿const faqs = [
   {
     question: "Tôi nên đặt xe trước bao lâu?",
     answer:
@@ -10,9 +10,9 @@ const faqs = [
       "Có. Hệ thống phù hợp cả các chuyến sân bay, cưới hỏi, du lịch nhiều chặng và lịch trình riêng theo yêu cầu."
   },
   {
-    question: "Giá thuê xe được báo như thế nào?",
+    question: "Tôi sẽ được liên hệ xác nhận như thế nào?",
     answer:
-      "Báo giá dựa trên lịch trình, thời gian sử dụng, số chỗ và loại xe. Sau khi gửi yêu cầu, admin sẽ liên hệ để xác nhận và chốt giá."
+      "Sau khi gửi yêu cầu, admin sẽ liên hệ để xác nhận lịch trình, thời gian sử dụng, số chỗ và dòng xe phù hợp."
   },
   {
     question: "Có thể chọn xe cụ thể trước khi đi không?",

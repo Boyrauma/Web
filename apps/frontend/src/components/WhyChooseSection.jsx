@@ -1,15 +1,15 @@
-const points = [
+﻿const points = [
   {
-    title: "Đội xe chỉn chu",
-    body: "Xe được giữ sạch, bảo trì đều và đồng bộ hình ảnh khi đón khách."
+    title: "Đội xe tuyển chọn",
+    body: "Xe được giữ sạch, bảo trì đều và chuẩn hình ảnh đón khách cho các chuyến riêng, công tác và đoàn gia đình."
   },
   {
-    title: "Lịch trình linh hoạt",
-    body: "Phù hợp sân bay, cưới hỏi, tour riêng và các đoàn cần điều phối giờ giấc."
+    title: "Lịch trình chuẩn chỉnh",
+    body: "Phù hợp sân bay, cưới hỏi, tour riêng và các lịch trình nhiều điểm cần sắp xếp giờ giấc rõ ràng."
   },
   {
-    title: "Tư vấn nhanh",
-    body: "Khách để lại thông tin là có người gọi lại sớm thay vì chờ phản hồi thủ công."
+    title: "Xác nhận tinh gọn",
+    body: "Thông tin chuyến đi được rà lại nhanh để chốt đúng quy mô đoàn, dòng xe và thời gian phục vụ."
   }
 ];
 
@@ -22,8 +22,12 @@ export default function WhyChooseSection() {
             Vì sao chọn
           </p>
           <h3 className="display-serif mt-3 text-4xl leading-tight text-brand-navy">
-            Trải nghiệm gọn gàng, lịch sự và đáng tin cho từng chuyến đi.
+            Chuẩn dịch vụ chỉn chu cho những hành trình cần sự yên tâm.
           </h3>
+          <p className="mt-4 max-w-md text-sm leading-7 text-slate-600">
+            Tập trung vào điều phối rõ ràng, xe sạch và quy trình xác nhận nhất quán để khách giữ
+            được cảm giác an tâm ngay từ lúc đặt lịch.
+          </p>
         </div>
         <div className="grid gap-5 md:grid-cols-3">
           {points.map((point) => (

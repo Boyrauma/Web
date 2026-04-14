@@ -1,15 +1,18 @@
-const testimonials = [
+﻿const testimonials = [
   {
-    name: "Khách đoàn công ty",
-    quote: "Xe sạch, đúng giờ và cách hỗ trợ rất gọn. Đoàn đi dài mà vẫn cảm thấy dễ chịu."
+    name: "Khách doanh nghiệp",
+    quote:
+      "Xe sạch, đúng giờ và khâu điều phối rất gọn. Lịch trình nhiều điểm nhưng cả đoàn vẫn giữ được nhịp di chuyển thoải mái."
   },
   {
-    name: "Khách cưới hỏi",
-    quote: "Phần điều phối nhanh, giao tiếp lịch sự, xe lên hình đẹp nên gia đình rất yên tâm."
+    name: "Khách sự kiện gia đình",
+    quote:
+      "Quy trình xác nhận rõ ràng, tài xế đúng giờ và hình ảnh xe chỉn chu nên gia đình rất yên tâm trong ngày quan trọng."
   },
   {
-    name: "Khách sân bay",
-    quote: "Đặt gấp nhưng vẫn có xe phù hợp, tài xế chủ động liên hệ trước giờ đón."
+    name: "Khách đón sân bay",
+    quote:
+      "Lịch cần gấp nhưng vẫn được sắp xe phù hợp. Bộ phận điều hành chủ động liên hệ trước giờ đón nên trải nghiệm rất nhẹ nhàng."
   }
 ];
 
@@ -22,7 +25,7 @@ export default function TestimonialSection() {
             Phản hồi
           </p>
           <h3 className="display-serif mt-3 text-4xl text-brand-navy">
-            Những cảm nhận thường gặp từ khách hàng
+            Những cảm nhận thường thấy từ khách hàng đã sử dụng dịch vụ
           </h3>
         </div>
       </div>
@@ -32,7 +35,7 @@ export default function TestimonialSection() {
             key={item.name}
             className="reveal-card rounded-[1.75rem] border border-slate-200 bg-white p-7 shadow-sm"
           >
-            <p className="text-base leading-8 text-slate-700">“{item.quote}”</p>
+            <p className="text-base leading-8 text-slate-700">"{item.quote}"</p>
             <p className="mt-6 text-sm font-extrabold uppercase tracking-[0.2em] text-brand-amber">
               {item.name}
             </p>

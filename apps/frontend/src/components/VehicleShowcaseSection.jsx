@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+﻿import { Link } from "react-router-dom";
 
 export default function VehicleShowcaseSection({
   flattenedVehicles,
@@ -12,7 +12,7 @@ export default function VehicleShowcaseSection({
   const currentSelectedImage =
     selectedVehicleGallery.find((image) => image.imageUrl === selectedImageUrl)?.fullUrl ??
     selectedVehicleGallery[0]?.fullUrl ??
-    "/assets/xecountybonghoi.png";
+    "/assets/xecountybonghoi.jpg";
 
   return (
     <section id="showcase-xe" className="site-shell mx-auto px-4 py-16 sm:px-6">
@@ -59,6 +59,8 @@ export default function VehicleShowcaseSection({
           <img
             src={currentSelectedImage}
             alt={selectedVehicle?.name ?? "Xe dịch vụ"}
+            loading="lazy"
+            decoding="async"
             className="h-[400px] w-full rounded-[1.5rem] object-cover"
           />
 
@@ -75,6 +77,8 @@ export default function VehicleShowcaseSection({
                 <img
                   src={image.fullUrl}
                   alt={image.altText ?? selectedVehicle?.name ?? "Xe dịch vụ"}
+                  loading="lazy"
+                  decoding="async"
                   className="h-20 w-24 object-cover"
                 />
               </button>

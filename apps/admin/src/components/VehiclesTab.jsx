@@ -1,8 +1,6 @@
 ﻿export default function VehiclesTab({
   editingVehicleId,
   selectedVehicleId,
-  vehicleFilterCategoryId,
-  vehicleSearch,
   vehicleForm,
   vehicleCategories,
   savingVehicle,
@@ -19,22 +17,10 @@
   handleImageAltTextBlur,
   handleImageSortOrderChange,
   handleVehicleImageUpload,
-  handleVehicleFilterChange,
-  handleVehicleSearchChange,
   handleSelectVehicle,
   resolveAdminAssetUrl
 }) {
-  const filteredVehicles =
-    vehicleFilterCategoryId === "all"
-      ? vehicles
-      : vehicles.filter((vehicle) => vehicle.categoryId === vehicleFilterCategoryId);
-
-  const searchedVehicles = filteredVehicles.filter((vehicle) =>
-    vehicle.name.toLowerCase().includes(vehicleSearch.toLowerCase().trim())
-  );
-
-  const selectedVehicle =
-    searchedVehicles.find((vehicle) => vehicle.id === selectedVehicleId) ?? null;
+  const selectedVehicle = vehicles.find((vehicle) => vehicle.id === selectedVehicleId) ?? null;
 
   return (
     <section className="mt-8 space-y-6">
@@ -160,37 +146,14 @@
             <div>
               <h3 className="admin-title text-2xl font-extrabold text-admin-ink">Danh sách xe</h3>
               <p className="mt-2 text-sm text-admin-steel">
-                Lọc theo nhóm, tìm theo tên và bấm vào một xe để quản lý ảnh riêng.
+                Bấm vào một xe để xem chi tiết và quản lý ảnh riêng.
               </p>
             </div>
-            <span className="admin-pill bg-slate-100 text-slate-700">
-              {searchedVehicles.length} xe
-            </span>
-          </div>
-
-          <div className="mt-6 flex flex-wrap gap-3">
-            <input
-              className="admin-field max-w-72"
-              placeholder="Tìm theo tên xe"
-              value={vehicleSearch}
-              onChange={(event) => handleVehicleSearchChange(event.target.value)}
-            />
-            <select
-              className="admin-select max-w-64"
-              value={vehicleFilterCategoryId}
-              onChange={(event) => handleVehicleFilterChange(event.target.value)}
-            >
-              <option value="all">Tất cả nhóm xe</option>
-              {vehicleCategories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+            <span className="admin-pill bg-slate-100 text-slate-700">{vehicles.length} xe</span>
           </div>
 
           <div className="mt-6 space-y-4">
-            {searchedVehicles.map((vehicle) => (
+            {vehicles.map((vehicle) => (
               <button
                 key={vehicle.id}
                 type="button"
@@ -249,9 +212,9 @@
                 </div>
               </button>
             ))}
-            {!searchedVehicles.length ? (
+            {!vehicles.length ? (
               <div className="rounded-[1.5rem] border border-dashed border-slate-300 px-5 py-10 text-center text-sm text-admin-steel">
-                Không tìm thấy xe phù hợp với bộ lọc hiện tại.
+                Chưa có xe nào trong hệ thống.
               </div>
             ) : null}
           </div>
@@ -319,36 +282,53 @@
                     className="h-36 w-full rounded-[1.2rem] object-cover"
                   />
                   <div className="mt-4 space-y-3">
-                    <button
-                      type="button"
-                      onClick={() => handleSetPrimaryImage(image.id)}
-                      className={image.isPrimary ? "admin-button-secondary w-full" : "admin-button-ghost w-full"}
-                    >
-                      {image.isPrimary ? "Ảnh đại diện" : "Đặt đại diện"}
-                    </button>
-                    <input
-                      className="admin-field !rounded-2xl !px-3 !py-3 text-sm"
-                      defaultValue={image.altText ?? ""}
-                      placeholder="Mô tả ảnh"
-                      onBlur={(event) => handleImageAltTextBlur(image.id, event.target.value)}
-                    />
-                    <input
-                      className="admin-field !rounded-2xl !px-3 !py-3 text-sm"
-                      type="number"
-                      defaultValue={image.sortOrder}
-                      placeholder="Thứ tự"
-                      onBlur={(event) => handleImageSortOrderChange(image.id, event.target.value)}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteVehicleImage(image.id)}
-                      className="admin-button-danger w-full"
-                    >
-                      Xóa ảnh
-                    </button>
+                    <label className="block space-y-2">
+                      <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+                        Alt text
+                      </span>
+                      <input
+                        className="admin-field"
+                        defaultValue={image.altText ?? ""}
+                        onBlur={(event) => handleImageAltTextBlur(image.id, event.target.value)}
+                      />
+                    </label>
+                    <label className="block space-y-2">
+                      <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+                        Thứ tự
+                      </span>
+                      <input
+                        className="admin-field"
+                        type="number"
+                        value={image.sortOrder}
+                        onChange={(event) =>
+                          handleImageSortOrderChange(image.id, Number(event.target.value))
+                        }
+                      />
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleSetPrimaryImage(image.id)}
+                        className="admin-button-secondary"
+                      >
+                        {image.isPrimary ? "Ảnh đại diện" : "Đặt đại diện"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteVehicleImage(image.id)}
+                        className="admin-button-danger"
+                      >
+                        Xóa ảnh
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
+              {!(selectedVehicle.images ?? []).length ? (
+                <div className="col-span-full rounded-[1.5rem] border border-dashed border-slate-300 px-5 py-12 text-center text-sm text-admin-steel">
+                  Xe này chưa có ảnh nào.
+                </div>
+              ) : null}
             </div>
           </div>
         )}

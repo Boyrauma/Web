@@ -1,4 +1,4 @@
-import { prisma } from "../config/prisma.js";
+﻿import { prisma } from "../config/prisma.js";
 
 const TELEGRAM_SETTING_KEYS = [
   "site_name",

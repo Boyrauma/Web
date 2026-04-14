@@ -1,10 +1,16 @@
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../config/prisma.js";
+import { createIpRateLimit } from "../middlewares/ipRateLimit.js";
 import { publishBookingEvent } from "../services/bookingEvents.js";
 import { sendBookingCreatedTelegramNotification } from "../services/telegramService.js";
 
 const router = Router();
+const bookingRateLimit = createIpRateLimit({
+  windowMs: 60 * 1000,
+  maxRequests: 100,
+  message: "Bạn gửi booking quá nhanh từ cùng một IP. Vui lòng thử lại sau 1 phút."
+});
 
 const bookingSchema = z.object({
   customerName: z.string().min(2),
@@ -80,7 +86,7 @@ router.get("/vehicles/:slug", async (request, response) => {
   return response.json(vehicle);
 });
 
-router.post("/booking-requests", async (request, response) => {
+router.post("/booking-requests", bookingRateLimit, async (request, response) => {
   const parsed = bookingSchema.safeParse(request.body);
 
   if (!parsed.success) {
