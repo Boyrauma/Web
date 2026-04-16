@@ -151,10 +151,7 @@ export default function BookingsTab({
       </div>
 
       <div className="mt-6 rounded-[1rem] border border-slate-200 bg-slate-50/80 p-4">
-        <p className="text-xs font-bold uppercase tracking-[0.22em] text-admin-accent">
-          Bộ lọc booking
-        </p>
-        <div className="mt-4 grid gap-3 xl:grid-cols-[220px_minmax(0,1fr)_200px] xl:items-end">
+        <div className="grid gap-3 xl:grid-cols-[220px_minmax(0,1fr)_200px] xl:items-end">
           <label className="space-y-2">
             <span className="text-sm font-bold text-admin-ink">Trạng thái</span>
             <select
@@ -227,7 +224,7 @@ export default function BookingsTab({
                     )}
                     {isInlineEditing ? (
                       <select
-                        className="admin-select min-w-40"
+                        className="admin-select w-full sm:w-44"
                         name="status"
                         value={inlineDraft.status}
                         onChange={handleInlineFieldChange}
@@ -247,6 +244,11 @@ export default function BookingsTab({
                   <p className="mt-1 text-sm font-semibold text-admin-steel">
                     {formatDateTime(isInlineEditing ? inlineDraft.tripDate : booking.tripDate)}
                   </p>
+                  {!isInlineEditing ? (
+                    <p className="mt-1 text-xs font-semibold text-slate-500">
+                      Tạo lúc: {formatDateTime(booking.createdAt)}
+                    </p>
+                  ) : null}
                 </div>
               </div>
 

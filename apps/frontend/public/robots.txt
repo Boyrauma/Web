@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://nhaxedinhdung.vn/sitemap.xml
+Host: https://nhaxedinhdung.vn

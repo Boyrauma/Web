@@ -1,4 +1,4 @@
-﻿@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Prata&display=swap");
+﻿@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Prata&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -11,19 +11,31 @@
 
 body {
   margin: 0;
-  font-family: "Be Vietnam Pro", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-family: "Manrope", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   background:
     radial-gradient(circle at top left, rgba(184, 138, 59, 0.15), transparent 24%),
     radial-gradient(circle at bottom right, rgba(20, 35, 60, 0.08), transparent 26%),
     linear-gradient(180deg, #f6efe3 0%, #fbf8f2 44%, #eef1f5 100%);
   color: #14233c;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .hero-surface {
-  background:
-    linear-gradient(135deg, rgba(15, 26, 47, 0.98), rgba(20, 35, 60, 0.92)),
-    radial-gradient(circle at top right, rgba(184, 138, 59, 0.34), transparent 26%),
-    radial-gradient(circle at bottom left, rgba(255, 248, 232, 0.1), transparent 32%);
+  background: #14233c;
+}
+
+a,
+button,
+summary {
+  transition:
+    transform 220ms ease,
+    opacity 220ms ease,
+    background-color 220ms ease,
+    color 220ms ease,
+    border-color 220ms ease,
+    box-shadow 220ms ease;
 }
 
 .field {
@@ -44,6 +56,7 @@ body {
 
 .display-serif {
   font-family: "Prata", Georgia, serif;
+  letter-spacing: -0.025em;
 }
 
 .glass-card {
@@ -81,6 +94,105 @@ body {
   animation: reveal-up 700ms ease both;
 }
 
+.hero-fade {
+  animation: hero-fade 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hero-fade-delay {
+  animation: hero-fade 1100ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hero-fade-delay-2 {
+  animation: hero-fade 1280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.float-soft {
+  animation: float-soft 7.5s ease-in-out infinite;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px rgba(15, 26, 47, 0.14);
+}
+
+.nav-pill:hover {
+  transform: translateY(-2px);
+}
+
+.hotline-glow {
+  box-shadow:
+    0 18px 40px rgba(8, 15, 30, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.hero-text-strong {
+  text-shadow:
+    0 10px 28px rgba(7, 14, 27, 0.48),
+    0 2px 10px rgba(7, 14, 27, 0.4);
+}
+
+.hero-text-soft {
+  text-shadow:
+    0 8px 22px rgba(7, 14, 27, 0.42),
+    0 1px 6px rgba(7, 14, 27, 0.34);
+}
+
+.vehicle-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #ecf1f6;
+}
+
+.vehicle-stage-card,
+.vehicle-stage-showcase,
+.vehicle-stage-detail {
+  padding: 0;
+}
+
+.vehicle-stage-lightbox {
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 30%),
+    linear-gradient(180deg, rgba(18, 27, 46, 0.98), rgba(10, 18, 33, 0.98));
+  padding: 0.75rem;
+}
+
+.vehicle-stage-image {
+  display: block;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  object-position: center center;
+  transform: scale(1.01);
+}
+
+.vehicle-stage-image-card {
+  object-position: center 62%;
+}
+
+.vehicle-stage-image-showcase {
+  object-position: center 62%;
+}
+
+.vehicle-thumb-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  padding: 0;
+}
+
+.vehicle-thumb-image {
+  display: block;
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+  object-position: center center;
+  transform: scale(1.06);
+}
+
 @keyframes reveal-up {
   from {
     opacity: 0;
@@ -90,5 +202,28 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes hero-fade {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float-soft {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-8px);
   }
 }

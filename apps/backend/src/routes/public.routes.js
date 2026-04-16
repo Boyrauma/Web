@@ -6,6 +6,20 @@ import { publishBookingEvent } from "../services/bookingEvents.js";
 import { sendBookingCreatedTelegramNotification } from "../services/telegramService.js";
 
 const router = Router();
+const PUBLIC_SITE_SETTING_KEYS = [
+  "address",
+  "browser_title",
+  "favicon_url",
+  "footer_text",
+  "hero_background_url",
+  "hero_subtitle",
+  "hero_title",
+  "hotline",
+  "logo_url",
+  "site_name",
+  "site_tagline",
+  "zalo"
+];
 const bookingRateLimit = createIpRateLimit({
   windowMs: 60 * 1000,
   maxRequests: 100,
@@ -33,6 +47,11 @@ const bookingSchema = z.object({
 
 router.get("/site-settings", async (request, response) => {
   const settings = await prisma.siteSetting.findMany({
+    where: {
+      key: {
+        in: PUBLIC_SITE_SETTING_KEYS
+      }
+    },
     orderBy: { key: "asc" }
   });
 

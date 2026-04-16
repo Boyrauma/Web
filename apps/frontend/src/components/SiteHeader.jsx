@@ -3,7 +3,6 @@
 const navItems = [
   { href: "#dich-vu", label: "Dịch vụ" },
   { href: "#doi-xe", label: "Đội xe" },
-  { href: "#faq", label: "Hỏi đáp" },
   { href: "#booking", label: "Liên hệ" },
   {
     href: "https://mail.google.com/mail/?view=cm&fs=1&to=nguyenducmanh261996@gmail.com&su=Ph%E1%BA%A3n%20h%E1%BB%93i%20t%E1%BB%AB%20kh%C3%A1ch%20h%C3%A0ng&body=T%C3%B4i%20mu%E1%BB%91n%20g%E1%BB%ADi%20ph%E1%BA%A3n%20h%E1%BB%93i%20v%E1%BB%81%20d%E1%BB%8Bch%20v%E1%BB%A5%3A%0A",
@@ -26,8 +25,8 @@ export default function SiteHeader({ siteName, siteTagline, hotline, logoUrl }) 
         <div className="flex items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-4">
             {logoUrl ? (
-              <div className="flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/90 p-2 shadow-premium ring-1 ring-[#dbc9a7]">
-                <img src={logoUrl} alt={displayName} className="h-full w-full object-contain" />
+              <div className="flex h-14 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-premium">
+                <img src={logoUrl} alt={displayName} className="h-full w-full bg-white object-cover object-center" />
               </div>
             ) : (
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#14233c] text-lg font-extrabold text-[#f6efe3] shadow-premium">
@@ -52,7 +51,7 @@ export default function SiteHeader({ siteName, siteTagline, hotline, logoUrl }) 
                   href={resolveHref(item)}
                   target={item.external ? "_blank" : undefined}
                   rel={item.external ? "noreferrer" : undefined}
-                  className="rounded-full px-4 py-2 text-sm font-bold text-[#46556d] transition hover:bg-[#f5ead8] hover:text-[#14233c]"
+                  className="nav-pill rounded-full px-4 py-2 text-sm font-bold text-[#46556d] transition hover:bg-[#f5ead8] hover:text-[#14233c]"
                 >
                   {item.label}
                 </a>
@@ -60,7 +59,7 @@ export default function SiteHeader({ siteName, siteTagline, hotline, logoUrl }) 
             </nav>
             <a
               href={`tel:${hotline ?? "0979860498"}`}
-              className="rounded-full bg-[#14233c] px-5 py-3 text-sm font-bold text-[#f6efe3] transition hover:-translate-y-0.5 hover:bg-[#b88a3b]"
+              className="hover-lift rounded-full bg-[#14233c] px-5 py-3 text-sm font-bold text-[#f6efe3] transition hover:bg-[#b88a3b]"
             >
               {hotline ?? "0979 860 498"}
             </a>
@@ -68,7 +67,7 @@ export default function SiteHeader({ siteName, siteTagline, hotline, logoUrl }) 
 
           <a
             href={`tel:${hotline ?? "0979860498"}`}
-            className="rounded-full bg-[#14233c] px-4 py-3 text-sm font-bold text-[#f6efe3] transition hover:-translate-y-0.5 hover:bg-[#b88a3b] lg:hidden"
+            className="hover-lift rounded-full bg-[#14233c] px-4 py-3 text-sm font-bold text-[#f6efe3] transition hover:bg-[#b88a3b] lg:hidden"
           >
             Gọi ngay
           </a>

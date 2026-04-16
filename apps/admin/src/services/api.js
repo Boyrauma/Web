@@ -90,6 +90,26 @@ export async function uploadSiteLogo(token, file) {
   return data;
 }
 
+export async function uploadHeroBackground(token, file) {
+  const formData = new FormData();
+  formData.append("image", file);
+
+  const response = await apiFetch(`${API_URL}/admin/site-assets/hero-background`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: formData
+  });
+  const data = await readJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(data?.message ?? "Không thể tải ảnh nền hero lên");
+  }
+
+  return data;
+}
+
 export async function fetchNotificationLogs(
   token,
   { eventType = "all", status = "all", limit = 30 } = {}

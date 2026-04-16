@@ -1,19 +1,16 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import BookingSection from "../components/BookingSection";
-import FaqSection from "../components/FaqSection";
 import FleetSection from "../components/FleetSection";
 import HeroSection from "../components/HeroSection";
-import PopularRoutesSection from "../components/PopularRoutesSection";
 import ProcessSection from "../components/ProcessSection";
 import ServicesSection from "../components/ServicesSection";
 import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
 import StickyContactBar from "../components/StickyContactBar";
-import TestimonialSection from "../components/TestimonialSection";
 import VehicleGalleryLightbox from "../components/VehicleGalleryLightbox";
 import VehicleShowcaseSection from "../components/VehicleShowcaseSection";
-import WhyChooseSection from "../components/WhyChooseSection";
 import { applyDocumentBranding } from "../utils/branding";
+import { applySeo, buildLocalBusinessSchema } from "../utils/seo";
 import {
   createBookingRequest,
   fetchServices,
@@ -85,15 +82,57 @@ export default function HomePage() {
     [siteSettings]
   );
   const siteLogoUrl = settingsMap.logo_url ? resolveAssetUrl(settingsMap.logo_url) : "";
+  const heroBackgroundUrl = settingsMap.hero_background_url
+    ? resolveAssetUrl(settingsMap.hero_background_url)
+    : "";
 
   useEffect(() => {
     applyDocumentBranding({
-      title:
-        settingsMap.browser_title ??
-        (settingsMap.site_name ? `${settingsMap.site_name} | Website nhà xe` : "Website nhà xe"),
       faviconUrl: settingsMap.favicon_url
     });
-  }, [settingsMap.browser_title, settingsMap.favicon_url, settingsMap.site_name]);
+  }, [settingsMap.favicon_url]);
+
+  useEffect(() => {
+    const siteName = settingsMap.site_name ?? "Nhà xe Định Dung";
+    const title =
+      settingsMap.browser_title ?? `${siteName} | Thuê xe du lịch, cưới hỏi, sân bay tại Thanh Hóa`;
+    const description =
+      settingsMap.hero_subtitle ??
+      "Dịch vụ thuê xe du lịch, cưới hỏi, sân bay và hợp đồng tại Thanh Hóa. Đặt xe nhanh, hỗ trợ rõ ràng, đúng giờ.";
+    const servicesForSchema = services.map((item) => item.title).filter(Boolean);
+
+    applySeo({
+      title,
+      description,
+      canonicalPath: "/",
+      image: heroBackgroundUrl || siteLogoUrl || "/favicon.svg",
+      type: "website",
+      siteName,
+      keywords:
+        "nhà xe Thanh Hóa, thuê xe du lịch Thanh Hóa, xe cưới Thanh Hóa, xe sân bay, đặt xe hợp đồng",
+      schema: buildLocalBusinessSchema({
+        siteName,
+        description,
+        url: window.location.origin,
+        image: heroBackgroundUrl || siteLogoUrl || "/favicon.svg",
+        logo: siteLogoUrl || "/favicon.svg",
+        hotline: settingsMap.hotline,
+        address: settingsMap.address,
+        zalo: settingsMap.zalo,
+        services: servicesForSchema
+      })
+    });
+  }, [
+    heroBackgroundUrl,
+    services,
+    settingsMap.address,
+    settingsMap.browser_title,
+    settingsMap.hero_subtitle,
+    settingsMap.hotline,
+    settingsMap.site_name,
+    settingsMap.zalo,
+    siteLogoUrl
+  ]);
 
   const flattenedVehicles = useMemo(
     () =>
@@ -194,6 +233,7 @@ export default function HomePage() {
           heroSubtitle={settingsMap.hero_subtitle}
           hotline={settingsMap.hotline}
           siteName={settingsMap.site_name}
+          backgroundImageUrl={heroBackgroundUrl}
         />
         <ServicesSection
           services={services}
@@ -201,13 +241,11 @@ export default function HomePage() {
           hotline={settingsMap.hotline}
           address={settingsMap.address}
         />
-        <WhyChooseSection />
         <FleetSection
           vehicleCategories={vehicleCategories}
           resolveAssetUrl={resolveAssetUrl}
           onOpenGallery={handleOpenFleetGallery}
         />
-        <ProcessSection />
         <VehicleShowcaseSection
           flattenedVehicles={flattenedVehicles}
           selectedVehicleSlug={selectedVehicleSlug}
@@ -217,9 +255,7 @@ export default function HomePage() {
           selectedImageUrl={selectedImageUrl}
           setSelectedImageUrl={setSelectedImageUrl}
         />
-        <PopularRoutesSection />
-        <TestimonialSection />
-        <FaqSection />
+        <ProcessSection />
         <BookingSection
           hotline={settingsMap.hotline}
           address={settingsMap.address}
@@ -251,3 +287,4 @@ export default function HomePage() {
     </div>
   );
 }
+

@@ -10,7 +10,8 @@ const COMMON_FIELDS = [
   { key: "zalo", label: "Link Zalo", group: "contact", type: "text" },
   { key: "address", label: "Địa chỉ", group: "contact", type: "textarea" },
   { key: "hero_title", label: "Tiêu đề hero", group: "homepage", type: "text" },
-  { key: "hero_subtitle", label: "Mô tả hero", group: "homepage", type: "textarea" }
+  { key: "hero_subtitle", label: "Mô tả hero", group: "homepage", type: "textarea" },
+  { key: "hero_background_url", label: "Đường dẫn ảnh nền hero", group: "homepage", type: "text" }
 ];
 
 const TELEGRAM_EVENT_OPTIONS = [
@@ -101,7 +102,7 @@ function TelegramToggleCard({ title, description, checked, onChange, children })
     <div className="rounded-[1rem] border border-slate-200 bg-slate-50/80 p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-bold uppercase tracking-[0.2em] text-admin-accent">{title}</p>
+          <p className="text-sm font-bold uppercase tracking-[0.2em] text-admin-ink">{title}</p>
           <p className="mt-2 text-sm text-admin-steel">{description}</p>
         </div>
         <input type="checkbox" checked={checked} onChange={onChange} className="mt-1" />
@@ -121,7 +122,9 @@ export default function SettingsTab({
   savingNewSetting,
   testingTelegram,
   uploadingLogo,
+  uploadingHeroBackground,
   handleUploadSiteLogo,
+  handleUploadHeroBackground,
   handleSettingValueChange,
   handleSaveSetting,
   handleSaveTelegramSettings,
@@ -145,7 +148,7 @@ export default function SettingsTab({
   const commonSettings = COMMON_FIELDS.map((field) => ({
     ...field,
     setting: settingMap[field.key]
-  })).filter((item) => item.setting);
+  })).filter((item) => item.setting && item.key !== "hero_background_url");
 
   const advancedSettings = siteSettings.filter(
     (setting) =>
@@ -171,6 +174,9 @@ export default function SettingsTab({
     }));
   }
 
+  const heroBackgroundSetting = settingMap.hero_background_url;
+  const heroBackgroundUrl = heroBackgroundSetting?.value || "";
+
   return (
     <section className="mt-8 space-y-6">
       <div className="admin-card rounded-[1.25rem] p-6">
@@ -184,7 +190,7 @@ export default function SettingsTab({
         <div className="mt-6 rounded-[1rem] border border-slate-200 bg-slate-50/80 p-5">
           <div className="flex flex-wrap items-start justify-between gap-5">
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold uppercase tracking-[0.2em] text-admin-accent">Logo nhà xe</p>
+              <p className="text-sm font-bold uppercase tracking-[0.2em] text-admin-ink">Logo nhà xe</p>
               <p className="mt-2 text-sm text-admin-steel">
                 Tải logo ảnh để dùng đồng bộ ở website public và trang quản trị. Nếu chưa có, hệ thống sẽ tự dùng tên nhà xe dạng chữ.
               </p>
@@ -214,10 +220,51 @@ export default function SettingsTab({
           </div>
         </div>
 
+        <div className="mt-6 rounded-[1rem] border border-slate-200 bg-slate-50/80 p-5">
+          <div className="flex flex-wrap items-start justify-between gap-5">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold uppercase tracking-[0.2em] text-admin-ink">
+                Hero website
+              </p>
+              <p className="mt-2 text-sm text-admin-steel">
+                Cập nhật ảnh nền hero để phần mở đầu website có thể hiển thị hình nền trực tiếp phía sau nội dung.
+              </p>
+              <label className="mt-4 inline-flex cursor-pointer items-center rounded-[1rem] bg-admin-ink px-4 py-3 text-sm font-bold text-white transition hover:opacity-90">
+                {uploadingHeroBackground ? "Đang tải ảnh nền..." : "Chọn ảnh nền hero"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadingHeroBackground}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) handleUploadHeroBackground(file);
+                    event.target.value = "";
+                  }}
+                />
+              </label>
+            </div>
+
+            <div className="flex h-40 w-full max-w-[320px] items-center justify-center overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white">
+              {heroBackgroundUrl ? (
+                <img
+                  src={heroBackgroundUrl}
+                  alt="Ảnh nền hero"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <p className="px-4 text-center text-sm font-semibold text-admin-steel">
+                  Chưa có ảnh nền hero
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
         <div className="mt-6 grid gap-4 xl:grid-cols-3">
           {commonSettings.map(({ key, label, setting, ...field }) => (
             <div key={key} className="rounded-[1rem] border border-slate-200 bg-slate-50/80 p-5">
-              <p className="text-sm font-bold uppercase tracking-[0.2em] text-admin-accent">{label}</p>
+              <p className="text-sm font-bold uppercase tracking-[0.2em] text-admin-ink">{label}</p>
               <div className="mt-3">
                 {renderField(field, setting.value, (value) => handleSettingValueChange(setting.id, value))}
               </div>
@@ -249,7 +296,7 @@ export default function SettingsTab({
 
         <div className="mt-6 grid gap-4 xl:grid-cols-2">
           <div className="rounded-[1rem] border border-slate-200 bg-slate-50/80 p-5">
-            <span className="text-sm font-bold uppercase tracking-[0.2em] text-admin-accent">Bật Telegram</span>
+            <span className="text-sm font-bold uppercase tracking-[0.2em] text-admin-ink">Bật Telegram</span>
             <div className="mt-4 flex items-center gap-3">
               <input
                 type="checkbox"
@@ -263,7 +310,7 @@ export default function SettingsTab({
           </div>
 
           <div className="rounded-[1rem] border border-slate-200 bg-slate-50/80 p-5">
-            <span className="text-sm font-bold uppercase tracking-[0.2em] text-admin-accent">Bot token</span>
+            <span className="text-sm font-bold uppercase tracking-[0.2em] text-admin-ink">Bot token</span>
             <input
               className="admin-field mt-3"
               type="password"
@@ -279,7 +326,7 @@ export default function SettingsTab({
           </div>
 
           <div className="rounded-[1rem] border border-slate-200 bg-slate-50/80 p-5 xl:col-span-2">
-            <span className="text-sm font-bold uppercase tracking-[0.2em] text-admin-accent">Nhóm nhận mặc định</span>
+            <span className="text-sm font-bold uppercase tracking-[0.2em] text-admin-ink">Nhóm nhận mặc định</span>
             <textarea
               className="admin-field admin-textarea mt-3"
               value={telegramForm.defaultChatIds}
@@ -292,7 +339,7 @@ export default function SettingsTab({
           </div>
 
           <div className="rounded-[1rem] border border-slate-200 bg-slate-50/80 p-5 xl:col-span-2">
-            <span className="text-sm font-bold uppercase tracking-[0.2em] text-admin-accent">Nhóm nhận hệ thống / test</span>
+            <span className="text-sm font-bold uppercase tracking-[0.2em] text-admin-ink">Nhóm nhận hệ thống / test</span>
             <textarea
               className="admin-field admin-textarea mt-3"
               value={telegramForm.systemChatIds}
@@ -429,7 +476,7 @@ export default function SettingsTab({
 
                 {log.message ? (
                   <details className="mt-4">
-                    <summary className="cursor-pointer text-sm font-bold text-admin-accent">Xem nội dung đã gửi</summary>
+                          <summary className="cursor-pointer text-sm font-bold text-admin-ink">Xem nội dung đã gửi</summary>
                     <pre className="mt-3 whitespace-pre-wrap rounded-[0.9rem] bg-slate-950 px-4 py-4 text-sm text-slate-100">
                       {log.message}
                     </pre>

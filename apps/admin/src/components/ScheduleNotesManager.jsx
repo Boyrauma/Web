@@ -1,19 +1,17 @@
 ﻿import { useMemo, useState } from "react";
-import { getBookingStatusClass, getBookingStatusLabel } from "../utils/bookingStatus";
+import {
+  BOOKING_STATUS_OPTIONS,
+  getBookingStatusClass,
+  getBookingStatusLabel
+} from "../utils/bookingStatus";
 
 import { useEffect } from "react";
 import AdminPagination, { PAGE_SIZE, getPageSlice } from "./AdminPagination";
 
-const scheduleSortOptions = [
-  { value: "newest", label: "Ngày mới nhất" },
-  { value: "oldest", label: "Ngày cũ nhất" }
-];
-
 const scheduleStatuses = [
-  { value: "scheduled", label: "Đã ghi lịch" },
-  { value: "confirmed", label: "Đã chốt xe" },
-  { value: "completed", label: "Đã hoàn thành" },
-  { value: "cancelled", label: "Đã hủy" }
+  { value: "scheduled", label: "Lên lịch" },
+  { value: "completed", label: "Hoàn thành" },
+  { value: "cancelled", label: "Hủy" }
 ];
 
 function formatDateTime(value) {
@@ -40,7 +38,6 @@ function toDateTimeInputValue(value) {
 }
 
 function getStatusClass(status) {
-  if (status === "confirmed") return "bg-emerald-100 text-emerald-700";
   if (status === "completed") return "bg-sky-100 text-sky-700";
   if (status === "cancelled") return "bg-rose-100 text-rose-700";
   return "bg-amber-100 text-amber-700";
@@ -70,7 +67,7 @@ function buildScheduleItems(notes = [], bookings = []) {
   }));
 
   const bookingItems = bookings
-    .filter((booking) => booking.tripDate && !linkedBookingIds.has(booking.id))
+    .filter((booking) => booking.tripDate && booking.status === "scheduled" && !linkedBookingIds.has(booking.id))
     .map((booking) => ({
       id: booking.id,
       kind: "booking",
@@ -119,7 +116,6 @@ export default function ScheduleNotesManager({
   notes,
   vehicles,
   bookings,
-  payments,
   scheduleNoteForm,
   editingScheduleNoteId,
   savingScheduleNote,
@@ -138,18 +134,10 @@ export default function ScheduleNotesManager({
   const [inlineDraft, setInlineDraft] = useState(null);
   const [savingInlineKey, setSavingInlineKey] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortOrder, setSortOrder] = useState("newest");
+  const [vehicleFilterId, setVehicleFilterId] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
 
   const scheduleItems = useMemo(() => buildScheduleItems(notes, bookings), [bookings, notes]);
-  const paymentByScheduleNoteId = useMemo(
-    () => new Map(payments.filter((payment) => payment.scheduleNoteId).map((payment) => [payment.scheduleNoteId, payment])),
-    [payments]
-  );
-  const paymentByBookingId = useMemo(
-    () => new Map(payments.filter((payment) => payment.bookingRequestId).map((payment) => [payment.bookingRequestId, payment])),
-    [payments]
-  );
   const visibleScheduleItems = useMemo(() => {
     const search = searchQuery.trim().toLowerCase();
     const matchedItems = scheduleItems.filter((item) => {
@@ -179,15 +167,24 @@ export default function ScheduleNotesManager({
               data.note
             ];
 
+      const matchVehicle =
+        vehicleFilterId === "all"
+          ? true
+          : item.kind === "note"
+            ? data.vehicleId === vehicleFilterId
+            : false;
+
+      if (!matchVehicle) return false;
+
       return content.filter(Boolean).join(" ").toLowerCase().includes(search);
     });
 
     return [...matchedItems].sort((left, right) => {
       const leftTime = new Date(left.tripDate ?? left.createdAt ?? 0).getTime();
       const rightTime = new Date(right.tripDate ?? right.createdAt ?? 0).getTime();
-      return sortOrder === "oldest" ? leftTime - rightTime : rightTime - leftTime;
+      return rightTime - leftTime;
     });
-  }, [scheduleItems, searchQuery, sortOrder]);
+  }, [scheduleItems, searchQuery, vehicleFilterId]);
   const totalPages = Math.max(1, Math.ceil(visibleScheduleItems.length / PAGE_SIZE));
   const paginatedScheduleItems = useMemo(
     () => getPageSlice(visibleScheduleItems, currentPage, PAGE_SIZE),
@@ -202,7 +199,7 @@ export default function ScheduleNotesManager({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, sortOrder]);
+  }, [searchQuery, vehicleFilterId]);
 
   function handleInlineFieldChange(event) {
     const { name, value } = event.target;
@@ -299,10 +296,7 @@ export default function ScheduleNotesManager({
         </div>
 
         <div className="mt-6 rounded-[1rem] border border-slate-200 bg-slate-50/80 p-4">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-admin-accent">
-            Bộ lọc lịch xe
-          </p>
-          <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_220px] xl:items-end">
+          <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_220px] xl:items-end">
             <label className="space-y-2">
               <span className="text-sm font-bold text-admin-ink">Tìm kiếm</span>
               <input
@@ -314,15 +308,16 @@ export default function ScheduleNotesManager({
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm font-bold text-admin-ink">Sắp xếp</span>
+              <span className="text-sm font-bold text-admin-ink">Lọc xe</span>
               <select
                 className="admin-select"
-                value={sortOrder}
-                onChange={(event) => setSortOrder(event.target.value)}
+                value={vehicleFilterId}
+                onChange={(event) => setVehicleFilterId(event.target.value)}
               >
-                {scheduleSortOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
+                <option value="all">Tất cả xe</option>
+                {vehicles.map((vehicle) => (
+                  <option key={vehicle.id} value={vehicle.id}>
+                    {vehicle.name}
                   </option>
                 ))}
               </select>
@@ -352,11 +347,8 @@ export default function ScheduleNotesManager({
                       <p className="mt-1 text-sm font-semibold text-admin-steel">Chưa gán xe - {formatDateTime(isInlineEditing ? inlineDraft.tripDate : booking.tripDate)}</p>
                     </div>
                     {isInlineEditing ? (
-                      <select className="admin-select min-w-40" name="status" value={inlineDraft.status} onChange={handleInlineFieldChange}>
-                        <option value="new">Mới</option>
-                        <option value="contacted">Đã liên hệ</option>
-                        <option value="confirmed">Đã chốt</option>
-                        <option value="closed">Đã đóng</option>
+                      <select className="admin-select w-full sm:w-44" name="status" value={inlineDraft.status} onChange={handleInlineFieldChange}>
+                        {BOOKING_STATUS_OPTIONS.map((status) => <option key={status.value} value={status.value}>{status.label}</option>)}
                       </select>
                     ) : (
                       <span className={`admin-pill ${getBookingStatusClass(booking.status)}`}>{getBookingStatusLabel(booking.status)}</span>
@@ -393,9 +385,6 @@ export default function ScheduleNotesManager({
             const note = item.data;
             const currentKey = `note-${note.id}`;
             const isInlineEditing = inlineEditingKey === currentKey && inlineDraft;
-            const payment = paymentByScheduleNoteId.get(note.id) ?? (note.bookingRequestId ? paymentByBookingId.get(note.bookingRequestId) ?? null : null);
-            const paymentBadgeClass = payment?.paymentStatus === "paid" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700";
-            const paymentBadgeLabel = payment?.paymentStatus === "paid" ? "Đã thu tiền" : "Chưa thu tiền";
 
             return (
               <div key={currentKey} className="rounded-[1.25rem] border border-slate-200 bg-slate-50/70 p-5">
@@ -408,9 +397,8 @@ export default function ScheduleNotesManager({
                     <p className="mt-1 text-sm font-semibold text-admin-steel">{note.vehicle?.name ?? "Chưa có xe"} - {formatDateTime(isInlineEditing ? inlineDraft.tripDate : note.tripDate)}</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <span className={`admin-pill ${paymentBadgeClass}`}>{paymentBadgeLabel}</span>
                     {isInlineEditing ? (
-                      <select className="admin-select min-w-40" name="status" value={inlineDraft.status} onChange={handleInlineFieldChange}>{scheduleStatuses.map((status) => <option key={status.value} value={status.value}>{status.label}</option>)}</select>
+                      <select className="admin-select w-full sm:w-44" name="status" value={inlineDraft.status} onChange={handleInlineFieldChange}>{scheduleStatuses.map((status) => <option key={status.value} value={status.value}>{status.label}</option>)}</select>
                     ) : (
                       <span className={`admin-pill ${getStatusClass(note.status)}`}>{getStatusLabel(note.status)}</span>
                     )}
@@ -462,3 +450,5 @@ export default function ScheduleNotesManager({
     </section>
   );
 }
+
+

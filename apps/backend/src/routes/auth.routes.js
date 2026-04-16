@@ -151,7 +151,8 @@ router.get("/me", requireAdminAuth, async (request, response) => {
       email: true,
       fullName: true,
       role: true,
-      isActive: true
+      isActive: true,
+      updatedAt: true
     }
   });
 
@@ -200,12 +201,23 @@ router.post("/change-password", requireAdminAuth, async (request, response) => {
     });
   }
 
-  await prisma.adminUser.update({
+  const updatedAdmin = await prisma.adminUser.update({
     where: { id: admin.id },
     data: {
       passwordHash: await hashPassword(parsed.data.newPassword)
+    },
+    select: {
+      id: true,
+      email: true,
+      fullName: true,
+      role: true,
+      isActive: true,
+      updatedAt: true
     }
   });
+
+  const token = signAdminToken(updatedAdmin);
+  response.cookie(ADMIN_AUTH_COOKIE, token, buildAdminAuthCookieOptions());
 
   return response.json({ message: "Password updated successfully" });
 });

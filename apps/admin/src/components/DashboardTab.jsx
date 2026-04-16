@@ -119,7 +119,37 @@ function formatRoute(booking) {
   return `${booking.pickupLocation || "Chưa có điểm đón"} - ${booking.dropoffLocation || "Chưa có điểm trả"}`;
 }
 
-export default function DashboardTab({ stats, bookings, scheduleNotes, handleOpenBookings, handleOpenScheduleNotes }) {
+function buildRecentRequests(bookings = []) {
+  return bookings
+    .map((booking) => ({
+      id: `booking-${booking.id}`,
+      title: booking.customerName || "Booking mới",
+      time: booking.tripDate || booking.createdAt,
+      updatedAt: booking.updatedAt || booking.createdAt,
+      status: getBookingStatusLabel(booking.status),
+      statusClass: getBookingStatusClass(booking.status),
+      subtitle: booking.phoneNumber || "Chưa có số điện thoại",
+      route: formatRoute(booking),
+      note: booking.note || "",
+      isPriorityBooking: booking.status === "new"
+    }))
+    .sort((left, right) => {
+      if (left.isPriorityBooking !== right.isPriorityBooking) {
+        return left.isPriorityBooking ? -1 : 1;
+      }
+
+      return new Date(right.updatedAt ?? 0).getTime() - new Date(left.updatedAt ?? 0).getTime();
+    })
+    .slice(0, 5);
+}
+
+export default function DashboardTab({
+  stats,
+  bookings,
+  scheduleNotes,
+  handleOpenBookings,
+  handleOpenScheduleNotes
+}) {
   const today = new Date();
   const monthLabel = today.toLocaleDateString("vi-VN", {
     month: "long",
@@ -128,6 +158,7 @@ export default function DashboardTab({ stats, bookings, scheduleNotes, handleOpe
   const calendarDays = buildCalendarDays(today);
   const currentMonth = today.getMonth();
   const calendarMap = buildCalendarMap(scheduleNotes, bookings);
+  const recentRequests = buildRecentRequests(bookings);
 
   return (
     <>
@@ -152,10 +183,7 @@ export default function DashboardTab({ stats, bookings, scheduleNotes, handleOpe
               </p>
             </div>
             <div className="text-right">
-              <p className="text-xs font-bold uppercase tracking-[0.3em] text-admin-accent">
-                Tháng hiện tại
-              </p>
-              <p className="mt-2 text-lg font-extrabold capitalize text-admin-ink">{monthLabel}</p>
+              <p className="text-lg font-extrabold capitalize text-admin-ink">{monthLabel}</p>
             </div>
           </div>
 
@@ -196,7 +224,7 @@ export default function DashboardTab({ stats, bookings, scheduleNotes, handleOpe
                       <button
                         type="button"
                         onClick={handleOpenScheduleNotes}
-                        className="text-xs font-bold text-admin-accent"
+                        className="text-xs font-bold text-admin-ink"
                       >
                         Xem thêm {dayItems.length - 2} mục
                       </button>
@@ -215,30 +243,28 @@ export default function DashboardTab({ stats, bookings, scheduleNotes, handleOpe
               <button
                 type="button"
                 onClick={handleOpenBookings}
-                className="text-sm font-bold text-admin-accent"
+                className="text-sm font-bold text-admin-ink"
               >
                 Xem tất cả
               </button>
             </div>
             <div className="mt-6 space-y-3">
-              {bookings.slice(0, 5).map((booking) => (
+              {recentRequests.map((item) => (
                 <article
-                  key={booking.id}
+                  key={item.id}
                   className="rounded-[1rem] border border-slate-200 bg-white p-5"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="break-words text-lg font-extrabold leading-8 text-admin-ink">
-                        {booking.customerName || "Chưa có tên khách"}
+                        {item.title}
                       </p>
                       <p className="mt-1 text-sm text-admin-steel">
-                        {booking.tripDate ? formatDateTime(booking.tripDate) : "Chưa có ngày đi"}
+                        {item.time ? formatDateTime(item.time) : "Chưa có thời gian"}
                       </p>
                     </div>
-                    <span
-                      className={`admin-pill shrink-0 self-start ${getBookingStatusClass(booking.status)}`}
-                    >
-                      {getBookingStatusLabel(booking.status)}
+                    <span className={`admin-pill shrink-0 self-start ${item.statusClass}`}>
+                      {item.status}
                     </span>
                   </div>
 
@@ -248,7 +274,7 @@ export default function DashboardTab({ stats, bookings, scheduleNotes, handleOpe
                         Điện thoại
                       </p>
                       <p className="mt-2 break-words text-sm font-semibold text-admin-ink">
-                        {booking.phoneNumber || "Chưa có số điện thoại"}
+                        {item.subtitle}
                       </p>
                     </div>
 
@@ -257,26 +283,26 @@ export default function DashboardTab({ stats, bookings, scheduleNotes, handleOpe
                         Lộ trình
                       </p>
                       <p className="mt-2 break-words text-sm font-semibold leading-6 text-admin-ink">
-                        {formatRoute(booking)}
+                        {item.route}
                       </p>
                     </div>
 
-                    {booking.note ? (
+                    {item.note ? (
                       <div className="rounded-[0.9rem] bg-slate-50 px-4 py-3">
                         <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
                           Ghi chú
                         </p>
                         <p className="mt-2 break-words text-sm leading-6 text-admin-steel">
-                          {booking.note}
+                          {item.note}
                         </p>
                       </div>
                     ) : null}
                   </div>
                 </article>
               ))}
-              {!bookings.length ? (
+              {!recentRequests.length ? (
                 <div className="rounded-[1rem] border border-dashed border-slate-300 px-5 py-10 text-center text-sm text-admin-steel">
-                  Chưa có booking nào.
+                  Chưa có dữ liệu gần đây.
                 </div>
               ) : null}
             </div>

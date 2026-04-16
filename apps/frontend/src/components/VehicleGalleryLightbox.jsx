@@ -75,11 +75,11 @@ export default function VehicleGalleryLightbox({
             ‹
           </button>
 
-          <div className="overflow-hidden rounded-[1.75rem] bg-slate-900">
+          <div className="vehicle-stage vehicle-stage-lightbox overflow-hidden rounded-[1.75rem]">
             <img
               src={activeImage.fullUrl}
               alt={activeImage.altText ?? title ?? "Ảnh xe"}
-              className="h-[56vh] w-full object-cover sm:h-[68vh]"
+              className="vehicle-stage-image h-[56vh] sm:h-[68vh]"
             />
           </div>
 
@@ -121,11 +121,13 @@ export default function VehicleGalleryLightbox({
               }`}
               aria-label={`Xem ảnh ${index + 1}`}
             >
-              <img
-                src={image.fullUrl}
-                alt={image.altText ?? title ?? "Ảnh thu nhỏ"}
-                className="h-20 w-24 object-cover sm:h-24 sm:w-28"
-              />
+              <div className="vehicle-thumb-stage h-20 w-24 sm:h-24 sm:w-28">
+                <img
+                  src={image.fullUrl}
+                  alt={image.altText ?? title ?? "Ảnh thu nhỏ"}
+                  className="vehicle-thumb-image"
+                />
+              </div>
             </button>
           ))}
         </div>

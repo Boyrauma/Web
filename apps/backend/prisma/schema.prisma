@@ -174,6 +174,7 @@ model VehicleMaintenance {
   vehicleId       String
   title           String
   maintenanceType String   @default("oil_change")
+  licensePlate    String?
   serviceDate     DateTime
   nextServiceDate DateTime?
   odometerKm      Int?

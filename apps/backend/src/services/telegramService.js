@@ -16,9 +16,10 @@ const TELEGRAM_SETTING_KEYS = [
 
 const BOOKING_STATUS_LABELS = {
   new: "Mới",
-  contacted: "Đã liên hệ",
-  confirmed: "Đã chốt",
-  closed: "Đã đóng"
+  contacted: "Liên hệ",
+  scheduled: "Lên lịch",
+  cancelled: "Hủy",
+  completed: "Hoàn thành"
 };
 
 const TELEGRAM_EVENT_LABELS = {

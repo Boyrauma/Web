@@ -1,9 +1,16 @@
-﻿export default function HeroSection({ heroTitle, heroSubtitle, siteName }) {
+﻿export default function HeroSection({
+  heroTitle,
+  heroSubtitle,
+  siteName,
+  backgroundImageUrl,
+  hotline
+}) {
   const legacyTitle = "Vạn dặm bình an, trọn vẹn niềm tin";
   const legacySubtitle =
     "Chuyên xe 4-7 chỗ, 16 chỗ, 29-35-45 chỗ cho du lịch, cưới hỏi, sự kiện và đưa đón sân bay tại Thanh Hóa.";
   const resolvedSiteName = siteName ?? "Nhà xe Định Dung";
   const isCustomTitle = heroTitle?.trim() && heroTitle.trim() !== legacyTitle;
+  const hasBackgroundImage = backgroundImageUrl?.trim();
 
   const resolvedTitle = isCustomTitle ? heroTitle.trim() : "Đồng hành chỉn chu cùng";
 
@@ -13,31 +20,53 @@
       : "Dịch vụ vận chuyển chuyên nghiệp, đúng hẹn và rõ ràng cho những hành trình cần sự an tâm.";
 
   return (
-    <section className="hero-surface overflow-hidden border-b border-[#c8ab74]/50">
-      <div className="site-shell mx-auto px-4 py-14 sm:px-6 lg:py-20">
-        <div className="relative mx-auto max-w-[1080px] px-6 py-12 sm:px-10 lg:px-18 lg:py-16">
-          <div className="pointer-events-none absolute inset-0">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(211,178,119,0.12),transparent_24%),radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.05),transparent_22%)]" />
-            <div className="absolute right-[-50px] top-[-40px] h-52 w-52 rounded-full bg-[#d3b277]/10 blur-3xl" />
-          </div>
+    <section className="hero-surface relative left-1/2 right-1/2 min-h-[680px] w-screen -translate-x-1/2 overflow-hidden border-b border-[#c8ab74]/35">
+      <div className="pointer-events-none absolute inset-0">
+        {hasBackgroundImage ? (
+          <img
+            src={backgroundImageUrl}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover object-center opacity-80"
+          />
+        ) : null}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(211,178,119,0.16),transparent_26%),radial-gradient(circle_at_82%_18%,rgba(255,255,255,0.08),transparent_22%),linear-gradient(135deg,rgba(12,24,46,0.42),rgba(23,39,69,0.34),rgba(22,41,75,0.44))]" />
+        <div className="absolute inset-y-0 right-0 w-[38%] bg-[linear-gradient(270deg,rgba(255,255,255,0.08),transparent)]" />
+        <div className="absolute right-[-30px] top-[-20px] h-56 w-56 rounded-full bg-[#d3b277]/12 blur-3xl" />
+        <div className="absolute bottom-[-80px] left-10 h-40 w-40 rounded-full bg-white/5 blur-3xl" />
+      </div>
 
-          <div className="relative mx-auto max-w-[900px] text-center">
-            <span className="inline-flex rounded-full border border-[#d3b277]/25 bg-white/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.28em] text-[#d9bb84]">
-              Nhà xe uy tín tại Thanh Hóa
+      <div className="relative mx-auto flex min-h-[680px] w-full max-w-[920px] items-center justify-center px-4 py-14 text-center sm:px-6 lg:py-20">
+        <div className="max-w-[820px]">
+          <span className="hero-fade inline-flex rounded-full border border-[#d3b277]/25 bg-white/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.28em] text-[#d9bb84]">
+            Nhà xe uy tín tại Thanh Hóa
+          </span>
+          <h2 className="display-serif hero-fade-delay hero-text-strong mt-6 text-4xl leading-[1.04] text-white sm:text-5xl lg:text-[4.15rem]">
+            {isCustomTitle ? (
+              resolvedTitle
+            ) : (
+              <>
+                {resolvedTitle} <span className="whitespace-nowrap">{resolvedSiteName}</span>
+              </>
+            )}
+          </h2>
+          <p className="hero-fade-delay hero-text-soft mx-auto mt-6 max-w-[620px] text-base font-semibold leading-8 text-slate-100 sm:text-lg">
+            {resolvedSubtitle}
+          </p>
+          <div
+            className="hero-fade-delay-2 hero-text-soft hotline-glow mx-auto mt-6 inline-flex rounded-full border border-[#d3b277]/30 bg-white/12 px-7 py-4 text-base font-extrabold uppercase tracking-[0.18em] text-white sm:text-lg"
+          >
+            Hotline: {hotline ?? "0979 860 498"}
+          </div>
+          <div className="hero-fade-delay-2 mx-auto mt-8 flex max-w-[540px] flex-wrap items-center justify-center gap-3">
+            <span className="float-soft rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-slate-100">
+              Xe 4 - 45 chỗ
             </span>
-            <h2 className="display-serif mt-6 text-4xl leading-[1.08] text-white sm:text-5xl lg:text-[4.15rem]">
-              {isCustomTitle ? (
-                resolvedTitle
-              ) : (
-                <>
-                  {resolvedTitle}{" "}
-                  <span className="whitespace-nowrap">{resolvedSiteName}</span>
-                </>
-              )}
-            </h2>
-            <p className="mx-auto mt-6 max-w-[620px] text-base leading-8 text-slate-200 sm:text-lg">
-              {resolvedSubtitle}
-            </p>
+            <span className="float-soft rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-slate-100 [animation-delay:180ms]">
+              Đúng hẹn
+            </span>
+            <span className="float-soft rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-slate-100 [animation-delay:360ms]">
+              Điều phối rõ ràng
+            </span>
           </div>
         </div>
       </div>

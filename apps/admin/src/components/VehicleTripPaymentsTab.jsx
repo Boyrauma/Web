@@ -5,12 +5,12 @@ import AdminPagination, { PAGE_SIZE, getPageSlice } from "./AdminPagination";
 
 const paymentStatusOptions = [
   { value: "unpaid", label: "Chưa thu" },
-  { value: "paid", label: "Đã thu" }
+  { value: "paid", label: "Thu tiền" }
 ];
 
-const paymentSortOptions = [
-  { value: "newest", label: "Ngày mới nhất" },
-  { value: "oldest", label: "Ngày cũ nhất" }
+const scheduleLifecycleOptions = [
+  { value: "completed", label: "Hoàn thành" },
+  { value: "cancelled", label: "Hủy" }
 ];
 
 function formatDateTime(value) {
@@ -35,6 +35,33 @@ function formatCurrency(value) {
   }).format(Number(value));
 }
 
+function getDayKey(value) {
+  if (!value) return "unknown";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "unknown";
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getMonthKey(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+}
+
+function getBookingCreatedAt(item) {
+  return item.booking?.createdAt ?? item.payment?.bookingRequest?.createdAt ?? null;
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -49,6 +76,16 @@ function getPaymentStatusLabel(status) {
 
 function getPaymentStatusClass(status) {
   return status === "paid" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700";
+}
+
+function getScheduleStatusLabel(status) {
+  return scheduleLifecycleOptions.find((item) => item.value === status)?.label ?? status;
+}
+
+function getScheduleStatusClass(status) {
+  if (status === "completed") return "bg-sky-100 text-sky-700";
+  if (status === "cancelled") return "bg-rose-100 text-rose-700";
+  return "bg-slate-200 text-slate-700";
 }
 
 function getSourceBadge(item) {
@@ -101,16 +138,46 @@ function createInlineDraft(payment) {
       "",
     amount: payment.amount ?? "",
     paymentStatus: payment.paymentStatus ?? "unpaid",
+    scheduleStatus: payment.scheduleNote?.status ?? "completed",
     note: payment.note ?? ""
   };
 }
 
-function buildPaymentItems(scheduleNotes = [], bookings = [], payments = []) {
+function createInlineDraftFromSource(item, fallbackVehicleId = "") {
+  const note = item.scheduleNote;
+  const booking = item.booking;
+
+  return {
+    scheduleNoteId: note?.id ?? "",
+    bookingRequestId: booking?.id ?? note?.bookingRequestId ?? "",
+    vehicleId: note?.vehicleId ?? fallbackVehicleId,
+    title:
+      note?.title?.trim() ||
+      (booking?.customerName?.trim() ? `Tiền xe - ${booking.customerName.trim()}` : "Tiền xe"),
+    customerName: note?.customerName ?? booking?.customerName ?? "",
+    phoneNumber: note?.phoneNumber ?? booking?.phoneNumber ?? "",
+    tripDate: toDateTimeInputValue(item.tripDate),
+    pickupLocation: note?.pickupLocation ?? booking?.pickupLocation ?? "",
+    dropoffLocation: note?.dropoffLocation ?? booking?.dropoffLocation ?? "",
+    amount: "",
+    paymentStatus: "unpaid",
+    scheduleStatus: note?.status ?? "completed",
+    note: note?.note ?? booking?.note ?? ""
+  };
+}
+
+function buildPaymentItems(scheduleNotes = [], bookings = [], payments = [], linkedPayments = payments) {
   const paymentByScheduleNoteId = new Map(
     payments.filter((item) => item.scheduleNoteId).map((item) => [item.scheduleNoteId, item])
   );
   const paymentByBookingId = new Map(
     payments.filter((item) => item.bookingRequestId).map((item) => [item.bookingRequestId, item])
+  );
+  const linkedPaymentByScheduleNoteId = new Map(
+    linkedPayments.filter((item) => item.scheduleNoteId).map((item) => [item.scheduleNoteId, item])
+  );
+  const linkedPaymentByBookingId = new Map(
+    linkedPayments.filter((item) => item.bookingRequestId).map((item) => [item.bookingRequestId, item])
   );
   const scheduleNoteByBookingId = new Map(
     scheduleNotes.filter((item) => item.bookingRequestId).map((item) => [item.bookingRequestId, item])
@@ -121,6 +188,14 @@ function buildPaymentItems(scheduleNotes = [], bookings = [], payments = []) {
       paymentByScheduleNoteId.get(note.id) ??
       (note.bookingRequestId ? paymentByBookingId.get(note.bookingRequestId) ?? null : null);
 
+    const hiddenLinkedPayment =
+      linkedPaymentByScheduleNoteId.get(note.id) ??
+      (note.bookingRequestId ? linkedPaymentByBookingId.get(note.bookingRequestId) ?? null : null);
+
+    if (!payment && hiddenLinkedPayment && (hiddenLinkedPayment.paymentStatus === "paid" || hiddenLinkedPayment.archivedAt)) {
+      return null;
+    }
+
     return {
       id: payment?.id ?? `schedule-${note.id}`,
       kind: "schedule",
@@ -130,19 +205,29 @@ function buildPaymentItems(scheduleNotes = [], bookings = [], payments = []) {
       tripDate: payment?.tripDate ?? note.tripDate,
       createdAt: payment?.createdAt ?? note.createdAt
     };
-  });
+  }).filter(Boolean);
 
   const bookingItems = bookings
     .filter((booking) => booking.tripDate && !scheduleNoteByBookingId.has(booking.id))
-    .map((booking) => ({
-      id: paymentByBookingId.get(booking.id)?.id ?? `booking-${booking.id}`,
-      kind: "booking",
-      payment: paymentByBookingId.get(booking.id) ?? null,
-      scheduleNote: null,
-      booking,
-      tripDate: paymentByBookingId.get(booking.id)?.tripDate ?? booking.tripDate,
-      createdAt: paymentByBookingId.get(booking.id)?.createdAt ?? booking.createdAt
-    }));
+    .map((booking) => {
+      const payment = paymentByBookingId.get(booking.id) ?? null;
+      const hiddenLinkedPayment = linkedPaymentByBookingId.get(booking.id) ?? null;
+
+      if (!payment && hiddenLinkedPayment && (hiddenLinkedPayment.paymentStatus === "paid" || hiddenLinkedPayment.archivedAt)) {
+        return null;
+      }
+
+      return {
+        id: payment?.id ?? `booking-${booking.id}`,
+        kind: "booking",
+        payment,
+        scheduleNote: null,
+        booking,
+        tripDate: payment?.tripDate ?? booking.tripDate,
+        createdAt: payment?.createdAt ?? booking.createdAt
+      };
+    })
+    .filter(Boolean);
 
   const scheduleIds = new Set(scheduleNotes.map((item) => item.id));
   const bookingIds = new Set(bookings.map((item) => item.id));
@@ -201,6 +286,7 @@ function exportItemsToExcel(items) {
         note?.dropoffLocation ??
         booking?.dropoffLocation ??
         "Chưa có điểm trả";
+      const bookingCreatedAt = getBookingCreatedAt(item);
       const noteText = payment?.note ?? note?.note ?? booking?.note ?? "";
 
       return `
@@ -210,6 +296,7 @@ function exportItemsToExcel(items) {
           <td class="cell">${escapeHtml(customerName)}</td>
           <td class="cell phone-cell">="${escapeHtml(phoneNumber)}"</td>
           <td class="cell">${escapeHtml(formatDateTime(item.tripDate))}</td>
+          <td class="cell">${escapeHtml(formatDateTime(bookingCreatedAt))}</td>
           <td class="cell">${escapeHtml(pickupLocation)}</td>
           <td class="cell">${escapeHtml(dropoffLocation)}</td>
           <td class="cell">${escapeHtml(getPaymentStatusLabel(payment?.paymentStatus ?? "unpaid"))}</td>
@@ -304,10 +391,10 @@ function exportItemsToExcel(items) {
           <table>
             <thead>
               <tr>
-                <th class="report-cell report-title-cell" colspan="10">Báo cáo tiền xe</th>
+                <th class="report-cell report-title-cell" colspan="11">Báo cáo tiền xe</th>
               </tr>
               <tr>
-                <th class="report-cell report-subtitle-cell" colspan="10">Ngày xuất: ${escapeHtml(
+                <th class="report-cell report-subtitle-cell" colspan="11">Ngày xuất: ${escapeHtml(
                   new Date().toLocaleString("vi-VN")
                 )}</th>
               </tr>
@@ -317,6 +404,7 @@ function exportItemsToExcel(items) {
                 <th class="head-cell">Khách hàng</th>
                 <th class="head-cell">Số điện thoại</th>
                 <th class="head-cell">Thời gian đi</th>
+                <th class="head-cell">Tạo booking</th>
                 <th class="head-cell">Điểm đón</th>
                 <th class="head-cell">Điểm trả</th>
                 <th class="head-cell">Trạng thái thu</th>
@@ -346,6 +434,7 @@ function exportItemsToExcel(items) {
 }
 export default function VehicleTripPaymentsTab({
   payments,
+  linkedPayments,
   scheduleNotes,
   bookings,
   vehicles,
@@ -354,6 +443,7 @@ export default function VehicleTripPaymentsTab({
   savingTripPayment,
   handleTripPaymentFormChange,
   handleCreateTripPayment,
+  handleCreateInlineTripPayment,
   handleInlineUpdateTripPayment,
   handleDeleteTripPayment,
   resetTripPaymentForm,
@@ -364,31 +454,29 @@ export default function VehicleTripPaymentsTab({
 }) {
   const defaultFilters = {
     vehicleFilterId: "all",
-    paymentStatusFilter: "all"
+    selectedDate: "",
+    selectedMonth: ""
   };
   const [vehicleFilterId, setVehicleFilterId] = useState("all");
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState("all");
   const [draftVehicleFilterId, setDraftVehicleFilterId] = useState(defaultFilters.vehicleFilterId);
-  const [draftPaymentStatusFilter, setDraftPaymentStatusFilter] = useState(
-    defaultFilters.paymentStatusFilter
-  );
-  const [sortOrder, setSortOrder] = useState("newest");
-  const [draftSortOrder, setDraftSortOrder] = useState("newest");
+  const [selectedDate, setSelectedDate] = useState(defaultFilters.selectedDate);
+  const [selectedMonth, setSelectedMonth] = useState(defaultFilters.selectedMonth);
+  const [draftSelectedDate, setDraftSelectedDate] = useState(defaultFilters.selectedDate);
+  const [draftSelectedMonth, setDraftSelectedMonth] = useState(defaultFilters.selectedMonth);
   const [inlineEditingId, setInlineEditingId] = useState("");
   const [inlineDraft, setInlineDraft] = useState(null);
   const [savingInlineId, setSavingInlineId] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
   const paymentItems = useMemo(
-    () => buildPaymentItems(scheduleNotes, bookings, payments),
-    [bookings, payments, scheduleNotes]
+    () => buildPaymentItems(scheduleNotes, bookings, payments, linkedPayments),
+    [bookings, linkedPayments, payments, scheduleNotes]
   );
 
   const filteredItems = useMemo(
     () =>
       paymentItems.filter((item) => {
         const vehicleId = item.payment?.vehicleId ?? item.scheduleNote?.vehicleId ?? "";
-        const paymentStatus = item.payment?.paymentStatus ?? "unpaid";
 
         const matchVehicle =
           vehicleFilterId === "all"
@@ -396,22 +484,27 @@ export default function VehicleTripPaymentsTab({
             : vehicleFilterId === "unassigned"
               ? !vehicleId
               : vehicleId === vehicleFilterId;
+        const referenceDate = item.tripDate ?? item.createdAt;
+        const dayKey = getDayKey(referenceDate);
+        const monthKey = getMonthKey(referenceDate);
+        const matchTime = selectedDate
+          ? dayKey === selectedDate
+          : selectedMonth
+            ? monthKey === selectedMonth
+            : true;
 
-        const matchPaymentStatus =
-          paymentStatusFilter === "all" ? true : paymentStatus === paymentStatusFilter;
-
-        return matchVehicle && matchPaymentStatus;
+        return matchVehicle && matchTime;
       }),
-    [paymentItems, paymentStatusFilter, vehicleFilterId]
+    [paymentItems, selectedDate, selectedMonth, vehicleFilterId]
   );
   const visibleItems = useMemo(
     () =>
       [...filteredItems].sort((left, right) => {
         const leftTime = new Date(left.tripDate ?? left.createdAt ?? 0).getTime();
         const rightTime = new Date(right.tripDate ?? right.createdAt ?? 0).getTime();
-        return sortOrder === "oldest" ? leftTime - rightTime : rightTime - leftTime;
+        return rightTime - leftTime;
       }),
-    [filteredItems, sortOrder]
+    [filteredItems]
   );
   const totalPages = Math.max(1, Math.ceil(visibleItems.length / PAGE_SIZE));
   const paginatedItems = useMemo(
@@ -435,6 +528,11 @@ export default function VehicleTripPaymentsTab({
     setInlineDraft(createInlineDraft(payment));
   }
 
+  function startInlineCreate(item) {
+    setInlineEditingId(item.id);
+    setInlineDraft(createInlineDraftFromSource(item, vehicles[0]?.id ?? ""));
+  }
+
   function cancelInlineEdit() {
     setInlineEditingId("");
     setInlineDraft(null);
@@ -452,20 +550,32 @@ export default function VehicleTripPaymentsTab({
     }
   }
 
+  async function saveInlineCreate(itemKey) {
+    if (!inlineDraft) return;
+
+    setSavingInlineId(itemKey);
+    try {
+      await handleCreateInlineTripPayment(inlineDraft);
+      cancelInlineEdit();
+    } finally {
+      setSavingInlineId("");
+    }
+  }
+
   function applyFilters() {
     setVehicleFilterId(draftVehicleFilterId);
-    setPaymentStatusFilter(draftPaymentStatusFilter);
-    setSortOrder(draftSortOrder);
+    setSelectedDate(draftSelectedDate);
+    setSelectedMonth(draftSelectedMonth);
     setCurrentPage(1);
   }
 
   function clearFilters() {
     setVehicleFilterId(defaultFilters.vehicleFilterId);
-    setPaymentStatusFilter(defaultFilters.paymentStatusFilter);
     setDraftVehicleFilterId(defaultFilters.vehicleFilterId);
-    setDraftPaymentStatusFilter(defaultFilters.paymentStatusFilter);
-    setSortOrder("newest");
-    setDraftSortOrder("newest");
+    setSelectedDate(defaultFilters.selectedDate);
+    setSelectedMonth(defaultFilters.selectedMonth);
+    setDraftSelectedDate(defaultFilters.selectedDate);
+    setDraftSelectedMonth(defaultFilters.selectedMonth);
     setCurrentPage(1);
   }
 
@@ -638,10 +748,7 @@ export default function VehicleTripPaymentsTab({
         </div>
 
         <div className="mt-6 rounded-[1rem] border border-slate-200 bg-slate-50/80 p-4">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-admin-accent">
-            Bộ lọc tiền xe
-          </p>
-          <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_152px_152px_152px] xl:items-end">
+          <div className="grid gap-3 xl:grid-cols-[220px_minmax(0,1fr)_140px_140px] xl:items-end">
             <label className="space-y-2">
               <span className="text-sm font-bold text-admin-ink">Lọc xe</span>
               <select
@@ -659,33 +766,34 @@ export default function VehicleTripPaymentsTab({
               </select>
             </label>
 
-            <label className="space-y-2">
-              <span className="text-sm font-bold text-admin-ink">Thu tiền</span>
-              <select
-                className="admin-select w-full"
-                value={draftPaymentStatusFilter}
-                onChange={(event) => setDraftPaymentStatusFilter(event.target.value)}
-              >
-                <option value="all">Tất cả thu tiền</option>
-                <option value="unpaid">Chưa thu</option>
-                <option value="paid">Đã thu</option>
-              </select>
-            </label>
+            <div className="space-y-2 min-w-0">
+              <span className="text-sm font-bold text-admin-ink">Ngày cụ thể hoặc theo tháng</span>
+              <div className="grid gap-3 md:grid-cols-2">
+                <input
+                  className="admin-field"
+                  type="date"
+                  value={draftSelectedDate}
+                  onChange={(event) => {
+                    setDraftSelectedDate(event.target.value);
+                    if (event.target.value) {
+                      setDraftSelectedMonth("");
+                    }
+                  }}
+                />
 
-            <label className="space-y-2">
-              <span className="text-sm font-bold text-admin-ink">Sắp xếp</span>
-              <select
-                className="admin-select w-full"
-                value={draftSortOrder}
-                onChange={(event) => setDraftSortOrder(event.target.value)}
-              >
-                {paymentSortOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+                <input
+                  className="admin-field"
+                  type="month"
+                  value={draftSelectedMonth}
+                  onChange={(event) => {
+                    setDraftSelectedMonth(event.target.value);
+                    if (event.target.value) {
+                      setDraftSelectedDate("");
+                    }
+                  }}
+                />
+              </div>
+            </div>
 
             <button
               type="button"
@@ -702,14 +810,6 @@ export default function VehicleTripPaymentsTab({
             >
               Bỏ lọc
             </button>
-
-            <button
-              type="button"
-              onClick={() => exportItemsToExcel(filteredItems)}
-              className="admin-button-secondary w-full min-w-0 justify-center"
-            >
-              Xuất Excel
-            </button>
           </div>
         </div>
 
@@ -718,7 +818,8 @@ export default function VehicleTripPaymentsTab({
             const payment = item.payment;
             const note = item.scheduleNote;
             const booking = item.booking;
-            const isInlineEditing = Boolean(payment && inlineEditingId === payment.id && inlineDraft);
+            const itemInlineKey = payment?.id ?? item.id;
+            const isInlineEditing = Boolean(inlineEditingId === itemInlineKey && inlineDraft);
             const sourceBadge = getSourceBadge(item);
             const title =
               (isInlineEditing ? inlineDraft.title : payment?.title) ??
@@ -749,6 +850,9 @@ export default function VehicleTripPaymentsTab({
               (isInlineEditing ? inlineDraft.note : payment?.note) ?? note?.note ?? booking?.note ?? "";
             const status =
               (isInlineEditing ? inlineDraft.paymentStatus : payment?.paymentStatus) ?? "unpaid";
+            const scheduleStatus =
+              (isInlineEditing ? inlineDraft.scheduleStatus : note?.status) ??
+              (booking?.status === "completed" ? "completed" : booking?.status === "cancelled" ? "cancelled" : null);
             const amount = isInlineEditing ? inlineDraft.amount : payment?.amount;
             const tripDateValue = isInlineEditing ? inlineDraft.tripDate : item.tripDate;
 
@@ -776,31 +880,30 @@ export default function VehicleTripPaymentsTab({
                     <p className="mt-1 text-sm font-semibold text-admin-steel">
                       {vehicleName} - {formatDateTime(tripDateValue)}
                     </p>
+                    {getBookingCreatedAt(item) ? (
+                      <p className="mt-1 text-xs font-semibold text-slate-500">
+                        Tạo booking: {formatDateTime(getBookingCreatedAt(item))}
+                      </p>
+                    ) : null}
                   </div>
-                  {isInlineEditing ? (
-                    <select
-                      className="admin-select min-w-36"
-                      name="paymentStatus"
-                      value={inlineDraft.paymentStatus}
-                      onChange={handleInlineFieldChange}
-                    >
-                      {paymentStatusOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {scheduleStatus ? (
+                      <span className={`admin-pill ${getScheduleStatusClass(scheduleStatus)}`}>
+                        {getScheduleStatusLabel(scheduleStatus)}
+                      </span>
+                    ) : (
+                      null
+                    )}
                     <span className={`admin-pill ${getPaymentStatusClass(status)}`}>
                       {getPaymentStatusLabel(status)}
                     </span>
-                  )}
+                  </div>
                 </div>
 
                 {isInlineEditing ? (
                   <>
-                    <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                      <div className="rounded-[1rem] bg-white px-4 py-3">
+                    <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4 xl:items-stretch">
+                      <div className="flex h-full flex-col rounded-[1rem] bg-white px-4 py-3">
                         <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
                           Khách hàng
                         </p>
@@ -822,7 +925,7 @@ export default function VehicleTripPaymentsTab({
                         </div>
                       </div>
 
-                      <div className="rounded-[1rem] bg-white px-4 py-3">
+                      <div className="flex h-full flex-col rounded-[1rem] bg-white px-4 py-3">
                         <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
                           Lộ trình
                         </p>
@@ -844,7 +947,7 @@ export default function VehicleTripPaymentsTab({
                         </div>
                       </div>
 
-                      <div className="rounded-[1rem] bg-white px-4 py-3">
+                      <div className="flex h-full flex-col rounded-[1rem] bg-white px-4 py-3">
                         <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
                           Thu tiền
                         </p>
@@ -864,8 +967,42 @@ export default function VehicleTripPaymentsTab({
                             onChange={handleInlineFieldChange}
                             placeholder="Số tiền"
                           />
+                          <select
+                            className="admin-select w-full"
+                            name="paymentStatus"
+                            value={inlineDraft.paymentStatus}
+                            onChange={handleInlineFieldChange}
+                          >
+                            {paymentStatusOptions.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                       </div>
+
+                      {note ? (
+                        <div className="flex h-full flex-col rounded-[1rem] bg-white px-4 py-3">
+                          <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                            Trạng thái chuyến
+                          </p>
+                          <div className="mt-3">
+                            <select
+                              className="admin-select w-full"
+                              name="scheduleStatus"
+                              value={inlineDraft.scheduleStatus}
+                              onChange={handleInlineFieldChange}
+                            >
+                              {scheduleLifecycleOptions.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
 
                     <textarea
@@ -902,6 +1039,11 @@ export default function VehicleTripPaymentsTab({
                         <p className="mt-2 text-sm font-semibold text-admin-ink">
                           {formatCurrency(amount)}
                         </p>
+                        {note && scheduleStatus ? (
+                          <p className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-bold ${getScheduleStatusClass(scheduleStatus)}`}>
+                            {getScheduleStatusLabel(scheduleStatus)}
+                          </p>
+                        ) : null}
                       </div>
                     </div>
 
@@ -953,11 +1095,28 @@ export default function VehicleTripPaymentsTab({
                     <>
                       <button
                         type="button"
-                        onClick={() => handleCreateTripPaymentFromSchedule(note)}
+                        onClick={() =>
+                          isInlineEditing ? saveInlineCreate(item.id) : startInlineCreate(item)
+                        }
                         className="admin-button-secondary"
+                        disabled={savingInlineId === item.id}
                       >
-                        Sửa
+                        {isInlineEditing
+                          ? savingInlineId === item.id
+                            ? "Đang lưu..."
+                            : "Lưu"
+                          : "Sửa"}
                       </button>
+                      {isInlineEditing ? (
+                        <button
+                          type="button"
+                          onClick={cancelInlineEdit}
+                          className="admin-button-ghost"
+                          disabled={savingInlineId === item.id}
+                        >
+                          Hủy
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         onClick={() =>
@@ -974,11 +1133,28 @@ export default function VehicleTripPaymentsTab({
                     <>
                       <button
                         type="button"
-                        onClick={() => handleCreateTripPaymentFromBooking(booking)}
+                        onClick={() =>
+                          isInlineEditing ? saveInlineCreate(item.id) : startInlineCreate(item)
+                        }
                         className="admin-button-secondary"
+                        disabled={savingInlineId === item.id}
                       >
-                        Sửa
+                        {isInlineEditing
+                          ? savingInlineId === item.id
+                            ? "Đang lưu..."
+                            : "Lưu"
+                          : "Sửa"}
                       </button>
+                      {isInlineEditing ? (
+                        <button
+                          type="button"
+                          onClick={cancelInlineEdit}
+                          className="admin-button-ghost"
+                          disabled={savingInlineId === item.id}
+                        >
+                          Hủy
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         onClick={() => handleDeleteBooking(booking.id)}
@@ -1010,4 +1186,5 @@ export default function VehicleTripPaymentsTab({
     </section>
   );
 }
+
 

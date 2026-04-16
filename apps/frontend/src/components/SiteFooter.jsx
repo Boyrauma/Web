@@ -4,8 +4,12 @@
       <div className="site-shell mx-auto grid gap-8 px-4 py-12 sm:px-6 md:grid-cols-[1.15fr_0.85fr]">
         <div>
           {logoUrl ? (
-            <div className="flex h-16 w-24 items-center justify-center overflow-hidden rounded-2xl bg-[#fff9ef] p-3 shadow-[0_18px_45px_rgba(0,0,0,0.18)]">
-              <img src={logoUrl} alt={siteName ?? "Nhà xe"} className="h-full w-full object-contain" />
+            <div className="flex h-20 w-28 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-[0_18px_45px_rgba(0,0,0,0.18)]">
+              <img
+                src={logoUrl}
+                alt={siteName ?? "Nhà xe"}
+                className="h-full w-full bg-white object-cover object-center"
+              />
             </div>
           ) : null}
           <p className={`${logoUrl ? "mt-4 " : ""}text-sm font-bold uppercase tracking-[0.25em] text-[#d3b277]`}>

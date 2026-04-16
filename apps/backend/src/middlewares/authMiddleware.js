@@ -25,12 +25,24 @@ export async function requireAdminAuth(request, response, next) {
         email: true,
         fullName: true,
         role: true,
-        isActive: true
+        isActive: true,
+        updatedAt: true
       }
     });
 
     if (!admin || !admin.isActive) {
       return response.status(401).json({ message: "Unauthorized" });
+    }
+
+    const tokenIssuedAt = typeof payload.sessionIssuedAt === "number"
+      ? payload.sessionIssuedAt
+      : typeof payload.iat === "number"
+        ? payload.iat * 1000
+        : 0;
+    const adminUpdatedAt = new Date(admin.updatedAt).getTime();
+
+    if (tokenIssuedAt < adminUpdatedAt) {
+      return response.status(401).json({ message: "Session expired" });
     }
 
     request.admin = {

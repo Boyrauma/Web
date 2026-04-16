@@ -68,38 +68,44 @@ export default function FleetSection({ vehicleCategories, resolveAssetUrl, onOpe
           </h3>
         </div>
 
-        <div className="mt-10 grid gap-8 md:grid-cols-3">
+        <div className="mt-10 grid gap-8 md:auto-rows-fr md:grid-cols-3">
           {groups.map((group) => (
             <article
               key={group.title}
-              className="reveal-card overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-premium"
+              className="reveal-card hover-lift flex min-h-[472px] h-full flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm transition hover:shadow-premium"
             >
               <button
                 type="button"
                 onClick={() => onOpenGallery?.(group.title, group.images, 0)}
-                className="group relative block w-full text-left"
+                className="group relative block h-[264px] w-full shrink-0 overflow-hidden bg-slate-100 text-left"
                 aria-label={`Mở bộ ảnh ${group.title}`}
               >
-                <img
-                  src={group.images[0]?.fullUrl ?? "/assets/xecountybonghoi.jpg"}
-                  alt={group.images[0]?.altText ?? group.title}
-                  loading="lazy"
-                  decoding="async"
-                  className="h-64 w-full object-cover transition duration-300 group-hover:scale-[1.02]"
-                />
+                <div className="vehicle-stage vehicle-stage-card h-full w-full">
+                  <img
+                    src={group.images[0]?.fullUrl ?? "/assets/xecountybonghoi.jpg"}
+                    alt={group.images[0]?.altText ?? group.title}
+                    loading="lazy"
+                    decoding="async"
+                    className="vehicle-stage-image vehicle-stage-image-card transition duration-300"
+                  />
+                </div>
 
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/80 via-slate-950/15 to-transparent px-5 pb-4 pt-12">
                   <div className="flex items-end justify-between gap-3">
                     <div className="flex -space-x-3">
                       {group.images.slice(0, 3).map((image, index) => (
-                        <img
+                        <div
                           key={image.id ?? `${group.title}-${index}`}
-                          src={image.fullUrl}
-                          alt={image.altText ?? group.title}
-                          loading="lazy"
-                          decoding="async"
-                          className="h-12 w-12 rounded-2xl border-2 border-white/90 object-cover shadow-lg"
-                        />
+                          className="vehicle-thumb-stage h-12 w-12 rounded-2xl border-2 border-white/90 shadow-lg"
+                        >
+                          <img
+                            src={image.fullUrl}
+                            alt={image.altText ?? group.title}
+                            loading="lazy"
+                            decoding="async"
+                            className="vehicle-thumb-image"
+                          />
+                        </div>
                       ))}
                     </div>
                     <span className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.2em] text-brand-navy">
@@ -109,11 +115,11 @@ export default function FleetSection({ vehicleCategories, resolveAssetUrl, onOpe
                 </div>
               </button>
 
-              <div className="space-y-4 p-6">
+              <div className="flex flex-1 flex-col space-y-4 p-6">
                 <h4 className="text-2xl font-extrabold text-brand-navy">{group.title}</h4>
-                <p className="text-slate-600">{group.description}</p>
+                <p className="min-h-[88px] text-slate-600">{group.description}</p>
 
-                <div className="flex flex-wrap gap-3">
+                <div className="mt-auto flex flex-wrap gap-3 pt-2">
                   <button
                     type="button"
                     onClick={() => onOpenGallery?.(group.title, group.images, 0)}
@@ -130,3 +136,4 @@ export default function FleetSection({ vehicleCategories, resolveAssetUrl, onOpe
     </section>
   );
 }
+

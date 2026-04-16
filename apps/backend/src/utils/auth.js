@@ -18,7 +18,8 @@ export function signAdminToken(admin) {
       sub: admin.id,
       email: admin.email,
       role: admin.role,
-      fullName: admin.fullName
+      fullName: admin.fullName,
+      sessionIssuedAt: Date.now()
     },
     env.jwtSecret,
     { expiresIn: "7d" }

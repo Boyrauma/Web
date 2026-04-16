@@ -5,6 +5,7 @@ import SiteHeader from "../components/SiteHeader";
 import StickyContactBar from "../components/StickyContactBar";
 import { fetchSiteSettings, fetchVehicleBySlug, resolveAssetUrl } from "../services/api";
 import { applyDocumentBranding } from "../utils/branding";
+import { applySeo, buildVehicleSchema } from "../utils/seo";
 
 export default function VehicleDetailPage() {
   const { slug } = useParams();
@@ -56,12 +57,49 @@ export default function VehicleDetailPage() {
 
   useEffect(() => {
     applyDocumentBranding({
-      title: vehicle?.name
-        ? `${vehicle.name} | ${settingsMap.site_name ?? "Website nhà xe"}`
-        : settingsMap.browser_title ?? settingsMap.site_name ?? "Website nhà xe",
       faviconUrl: settingsMap.favicon_url
     });
-  }, [vehicle?.name, settingsMap.browser_title, settingsMap.favicon_url, settingsMap.site_name]);
+  }, [settingsMap.favicon_url]);
+
+  useEffect(() => {
+    const siteName = settingsMap.site_name ?? "Nhà xe Định Dung";
+    const title = vehicle?.name
+      ? `${vehicle.name} | ${siteName}`
+      : settingsMap.browser_title ?? `${siteName} | Chi tiết xe`;
+    const description =
+      vehicle?.description ||
+      vehicle?.shortDescription ||
+      `Chi tiết dòng xe ${vehicle?.name ?? ""} tại ${siteName}. Xem hình ảnh, số chỗ và liên hệ đặt xe nhanh.`;
+    const canonicalPath = vehicle?.slug ? `/xe/${vehicle.slug}` : `/xe/${slug}`;
+    const schema = vehicle
+      ? buildVehicleSchema({
+          vehicle,
+          siteName,
+          canonicalUrl: new URL(canonicalPath, window.location.origin).toString(),
+          images: gallery.map((item) => item.fullUrl)
+        })
+      : null;
+
+    applySeo({
+      title,
+      description,
+      canonicalPath,
+      image: currentImage,
+      type: "product",
+      siteName,
+      keywords: vehicle?.category?.name
+        ? `${vehicle.name}, ${vehicle.category.name}, thuê xe ${vehicle.name}, nhà xe Thanh Hóa`
+        : undefined,
+      schema
+    });
+  }, [
+    currentImage,
+    gallery,
+    settingsMap.browser_title,
+    settingsMap.site_name,
+    slug,
+    vehicle
+  ]);
 
   return (
     <div className="min-h-screen bg-transparent text-slate-900">
@@ -87,13 +125,15 @@ export default function VehicleDetailPage() {
           <div className="mt-8 space-y-10">
             <section className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr]">
               <div className="space-y-4">
-                <img
-                  src={currentImage}
-                  alt={vehicle.name}
-                  loading="lazy"
-                  decoding="async"
-                  className="h-[420px] w-full rounded-[2rem] object-cover shadow-[0_28px_70px_rgba(20,35,60,0.14)]"
-                />
+                <div className="vehicle-stage vehicle-stage-detail h-[420px] w-full rounded-[2rem] shadow-[0_28px_70px_rgba(20,35,60,0.14)]">
+                  <img
+                    src={currentImage}
+                    alt={vehicle.name}
+                    loading="lazy"
+                    decoding="async"
+                    className="vehicle-stage-image"
+                  />
+                </div>
                 <div className="flex flex-wrap gap-3">
                   {gallery.map((image) => (
                     <button
@@ -106,13 +146,15 @@ export default function VehicleDetailPage() {
                           : "border-transparent"
                       }`}
                     >
-                      <img
-                        src={image.fullUrl}
-                        alt={image.altText ?? vehicle.name}
-                        loading="lazy"
-                        decoding="async"
-                        className="h-20 w-24 object-cover"
-                      />
+                      <div className="vehicle-thumb-stage h-20 w-24">
+                        <img
+                          src={image.fullUrl}
+                          alt={image.altText ?? vehicle.name}
+                          loading="lazy"
+                          decoding="async"
+                          className="vehicle-thumb-image"
+                        />
+                      </div>
                     </button>
                   ))}
                 </div>

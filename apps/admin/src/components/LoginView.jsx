@@ -13,7 +13,7 @@
     <div className="admin-shell flex min-h-screen items-center justify-center overflow-hidden p-6">
       <div className="grid w-full max-w-5xl gap-6 lg:grid-cols-[0.95fr_1.05fr]">
         <section className="admin-card-dark hidden rounded-[1.5rem] p-8 text-white lg:block">
-          <p className="text-sm font-bold uppercase tracking-[0.35em] text-emerald-300">
+          <p className="text-sm font-bold uppercase tracking-[0.35em] text-slate-300">
             Premium Admin
           </p>
           {logoUrl ? (
@@ -31,17 +31,17 @@
           </p>
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
             <div className="rounded-[1rem] border border-white/10 bg-white/5 p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.25em] text-emerald-300">
+              <p className="text-xs font-bold uppercase tracking-[0.25em] text-slate-300">
                 Booking
               </p>
               <p className="mt-2 text-2xl font-extrabold">Ưu tiên mới</p>
             </div>
             <div className="rounded-[1rem] border border-white/10 bg-white/5 p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.25em] text-emerald-300">Xe</p>
+              <p className="text-xs font-bold uppercase tracking-[0.25em] text-slate-300">Xe</p>
               <p className="mt-2 text-2xl font-extrabold">CRUD rõ ràng</p>
             </div>
             <div className="rounded-[1rem] border border-white/10 bg-white/5 p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.25em] text-emerald-300">
+              <p className="text-xs font-bold uppercase tracking-[0.25em] text-slate-300">
                 Nội dung
               </p>
               <p className="mt-2 text-2xl font-extrabold">Dễ chỉnh sửa</p>
@@ -54,7 +54,7 @@
           autoComplete="off"
           className="admin-panel w-full rounded-[1.5rem] p-8 sm:p-9"
         >
-          <p className="text-sm font-bold uppercase tracking-[0.3em] text-admin-accent">
+          <p className="text-sm font-bold uppercase tracking-[0.3em] text-admin-ink">
             Đăng nhập quản trị
           </p>
           {logoUrl ? (

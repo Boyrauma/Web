@@ -38,7 +38,6 @@ Các file production đã có sẵn:
 - `docker-compose.prod.yml`
 - `.env.production.example`
 - `infra/nginx/nhaxedinhdung.vn.conf`
-- `infra/nginx/admin.nhaxedinhdung.vn.conf`
 
 Luồng deploy khuyến nghị:
 
@@ -47,7 +46,7 @@ Luồng deploy khuyến nghị:
    - `JWT_SECRET` đủ mạnh
    - `DATABASE_URL`
    - `DIRECT_DATABASE_URL`
-   - `CORS_ORIGINS=https://nhaxedinhdung.vn,https://www.nhaxedinhdung.vn,https://admin.nhaxedinhdung.vn`
+   - `CORS_ORIGINS=https://nhaxedinhdung.vn,https://www.nhaxedinhdung.vn`
    - `VITE_API_URL=/api`
    - `RUN_SEED_ON_BOOT=false`
 2. Chạy stack production:
@@ -57,10 +56,8 @@ Luồng deploy khuyến nghị:
    - chỉ chạy `docker compose exec backend node prisma/seed.js` khi cần seed máy mới
 4. Copy file Nginx domain vào Ubuntu:
    - `/etc/nginx/sites-available/nhaxedinhdung.vn`
-   - `/etc/nginx/sites-available/admin.nhaxedinhdung.vn`
 5. Bật site:
    - `ln -s /etc/nginx/sites-available/nhaxedinhdung.vn /etc/nginx/sites-enabled/`
-   - `ln -s /etc/nginx/sites-available/admin.nhaxedinhdung.vn /etc/nginx/sites-enabled/`
    - `nginx -t`
    - `systemctl reload nginx`
 6. Cấp SSL bằng Certbot sau khi domain đã trỏ đúng về server
@@ -70,7 +67,7 @@ Lưu ý khi public:
 - Frontend và admin hiện gọi API same-origin qua `/api`, không nên hard-code `http://localhost:8080/api` trên server public.
 - Ảnh upload được gọi qua URL public `/image/...`, vì vậy Nginx public phải proxy `/image/` về backend.
 - Backend vẫn lưu file vật lý trong thư mục `uploads`, nhưng website chỉ nên dùng URL `/image/...`.
-- Nếu admin chạy ở subdomain riêng, build production của admin phải dùng base path `/`, không dùng `/admin/`.
+- Admin production hiện chạy tại `https://nhaxedinhdung.vn/admin`, vì vậy build production của admin phải dùng base path `/admin/`.
 
 ## Seed admin an toàn
 

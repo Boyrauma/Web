@@ -13,7 +13,6 @@ import { publishBookingEvent, subscribeBookingEvents } from "../services/booking
 import {
   fetchRecentTelegramLogs,
   sendBookingDeletedTelegramNotification,
-  sendBookingUpdatedTelegramNotification,
   sendTelegramTestMessage
 } from "../services/telegramService.js";
 
@@ -329,6 +328,7 @@ router.get("/vehicle-trip-payments", async (request, response) => {
           id: true,
           customerName: true,
           phoneNumber: true,
+          createdAt: true,
           tripDate: true,
           pickupLocation: true,
           dropoffLocation: true,
@@ -399,6 +399,7 @@ router.post("/vehicle-trip-payments", async (request, response) => {
           id: true,
           customerName: true,
           phoneNumber: true,
+          createdAt: true,
           tripDate: true,
           pickupLocation: true,
           dropoffLocation: true,
@@ -469,6 +470,7 @@ router.patch("/vehicle-trip-payments/:id", async (request, response) => {
           id: true,
           customerName: true,
           phoneNumber: true,
+          createdAt: true,
           tripDate: true,
           pickupLocation: true,
           dropoffLocation: true,
@@ -526,6 +528,7 @@ router.post("/vehicle-trip-payments/:id/restore", async (request, response) => {
           id: true,
           customerName: true,
           phoneNumber: true,
+          createdAt: true,
           tripDate: true,
           pickupLocation: true,
           dropoffLocation: true,
@@ -571,6 +574,7 @@ router.post("/vehicle-maintenances", async (request, response) => {
       vehicleId: parsed.data.vehicleId,
       title: parsed.data.title?.trim() || "Bảo dưỡng xe",
       maintenanceType: parsed.data.maintenanceType,
+      licensePlate: parsed.data.licensePlate ?? null,
       serviceDate: parsed.data.serviceDate ?? new Date(),
       nextServiceDate: parsed.data.nextServiceDate ?? null,
       odometerKm: parsed.data.odometerKm ?? null,
@@ -608,6 +612,7 @@ router.patch("/vehicle-maintenances/:id", async (request, response) => {
       vehicleId: parsed.data.vehicleId,
       title: parsed.data.title?.trim() || "Bảo dưỡng xe",
       maintenanceType: parsed.data.maintenanceType,
+      licensePlate: parsed.data.licensePlate ?? null,
       serviceDate: parsed.data.serviceDate ?? new Date(),
       nextServiceDate: parsed.data.nextServiceDate ?? null,
       odometerKm: parsed.data.odometerKm ?? null,
@@ -802,6 +807,7 @@ const vehicleMaintenanceSchema = z.object({
   vehicleId: z.string().min(1),
   title: optionalStringField,
   maintenanceType: z.string().min(1),
+  licensePlate: optionalStringField,
   serviceDate: optionalDateField,
   nextServiceDate: optionalDateField,
   odometerKm: optionalIntField,
@@ -1148,6 +1154,44 @@ router.post("/site-assets/logo", uploadBrandLogo.single("logo"), async (request,
   });
 });
 
+router.post(
+  "/site-assets/hero-background",
+  uploadBrandLogo.single("image"),
+  async (request, response) => {
+    if (!request.file) {
+      return response.status(400).json({ message: "Chưa có ảnh nền hero được tải lên." });
+    }
+
+    const isValidImage = await validateStoredImageFile(request.file.path);
+
+    if (!isValidImage) {
+      await removeUploadedFiles([request.file]);
+      return response.status(400).json({
+        message: "File tải lên không đúng định dạng ảnh hợp lệ."
+      });
+    }
+
+    let optimizedImage;
+
+    try {
+      optimizedImage = await optimizeStoredImageFile(request.file, {
+        maxWidth: 2200,
+        maxHeight: 1600,
+        quality: 84
+      });
+    } catch (error) {
+      await removeUploadedFiles([request.file, buildOptimizedCandidatePath(request.file.path)]);
+      return response.status(400).json({
+        message: "Không thể xử lý ảnh tải lên."
+      });
+    }
+
+    return response.status(201).json({
+      imageUrl: `/image/branding/${optimizedImage.filename}`
+    });
+  }
+);
+
 router.put("/site-settings/:id", async (request, response) => {
   const parsed = siteSettingSchema.safeParse(request.body);
 
@@ -1192,9 +1236,6 @@ router.patch("/booking-requests/:id/status", async (request, response) => {
   });
 
   publishBookingEvent("booking.updated", booking);
-  void sendBookingUpdatedTelegramNotification(booking).catch((error) => {
-    console.error("[telegram][booking.updated]", error.message);
-  });
 
   return response.json(booking);
 });
@@ -1223,13 +1264,12 @@ router.patch("/booking-requests/:id", async (request, response) => {
   });
 
   publishBookingEvent("booking.updated", booking);
-  void sendBookingUpdatedTelegramNotification(booking).catch((error) => {
-    console.error("[telegram][booking.updated]", error.message);
-  });
 
   return response.json(booking);
 });
 
 export default router;
+
+
 
 

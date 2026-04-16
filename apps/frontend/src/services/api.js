@@ -32,7 +32,12 @@ export function resolveAssetUrl(path) {
 }
 
 export async function fetchSiteSettings() {
-  const response = await fetch(`${API_URL}/site-settings`);
+  const response = await fetch(`${API_URL}/site-settings`, {
+    cache: "no-store",
+    headers: {
+      Accept: "application/json"
+    }
+  });
   const data = await readJsonResponse(response);
 
   if (!response.ok) {
@@ -43,7 +48,12 @@ export async function fetchSiteSettings() {
 }
 
 export async function fetchServices() {
-  const response = await fetch(`${API_URL}/services`);
+  const response = await fetch(`${API_URL}/services`, {
+    cache: "no-store",
+    headers: {
+      Accept: "application/json"
+    }
+  });
   const data = await readJsonResponse(response);
 
   if (!response.ok) {
@@ -54,7 +64,12 @@ export async function fetchServices() {
 }
 
 export async function fetchVehicleCategories() {
-  const response = await fetch(`${API_URL}/vehicle-categories`);
+  const response = await fetch(`${API_URL}/vehicle-categories`, {
+    cache: "no-store",
+    headers: {
+      Accept: "application/json"
+    }
+  });
   const data = await readJsonResponse(response);
 
   if (!response.ok) {
@@ -65,7 +80,12 @@ export async function fetchVehicleCategories() {
 }
 
 export async function fetchVehicleBySlug(slug) {
-  const response = await fetch(`${API_URL}/vehicles/${slug}`);
+  const response = await fetch(`${API_URL}/vehicles/${slug}`, {
+    cache: "no-store",
+    headers: {
+      Accept: "application/json"
+    }
+  });
   const data = await readJsonResponse(response);
 
   if (!response.ok) {

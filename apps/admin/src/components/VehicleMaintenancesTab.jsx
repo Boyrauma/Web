@@ -9,14 +9,9 @@ const maintenanceTypeOptions = [
 ];
 
 const maintenanceStatusOptions = [
-  { value: "scheduled", label: "Đã lên lịch" },
-  { value: "completed", label: "Đã hoàn thành" },
+  { value: "scheduled", label: "Lên lịch" },
+  { value: "completed", label: "Hoàn thành" },
   { value: "overdue", label: "Quá hạn" }
-];
-
-const maintenanceSortOptions = [
-  { value: "newest", label: "Ngày mới nhất" },
-  { value: "oldest", label: "Ngày cũ nhất" }
 ];
 
 function formatDate(value) {
@@ -62,16 +57,25 @@ export default function VehicleMaintenancesTab({
   resetMaintenanceForm
 }) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortOrder, setSortOrder] = useState("newest");
+  const [vehicleFilterId, setVehicleFilterId] = useState("all");
+  const [licensePlateFilter, setLicensePlateFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const visibleMaintenances = useMemo(() => {
     const search = searchQuery.trim().toLowerCase();
-    const matchedItems = maintenances.filter((item) => {
+    const plateSearch = licensePlateFilter.trim().toLowerCase();
+    return [...maintenances].filter((item) => {
+      const matchVehicle = vehicleFilterId === "all" ? true : item.vehicleId === vehicleFilterId;
+      const matchLicensePlate = plateSearch
+        ? (item.licensePlate ?? "").toLowerCase().includes(plateSearch)
+        : true;
+      if (!matchVehicle || !matchLicensePlate) return false;
+
       if (!search) return true;
 
       const content = [
         item.title,
         item.vehicle?.name,
+        item.licensePlate,
         item.note,
         getTypeLabel(item.maintenanceType),
         getStatusLabel(item.status)
@@ -81,14 +85,12 @@ export default function VehicleMaintenancesTab({
         .toLowerCase();
 
       return content.includes(search);
-    });
-
-    return [...matchedItems].sort((left, right) => {
+    }).sort((left, right) => {
       const leftTime = new Date(left.serviceDate ?? left.createdAt ?? 0).getTime();
       const rightTime = new Date(right.serviceDate ?? right.createdAt ?? 0).getTime();
-      return sortOrder === "oldest" ? leftTime - rightTime : rightTime - leftTime;
+      return rightTime - leftTime;
     });
-  }, [maintenances, searchQuery, sortOrder]);
+  }, [licensePlateFilter, maintenances, searchQuery, vehicleFilterId]);
   const totalPages = Math.max(1, Math.ceil(visibleMaintenances.length / PAGE_SIZE));
   const paginatedMaintenances = useMemo(
     () => getPageSlice(visibleMaintenances, currentPage, PAGE_SIZE),
@@ -103,7 +105,7 @@ export default function VehicleMaintenancesTab({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, sortOrder]);
+  }, [licensePlateFilter, searchQuery, vehicleFilterId]);
 
   return (
     <section className="mt-8 grid gap-6 xl:grid-cols-[430px_minmax(0,1fr)]">
@@ -170,19 +172,14 @@ export default function VehicleMaintenancesTab({
               </select>
             </label>
             <label className="space-y-2">
-              <span className="text-sm font-bold text-admin-ink">Trạng thái</span>
-              <select
-                className="admin-select"
-                name="status"
-                value={maintenanceForm.status}
+              <span className="text-sm font-bold text-admin-ink">Biển số xe</span>
+              <input
+                className="admin-field"
+                name="licensePlate"
+                placeholder="Ví dụ: 36A-12345"
+                value={maintenanceForm.licensePlate}
                 onChange={handleMaintenanceFormChange}
-              >
-                {maintenanceStatusOptions.map((status) => (
-                  <option key={status.value} value={status.value}>
-                    {status.label}
-                  </option>
-                ))}
-              </select>
+              />
             </label>
           </div>
 
@@ -271,10 +268,7 @@ export default function VehicleMaintenancesTab({
         </div>
 
         <div className="mt-6 rounded-[1rem] border border-slate-200 bg-slate-50/80 p-4">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-admin-accent">
-            Bộ lọc bảo dưỡng
-          </p>
-          <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_220px] xl:items-end">
+          <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_220px_220px] xl:items-end">
             <label className="space-y-2">
               <span className="text-sm font-bold text-admin-ink">Tìm kiếm</span>
               <input
@@ -286,18 +280,29 @@ export default function VehicleMaintenancesTab({
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm font-bold text-admin-ink">Sắp xếp</span>
+              <span className="text-sm font-bold text-admin-ink">Lọc theo xe</span>
               <select
                 className="admin-select"
-                value={sortOrder}
-                onChange={(event) => setSortOrder(event.target.value)}
+                value={vehicleFilterId}
+                onChange={(event) => setVehicleFilterId(event.target.value)}
               >
-                {maintenanceSortOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
+                <option value="all">Tất cả xe</option>
+                {vehicles.map((vehicle) => (
+                  <option key={vehicle.id} value={vehicle.id}>
+                    {vehicle.name}
                   </option>
                 ))}
               </select>
+            </label>
+
+            <label className="space-y-2">
+              <span className="text-sm font-bold text-admin-ink">Biển số</span>
+              <input
+                className="admin-field"
+                placeholder="Tìm theo biển số"
+                value={licensePlateFilter}
+                onChange={(event) => setLicensePlateFilter(event.target.value)}
+              />
             </label>
           </div>
         </div>
@@ -349,6 +354,7 @@ export default function VehicleMaintenancesTab({
 
               <div className="mt-4 flex flex-wrap gap-3 text-sm text-admin-steel">
                 <span>Số km: {item.odometerKm ?? "Chưa ghi"}</span>
+                <span>Biển số: {item.licensePlate || "Chưa ghi"}</span>
               </div>
 
               {item.note ? (
@@ -393,3 +399,4 @@ export default function VehicleMaintenancesTab({
     </section>
   );
 }
+

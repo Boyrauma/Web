@@ -56,13 +56,15 @@ export default function VehicleShowcaseSection({
         </div>
 
         <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-          <img
-            src={currentSelectedImage}
-            alt={selectedVehicle?.name ?? "Xe dịch vụ"}
-            loading="lazy"
-            decoding="async"
-            className="h-[400px] w-full rounded-[1.5rem] object-cover"
-          />
+          <div className="vehicle-stage vehicle-stage-showcase h-[400px] w-full rounded-[1.5rem]">
+            <img
+              src={currentSelectedImage}
+              alt={selectedVehicle?.name ?? "Xe dịch vụ"}
+              loading="lazy"
+              decoding="async"
+              className="vehicle-stage-image vehicle-stage-image-showcase"
+            />
+          </div>
 
           <div className="mt-4 flex flex-wrap gap-3">
             {selectedVehicleGallery.map((image) => (
@@ -74,13 +76,15 @@ export default function VehicleShowcaseSection({
                   selectedImageUrl === image.imageUrl ? "border-brand-amber" : "border-transparent"
                 }`}
               >
-                <img
-                  src={image.fullUrl}
-                  alt={image.altText ?? selectedVehicle?.name ?? "Xe dịch vụ"}
-                  loading="lazy"
-                  decoding="async"
-                  className="h-20 w-24 object-cover"
-                />
+                <div className="vehicle-thumb-stage h-20 w-24">
+                  <img
+                    src={image.fullUrl}
+                    alt={image.altText ?? selectedVehicle?.name ?? "Xe dịch vụ"}
+                    loading="lazy"
+                    decoding="async"
+                    className="vehicle-thumb-image"
+                  />
+                </div>
               </button>
             ))}
           </div>

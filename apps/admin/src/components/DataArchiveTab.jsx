@@ -1,12 +1,5 @@
-﻿import { useMemo, useState } from "react";
-
-import { useEffect } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import AdminPagination, { PAGE_SIZE, getPageSlice } from "./AdminPagination";
-
-const dataSortOptions = [
-  { value: "newest", label: "Ngày mới nhất" },
-  { value: "oldest", label: "Ngày cũ nhất" }
-];
 
 function formatDateTime(value) {
   if (!value) return "Chưa có thời gian";
@@ -63,44 +56,25 @@ function getMonthKey(value) {
   return `${year}-${month}`;
 }
 
-function buildScheduleEntries(items = [], storageStatus = "active") {
-  return items.map((note) => ({
-    id: `schedule-${storageStatus}-${note.id}`,
-    type: "schedule",
-    storageStatus,
-    source: note.bookingRequestId ? "BK" : "TT",
-    title: note.title || "Lịch xe",
-    vehicleName: note.vehicle?.name ?? "Chưa có xe",
-    customerName: note.customerName ?? note.bookingRequest?.customerName ?? "Chưa ghi tên",
-    phoneNumber:
-      note.phoneNumber ?? note.bookingRequest?.phoneNumber ?? "Chưa ghi số điện thoại",
-    pickupLocation:
-      note.pickupLocation ?? note.bookingRequest?.pickupLocation ?? "Chưa có điểm đón",
-    dropoffLocation:
-      note.dropoffLocation ?? note.bookingRequest?.dropoffLocation ?? "Chưa có điểm trả",
-    note: note.note ?? "",
-    statusLabel:
-      note.status === "confirmed"
-        ? "Đã chốt xe"
-        : note.status === "completed"
-          ? "Đã hoàn thành"
-          : note.status === "cancelled"
-            ? "Đã hủy"
-            : "Đã ghi lịch",
-    amount: null,
-    referenceDate: note.tripDate ?? note.createdAt,
-    archivedAt: note.archivedAt ?? null
-  }));
+function getSourceBadgeClass(source) {
+  return source === "BK" ? "bg-sky-100 text-sky-700" : "bg-violet-100 text-violet-700";
 }
 
-function buildPaymentEntries(items = [], storageStatus = "active") {
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function buildPaymentEntries(items = [], storageStatus = "status") {
   return items.map((payment) => ({
     id: `payment-${storageStatus}-${payment.id}`,
-    type: "payment",
-    storageStatus,
-    source:
-      payment.bookingRequestId || payment.scheduleNote?.bookingRequestId ? "BK" : "TT",
+    typeLabel: "Tiền xe",
     title: payment.title || "Tiền xe",
+    statusLabel: "DONE",
+    statusTone: "bg-emerald-100 text-emerald-700",
     vehicleName: payment.vehicle?.name ?? payment.scheduleNote?.vehicle?.name ?? "Chưa có xe",
     customerName:
       payment.customerName ??
@@ -123,60 +97,153 @@ function buildPaymentEntries(items = [], storageStatus = "active") {
       payment.bookingRequest?.dropoffLocation ??
       "Chưa có điểm trả",
     note: payment.note ?? "",
-    statusLabel: payment.paymentStatus === "paid" ? "Đã thu" : "Chưa thu",
     amount: payment.amount ?? null,
-    referenceDate: payment.tripDate ?? payment.createdAt,
-    archivedAt: payment.archivedAt ?? null
+    source: payment.bookingRequestId || payment.scheduleNote?.bookingRequestId ? "BK" : "TT",
+    bookingCreatedAt: payment.bookingRequest?.createdAt ?? null,
+    storageStatus,
+    referenceDate:
+      payment.tripDate ?? payment.collectedAt ?? payment.archivedAt ?? payment.updatedAt ?? payment.createdAt
   }));
 }
 
-export default function DataArchiveTab({
-  notes,
-  archivedNotes,
-  payments,
-  archivedPayments
-}) {
+function buildArchiveEntries({ payments, archivedPayments }) {
+  return [
+    ...buildPaymentEntries(
+      payments.filter((payment) => payment.paymentStatus === "paid"),
+      "status"
+    ),
+    ...buildPaymentEntries(archivedPayments, "archived")
+  ];
+}
+
+function exportArchiveItemsToExcel(items) {
+  const rows = items
+    .map(
+      (item) => `
+        <tr class="data-row">
+          <td class="cell">${escapeHtml(item.source)}</td>
+          <td class="cell">${escapeHtml(item.vehicleName)}</td>
+          <td class="cell">${escapeHtml(item.title)}</td>
+          <td class="cell">${escapeHtml(item.customerName)}</td>
+          <td class="cell phone-cell">="${escapeHtml(item.phoneNumber)}"</td>
+          <td class="cell">${escapeHtml(formatDateTime(item.referenceDate))}</td>
+          <td class="cell">${escapeHtml(formatDateTime(item.bookingCreatedAt))}</td>
+          <td class="cell">${escapeHtml(item.pickupLocation)}</td>
+          <td class="cell">${escapeHtml(item.dropoffLocation)}</td>
+          <td class="cell">${escapeHtml(item.statusLabel)}</td>
+          <td class="cell">${escapeHtml(formatCurrency(item.amount))}</td>
+          <td class="cell note-cell">${escapeHtml(item.note)}</td>
+        </tr>
+      `
+    )
+    .join("");
+
+  const html = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office"
+          xmlns:x="urn:schemas-microsoft-com:office:excel"
+          xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta charset="utf-8" />
+        <style>
+          body { font-family: Arial, sans-serif; background: #ffffff; color: #14233c; }
+          .report-wrap { padding: 20px; }
+          table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+          .report-cell { border: 1px solid #b8c4d6; padding: 10px 8px; text-align: center; vertical-align: middle; }
+          .report-title-cell { background: #eef3f9; color: #14233c; font-size: 20px; font-weight: 700; }
+          .report-subtitle-cell { background: #f8fafc; color: #5b6880; font-size: 11px; }
+          .head-cell { background: #1f3352; color: #ffffff; border: 1px solid #b8c4d6; padding: 10px 8px; font-size: 11px; font-weight: 700; text-align: center; vertical-align: middle; }
+          .cell { border: 1px solid #cfd7e3; padding: 10px 8px; font-size: 11px; text-align: center; vertical-align: middle; word-wrap: break-word; white-space: normal; }
+          .data-row:nth-child(even) .cell { background: #f7f9fc; }
+          .phone-cell { mso-number-format: "\\@"; text-align: center; vertical-align: middle; }
+          .note-cell { white-space: pre-wrap; }
+        </style>
+      </head>
+      <body>
+        <div class="report-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="report-cell report-title-cell" colspan="12">Báo cáo dữ liệu hoàn tất</th>
+              </tr>
+              <tr>
+                <th class="report-cell report-subtitle-cell" colspan="12">Ngày xuất: ${escapeHtml(
+                  new Date().toLocaleString("vi-VN")
+                )}</th>
+              </tr>
+              <tr>
+                <th class="head-cell">Nguồn</th>
+                <th class="head-cell">Xe</th>
+                <th class="head-cell">Tiêu đề</th>
+                <th class="head-cell">Khách hàng</th>
+                <th class="head-cell">Số điện thoại</th>
+                <th class="head-cell">Thời gian</th>
+                <th class="head-cell">Tạo booking</th>
+                <th class="head-cell">Điểm đón</th>
+                <th class="head-cell">Điểm trả</th>
+                <th class="head-cell">Trạng thái</th>
+                <th class="head-cell">Giá trị</th>
+                <th class="head-cell">Ghi chú</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </body>
+    </html>
+  `;
+
+  const blob = new Blob([`\ufeff${html}`], {
+    type: "application/vnd.ms-excel;charset=utf-8;"
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = `du-lieu-${new Date().toISOString().slice(0, 10)}.xls`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+export default function DataArchiveTab({ payments, archivedPayments }) {
   const defaultFilters = {
-    typeFilter: "all",
     timeFilter: "all",
     selectedDate: "",
     selectedMonth: "",
-    vehicleSearch: ""
+    keyword: ""
   };
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [timeFilter, setTimeFilter] = useState("all");
-  const [selectedDate, setSelectedDate] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState("");
-  const [vehicleSearch, setVehicleSearch] = useState("");
-  const [draftTypeFilter, setDraftTypeFilter] = useState(defaultFilters.typeFilter);
+  const [timeFilter, setTimeFilter] = useState(defaultFilters.timeFilter);
+  const [selectedDate, setSelectedDate] = useState(defaultFilters.selectedDate);
+  const [selectedMonth, setSelectedMonth] = useState(defaultFilters.selectedMonth);
+  const [keyword, setKeyword] = useState(defaultFilters.keyword);
   const [draftTimeFilter, setDraftTimeFilter] = useState(defaultFilters.timeFilter);
   const [draftSelectedDate, setDraftSelectedDate] = useState(defaultFilters.selectedDate);
   const [draftSelectedMonth, setDraftSelectedMonth] = useState(defaultFilters.selectedMonth);
-  const [draftVehicleSearch, setDraftVehicleSearch] = useState(defaultFilters.vehicleSearch);
-  const [sortOrder, setSortOrder] = useState("newest");
-  const [draftSortOrder, setDraftSortOrder] = useState("newest");
+  const [draftKeyword, setDraftKeyword] = useState(defaultFilters.keyword);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const dataItems = useMemo(() => {
-    const entries = [
-      ...buildScheduleEntries(notes, "active"),
-      ...buildScheduleEntries(archivedNotes, "archived"),
-      ...buildPaymentEntries(payments, "active"),
-      ...buildPaymentEntries(archivedPayments, "archived")
-    ];
-
-    return entries.sort(
-      (left, right) =>
-        new Date(right.referenceDate ?? 0).getTime() - new Date(left.referenceDate ?? 0).getTime()
-    );
-  }, [archivedNotes, archivedPayments, notes, payments]);
+  const archiveEntries = useMemo(
+    () => buildArchiveEntries({ payments, archivedPayments }),
+    [archivedPayments, payments]
+  );
 
   const filteredItems = useMemo(() => {
-    const search = vehicleSearch.trim().toLowerCase();
+    const search = keyword.trim().toLowerCase();
 
-    return dataItems.filter((item) => {
-      const matchesType = typeFilter === "all" ? true : item.type === typeFilter;
-      const matchesVehicle = search ? item.vehicleName.toLowerCase().includes(search) : true;
+    return archiveEntries.filter((item) => {
+      const haystack = [
+        item.title,
+        item.vehicleName,
+        item.customerName,
+        item.phoneNumber,
+        item.pickupLocation,
+        item.dropoffLocation,
+        item.note
+      ];
+      const matchesKeyword = search
+        ? haystack.filter(Boolean).join(" ").toLowerCase().includes(search)
+        : true;
       const dayKey = getDayKey(item.referenceDate);
       const monthKey = getMonthKey(item.referenceDate);
       const matchesTime =
@@ -186,18 +253,20 @@ export default function DataArchiveTab({
             ? Boolean(selectedDate) && dayKey === selectedDate
             : Boolean(selectedMonth) && monthKey === selectedMonth;
 
-      return matchesType && matchesVehicle && matchesTime;
+      return matchesKeyword && matchesTime;
     });
-  }, [dataItems, selectedDate, selectedMonth, timeFilter, typeFilter, vehicleSearch]);
+  }, [archiveEntries, keyword, selectedDate, selectedMonth, timeFilter]);
+
   const visibleItems = useMemo(
     () =>
       [...filteredItems].sort((left, right) => {
         const leftTime = new Date(left.referenceDate ?? 0).getTime();
         const rightTime = new Date(right.referenceDate ?? 0).getTime();
-        return sortOrder === "oldest" ? leftTime - rightTime : rightTime - leftTime;
+        return rightTime - leftTime;
       }),
-    [filteredItems, sortOrder]
+    [filteredItems]
   );
+
   const totalPages = Math.max(1, Math.ceil(visibleItems.length / PAGE_SIZE));
   const paginatedItems = useMemo(
     () => getPageSlice(visibleItems, currentPage, PAGE_SIZE),
@@ -238,28 +307,22 @@ export default function DataArchiveTab({
   }
 
   function applyFilters() {
-    setTypeFilter(draftTypeFilter);
     setTimeFilter(draftTimeFilter);
     setSelectedDate(draftSelectedDate);
     setSelectedMonth(draftSelectedMonth);
-    setVehicleSearch(draftVehicleSearch);
-    setSortOrder(draftSortOrder);
+    setKeyword(draftKeyword);
     setCurrentPage(1);
   }
 
-  function clearTimeFilters() {
-    setTypeFilter(defaultFilters.typeFilter);
+  function clearFilters() {
     setTimeFilter(defaultFilters.timeFilter);
     setSelectedDate(defaultFilters.selectedDate);
     setSelectedMonth(defaultFilters.selectedMonth);
-    setVehicleSearch(defaultFilters.vehicleSearch);
-    setDraftTypeFilter(defaultFilters.typeFilter);
+    setKeyword(defaultFilters.keyword);
     setDraftTimeFilter(defaultFilters.timeFilter);
     setDraftSelectedDate(defaultFilters.selectedDate);
     setDraftSelectedMonth(defaultFilters.selectedMonth);
-    setDraftVehicleSearch(defaultFilters.vehicleSearch);
-    setSortOrder("newest");
-    setDraftSortOrder("newest");
+    setDraftKeyword(defaultFilters.keyword);
     setCurrentPage(1);
   }
 
@@ -270,42 +333,21 @@ export default function DataArchiveTab({
           <div>
             <h3 className="admin-title text-2xl font-extrabold text-admin-ink">Dữ liệu</h3>
             <p className="mt-2 text-sm text-admin-steel">
-              Lưu tự động toàn bộ lịch xe và tiền xe để truy xuất theo ngày, tháng hoặc theo tên xe.
-            </p>
-            <p className="mt-3 text-xs font-bold uppercase tracking-[0.22em] text-admin-accent">
-              Lọc dữ liệu
+              Chỉ lưu các chuyến đã thu tiền để tra cứu lịch sử hoàn tất.
             </p>
           </div>
-          <span className="admin-pill bg-slate-100 text-slate-700">
-            {filteredItems.length} dữ liệu
-          </span>
+          <span className="admin-pill bg-slate-100 text-slate-700">{visibleItems.length} mục dữ liệu</span>
         </div>
 
         <div className="mt-6 rounded-[1rem] border border-slate-200 bg-slate-50/80 p-4">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-admin-accent">
-            Bộ lọc tra cứu
-          </p>
-          <div className="mt-4 grid gap-4 xl:grid-cols-[180px_220px_minmax(0,1fr)_220px_176px_176px] xl:items-end">
+          <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_176px_176px_176px] xl:items-end">
             <label className="space-y-2">
-              <span className="text-sm font-bold text-admin-ink">Loại dữ liệu</span>
-              <select
-                className="admin-select"
-                value={draftTypeFilter}
-                onChange={(event) => setDraftTypeFilter(event.target.value)}
-              >
-                <option value="all">Tất cả</option>
-                <option value="schedule">Lịch xe</option>
-                <option value="payment">Tiền xe</option>
-              </select>
-            </label>
-
-            <label className="space-y-2">
-              <span className="text-sm font-bold text-admin-ink">Tên xe</span>
+              <span className="text-sm font-bold text-admin-ink">Từ khóa tra cứu</span>
               <input
                 className="admin-field"
-                placeholder="Tìm theo tên xe"
-                value={draftVehicleSearch}
-                onChange={(event) => setDraftVehicleSearch(event.target.value)}
+                placeholder="Tìm theo khách, xe, số điện thoại, lộ trình"
+                value={draftKeyword}
+                onChange={(event) => setDraftKeyword(event.target.value)}
               />
             </label>
 
@@ -344,21 +386,6 @@ export default function DataArchiveTab({
               </div>
             </div>
 
-            <label className="space-y-2">
-              <span className="text-sm font-bold text-admin-ink">Sắp xếp</span>
-              <select
-                className="admin-select"
-                value={draftSortOrder}
-                onChange={(event) => setDraftSortOrder(event.target.value)}
-              >
-                {dataSortOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
             <button
               type="button"
               onClick={applyFilters}
@@ -368,10 +395,17 @@ export default function DataArchiveTab({
             </button>
             <button
               type="button"
-              onClick={clearTimeFilters}
+              onClick={clearFilters}
               className="admin-button-secondary min-w-44 justify-center"
             >
               Bỏ lọc
+            </button>
+            <button
+              type="button"
+              onClick={() => exportArchiveItemsToExcel(visibleItems)}
+              className="admin-button-secondary min-w-44 justify-center"
+            >
+              Xuất Excel
             </button>
           </div>
         </div>
@@ -394,39 +428,24 @@ export default function DataArchiveTab({
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span
-                          className={`admin-pill ${
-                            item.type === "payment"
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-sky-100 text-sky-700"
-                          }`}
-                        >
-                          {item.type === "payment" ? "Tiền xe" : "Lịch xe"}
-                        </span>
-                        <span
-                          className={`admin-pill ${
-                            item.storageStatus === "archived"
-                              ? "bg-slate-200 text-slate-700"
-                              : "bg-violet-100 text-violet-700"
-                          }`}
-                        >
-                          {item.storageStatus === "archived" ? "Đã lưu" : "Đang dùng"}
-                        </span>
-                        <span className="admin-pill bg-white text-slate-700">{item.source}</span>
+                        <span className={`admin-pill ${getSourceBadgeClass(item.source)}`}>{item.source}</span>
+                        {item.storageStatus === "archived" ? (
+                          <span className="admin-pill bg-slate-200 text-slate-700">Đã lưu</span>
+                        ) : null}
                         <p className="text-lg font-extrabold text-admin-ink">{item.title}</p>
                       </div>
                       <p className="mt-2 text-sm font-semibold text-admin-steel">
                         {item.vehicleName} - {formatDateTime(item.referenceDate)}
                       </p>
+                      {item.bookingCreatedAt ? (
+                        <p className="mt-1 text-xs font-semibold text-slate-500">
+                          Tạo booking: {formatDateTime(item.bookingCreatedAt)}
+                        </p>
+                      ) : null}
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                      <span className="admin-pill bg-white text-slate-700">{item.statusLabel}</span>
-                      {item.storageStatus === "archived" && item.archivedAt ? (
-                        <span className="admin-pill bg-slate-200 text-slate-700">
-                          Lưu lúc {formatDateTime(item.archivedAt)}
-                        </span>
-                      ) : null}
+                      <span className={`admin-pill ${item.statusTone}`}>{item.statusLabel}</span>
                     </div>
                   </div>
 
@@ -451,9 +470,7 @@ export default function DataArchiveTab({
                       <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
                         Giá trị
                       </p>
-                      <p className="mt-2 text-sm font-semibold text-admin-ink">
-                        {item.type === "payment" ? formatCurrency(item.amount) : "Lịch vận hành"}
-                      </p>
+                      <p className="mt-2 text-sm font-semibold text-admin-ink">{formatCurrency(item.amount)}</p>
                     </div>
                   </div>
 
@@ -470,7 +487,7 @@ export default function DataArchiveTab({
 
         {groupedItems.length ? null : (
           <div className="admin-card rounded-[1.25rem] border border-dashed border-slate-300 px-5 py-10 text-center text-sm text-admin-steel">
-            Không có dữ liệu phù hợp với bộ lọc hiện tại.
+            Không có dữ liệu đã thu tiền phù hợp với bộ lọc hiện tại.
           </div>
         )}
 
