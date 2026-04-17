@@ -188,12 +188,6 @@ export function buildVehicleSchema({ vehicle, siteName, canonicalUrl, images = [
       brand: {
         "@type": "Brand",
         name: siteName
-      },
-      offers: {
-        "@type": "Offer",
-        priceCurrency: "VND",
-        availability: "https://schema.org/InStock",
-        url: canonicalUrl
       }
     },
     {
