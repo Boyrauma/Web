@@ -13,11 +13,60 @@ import { applyDocumentBranding } from "../utils/branding";
 import { applySeo, buildLocalBusinessSchema } from "../utils/seo";
 import {
   createBookingRequest,
+  fetchBookingCaptcha,
   fetchServices,
   fetchSiteSettings,
   fetchVehicleCategories,
   resolveAssetUrl
 } from "../services/api";
+
+async function sha256Hex(input) {
+  if (!window.crypto?.subtle) {
+    throw new Error("Trình duyệt không hỗ trợ xác thực nâng cao.");
+  }
+
+  const buffer = await window.crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(input)
+  );
+  return Array.from(new Uint8Array(buffer), (value) => value.toString(16).padStart(2, "0")).join("");
+}
+
+async function solveProofOfWork({ challenge, difficulty }) {
+  const prefix = "0".repeat(Math.max(1, difficulty));
+
+  for (let nonce = 0; nonce < 200000; nonce += 1) {
+    const hash = await sha256Hex(`${challenge}:${nonce}`);
+
+    if (hash.startsWith(prefix)) {
+      return String(nonce);
+    }
+  }
+
+  throw new Error("Không thể hoàn tất xác thực nâng cao. Vui lòng tải lại captcha.");
+}
+
+function buildTurnstileState(captcha, resetKey) {
+  const enabled = Boolean(captcha?.turnstile?.enabled && captcha?.turnstile?.siteKey);
+
+  return {
+    enabled,
+    siteKey: enabled ? captcha.turnstile.siteKey : "",
+    token: "",
+    error: "",
+    resetKey: resetKey + 1
+  };
+}
+
+function buildFallbackTurnstileState(resetKey) {
+  return {
+    enabled: false,
+    siteKey: "",
+    token: "",
+    error: "",
+    resetKey: resetKey + 1
+  };
+}
 
 export default function HomePage() {
   const [siteSettings, setSiteSettings] = useState([]);
@@ -39,9 +88,29 @@ export default function HomePage() {
     passengerCount: "",
     pickupLocation: "",
     dropoffLocation: "",
-    note: ""
+    note: "",
+    captchaAnswer: "",
+    website: ""
   });
   const [submitState, setSubmitState] = useState({ loading: false, message: "", error: "" });
+  const [captchaState, setCaptchaState] = useState({
+    loading: true,
+    prompt: "",
+    token: "",
+    proofChallenge: "",
+    proofDifficulty: 0,
+    proofNonce: "",
+    proofLoading: false,
+    proofReady: false,
+    proofError: ""
+  });
+  const [turnstileState, setTurnstileState] = useState({
+    enabled: false,
+    siteKey: "",
+    token: "",
+    error: "",
+    resetKey: 0
+  });
 
   useEffect(() => {
     let ignore = false;
@@ -76,6 +145,102 @@ export default function HomePage() {
       ignore = true;
     };
   }, []);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadCaptcha() {
+      try {
+        const captcha = await fetchBookingCaptcha();
+
+        if (!ignore) {
+          setCaptchaState({
+            loading: false,
+            prompt: captcha.prompt,
+            token: captcha.token,
+            proofChallenge: captcha.proofOfWork?.challenge ?? "",
+            proofDifficulty: Number(captcha.proofOfWork?.difficulty ?? 0),
+            proofNonce: "",
+            proofLoading: true,
+            proofReady: false,
+            proofError: ""
+          });
+          setTurnstileState((current) => buildTurnstileState(captcha, current.resetKey));
+        }
+      } catch {
+        if (!ignore) {
+          setCaptchaState({
+            loading: false,
+            prompt: "",
+            token: "",
+            proofChallenge: "",
+            proofDifficulty: 0,
+            proofNonce: "",
+            proofLoading: false,
+            proofReady: false,
+            proofError: "Không thể tải captcha. Vui lòng thử lại."
+          });
+          setTurnstileState((current) => buildFallbackTurnstileState(current.resetKey));
+        }
+      }
+    }
+
+    loadCaptcha();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function runProofOfWork() {
+      if (!captchaState.token || !captchaState.proofChallenge || !captchaState.proofDifficulty) {
+        return;
+      }
+
+      try {
+        const proofNonce = await solveProofOfWork({
+          challenge: captchaState.proofChallenge,
+          difficulty: captchaState.proofDifficulty
+        });
+
+        if (!cancelled) {
+          setCaptchaState((current) => ({
+            ...current,
+            proofNonce,
+            proofLoading: false,
+            proofReady: true,
+            proofError: ""
+          }));
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setCaptchaState((current) => ({
+            ...current,
+            proofNonce: "",
+            proofLoading: false,
+            proofReady: false,
+            proofError: error.message
+          }));
+        }
+      }
+    }
+
+    if (captchaState.proofLoading) {
+      runProofOfWork();
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    captchaState.proofChallenge,
+    captchaState.proofDifficulty,
+    captchaState.proofLoading,
+    captchaState.token
+  ]);
 
   const settingsMap = useMemo(
     () => Object.fromEntries(siteSettings.map((item) => [item.key, item.value])),
@@ -164,9 +329,125 @@ export default function HomePage() {
     setSelectedImageUrl(selectedVehicleGallery[0].imageUrl);
   }, [selectedVehicleSlug, selectedVehicleGallery]);
 
+  async function refreshCaptcha() {
+    setCaptchaState((current) => ({
+      ...current,
+      loading: true,
+      prompt: "",
+      token: "",
+      proofChallenge: "",
+      proofDifficulty: 0,
+      proofNonce: "",
+      proofLoading: true,
+      proofReady: false,
+      proofError: ""
+    }));
+    setTurnstileState((current) => buildFallbackTurnstileState(current.resetKey));
+
+    try {
+      const captcha = await fetchBookingCaptcha();
+      setCaptchaState({
+        loading: false,
+        prompt: captcha.prompt,
+        token: captcha.token,
+        proofChallenge: captcha.proofOfWork?.challenge ?? "",
+        proofDifficulty: Number(captcha.proofOfWork?.difficulty ?? 0),
+        proofNonce: "",
+        proofLoading: true,
+        proofReady: false,
+        proofError: ""
+      });
+      setTurnstileState((current) => buildTurnstileState(captcha, current.resetKey));
+    } catch {
+      setCaptchaState({
+        loading: false,
+        prompt: "",
+        token: "",
+        proofChallenge: "",
+        proofDifficulty: 0,
+        proofNonce: "",
+        proofLoading: false,
+        proofReady: false,
+        proofError: "Không thể tải captcha. Vui lòng thử lại."
+      });
+      setTurnstileState((current) => buildFallbackTurnstileState(current.resetKey));
+    }
+  }
+
   function handleChange(event) {
     const { name, value } = event.target;
+    setSubmitState((current) =>
+      current.error || current.message ? { loading: false, message: "", error: "" } : current
+    );
     setFormData((current) => ({ ...current, [name]: value }));
+  }
+
+  function handleTurnstileTokenChange(token) {
+    setTurnstileState((current) => ({
+      ...current,
+      token,
+      error: token ? "" : current.error
+    }));
+  }
+
+  function handleTurnstileError(errorMessage) {
+    setTurnstileState((current) => ({
+      ...current,
+      token: "",
+      error: errorMessage
+    }));
+  }
+
+  function validateBookingForm(data) {
+    const requiredFields = [
+      data.customerName,
+      data.phoneNumber,
+      data.tripDate,
+      data.passengerCount,
+      data.pickupLocation,
+      data.dropoffLocation,
+      data.captchaAnswer
+    ];
+
+    if (requiredFields.some((value) => !String(value ?? "").trim())) {
+      return "Vui lòng nhập đầy đủ thông tin liên hệ.";
+    }
+
+    if (data.customerName.trim().length < 2) {
+      return "Vui lòng nhập họ và tên hợp lệ.";
+    }
+
+    const phoneDigits = data.phoneNumber.replace(/\D/g, "");
+    if (phoneDigits.length < 8 || phoneDigits.length > 15) {
+      return "Vui lòng nhập số điện thoại hợp lệ.";
+    }
+
+    const passengerCount = Number(data.passengerCount);
+    if (!Number.isInteger(passengerCount) || passengerCount <= 0) {
+      return "Vui lòng nhập số người hợp lệ.";
+    }
+
+    if (Number.isNaN(Date.parse(data.tripDate))) {
+      return "Vui lòng chọn ngày đi hợp lệ.";
+    }
+
+    if (!captchaState.token) {
+      return "Không thể tải captcha. Vui lòng thử lại sau ít phút.";
+    }
+
+    if (captchaState.proofLoading) {
+      return "Hệ thống đang hoàn tất xác thực chống bot. Vui lòng chờ thêm một chút.";
+    }
+
+    if (!captchaState.proofNonce) {
+      return captchaState.proofError || "Xác thực chống bot chưa sẵn sàng. Vui lòng thử lại.";
+    }
+
+    if (turnstileState.enabled && !turnstileState.token) {
+      return turnstileState.error || "Vui lòng hoàn tất xác thực Cloudflare trước khi gửi.";
+    }
+
+    return "";
   }
 
   function handleOpenFleetGallery(title, images, index = 0) {
@@ -196,10 +477,30 @@ export default function HomePage() {
 
   async function handleSubmit(event) {
     event.preventDefault();
+    const validationError = validateBookingForm(formData);
+
+    if (validationError) {
+      setSubmitState({ loading: false, message: "", error: validationError });
+      return;
+    }
+
     setSubmitState({ loading: true, message: "", error: "" });
 
     try {
-      await createBookingRequest(formData);
+      await createBookingRequest({
+        customerName: formData.customerName.trim(),
+        phoneNumber: formData.phoneNumber.trim(),
+        tripDate: formData.tripDate,
+        passengerCount: formData.passengerCount.trim(),
+        pickupLocation: formData.pickupLocation.trim(),
+        dropoffLocation: formData.dropoffLocation.trim(),
+        note: formData.note.trim(),
+        bookingCaptchaToken: captchaState.token,
+        bookingCaptchaAnswer: formData.captchaAnswer.trim(),
+        bookingProofNonce: captchaState.proofNonce,
+        turnstileToken: turnstileState.token,
+        website: formData.website
+      });
       setSubmitState({
         loading: false,
         message: "Yêu cầu đã được gửi. Chúng tôi sẽ liên hệ sớm.",
@@ -212,9 +513,17 @@ export default function HomePage() {
         passengerCount: "",
         pickupLocation: "",
         dropoffLocation: "",
-        note: ""
+        note: "",
+        captchaAnswer: "",
+        website: ""
       });
+      await refreshCaptcha();
     } catch (error) {
+      setFormData((current) => ({
+        ...current,
+        captchaAnswer: ""
+      }));
+      await refreshCaptcha();
       setSubmitState({ loading: false, message: "", error: error.message });
     }
   }
@@ -261,6 +570,10 @@ export default function HomePage() {
           address={settingsMap.address}
           formData={formData}
           submitState={submitState}
+          captchaState={captchaState}
+          turnstileState={turnstileState}
+          handleTurnstileTokenChange={handleTurnstileTokenChange}
+          handleTurnstileError={handleTurnstileError}
           handleChange={handleChange}
           handleSubmit={handleSubmit}
         />
@@ -287,4 +600,3 @@ export default function HomePage() {
     </div>
   );
 }
-

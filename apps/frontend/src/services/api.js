@@ -95,6 +95,22 @@ export async function fetchVehicleBySlug(slug) {
   return data;
 }
 
+export async function fetchBookingCaptcha() {
+  const response = await fetch(`${API_URL}/booking-captcha`, {
+    cache: "no-store",
+    headers: {
+      Accept: "application/json"
+    }
+  });
+  const data = await readJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(data?.message ?? "Không thể tải captcha lúc này.");
+  }
+
+  return data;
+}
+
 export async function createBookingRequest(payload) {
   const response = await fetch(`${API_URL}/booking-requests`, {
     method: "POST",
@@ -106,6 +122,16 @@ export async function createBookingRequest(payload) {
   const data = await readJsonResponse(response);
 
   if (!response.ok) {
+    if (data?.message === "Invalid booking payload") {
+      throw new Error("Vui lòng nhập đầy đủ thông tin liên hệ hợp lệ.");
+    }
+    if (data?.message === "Xác thực captcha không hợp lệ. Vui lòng thử lại.") {
+      throw new Error(data.message);
+    }
+    if (data?.message === "Xác thực chống bot không hợp lệ. Vui lòng thử lại.") {
+      throw new Error(data.message);
+    }
+
     throw new Error(data?.message ?? "Không thể gửi yêu cầu lúc này.");
   }
 

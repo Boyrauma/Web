@@ -10,6 +10,8 @@ export default function VehicleGalleryLightbox({
   onSelect
 }) {
   const activeImage = gallery[currentIndex];
+  const galleryLabel = title ? `Bộ ảnh ${title}` : "Bộ ảnh xe";
+  const imageLabel = activeImage?.altText ?? title ?? `Ảnh xe ${currentIndex + 1}`;
 
   useEffect(() => {
     if (!gallery.length) return undefined;
@@ -34,102 +36,122 @@ export default function VehicleGalleryLightbox({
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/88 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[70] bg-slate-950/78 p-3 backdrop-blur-md sm:p-5"
       role="dialog"
       aria-modal="true"
-      aria-label={title ? `Bộ ảnh ${title}` : "Bộ ảnh xe"}
+      aria-label={galleryLabel}
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-6xl rounded-[2rem] bg-slate-950/90 p-4 text-white shadow-2xl sm:p-6"
+        className="relative mx-auto flex h-full w-full max-w-[96rem] flex-col overflow-hidden rounded-[2rem] border border-white/12 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_26%),linear-gradient(180deg,rgba(18,27,46,0.92),rgba(7,12,23,0.94))] text-white shadow-[0_38px_120px_rgba(0,0,0,0.45)]"
         onClick={(event) => event.stopPropagation()}
       >
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_top,rgba(184,138,59,0.18),transparent_58%)]" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-[linear-gradient(180deg,transparent,rgba(6,10,18,0.38))]" />
+
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-xl font-bold text-white transition hover:bg-white/20"
+          className="absolute right-4 top-4 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-slate-950/45 text-xl font-bold text-white backdrop-blur transition hover:bg-white/15 sm:right-5 sm:top-5"
           aria-label="Đóng bộ ảnh"
         >
           ×
         </button>
 
-        <div className="flex flex-wrap items-center justify-between gap-4 pr-14">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.28em] text-brand-amber">
+        <div className="relative z-10 flex flex-wrap items-start justify-between gap-4 px-5 pb-4 pt-5 sm:px-7 sm:pt-6">
+          <div className="max-w-3xl">
+            <p className="text-[11px] font-bold uppercase tracking-[0.34em] text-brand-amber/90">
               Bộ ảnh đội xe
             </p>
             <h3 className="mt-2 text-2xl font-black text-white sm:text-3xl">{title}</h3>
+            <p className="mt-2 max-w-2xl text-sm text-slate-300 sm:text-[15px]">
+              Xem ảnh ở kích thước lớn để đối chiếu kiểu xe, không gian và tình trạng thực tế.
+            </p>
           </div>
-          <p className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-200">
+          <p className="rounded-full border border-white/10 bg-white/8 px-4 py-2 text-sm font-bold text-slate-100 backdrop-blur">
             {currentIndex + 1} / {gallery.length}
           </p>
         </div>
 
-        <div className="mt-6 grid items-center gap-4 lg:grid-cols-[72px_minmax(0,1fr)_72px]">
-          <button
-            type="button"
-            onClick={onPrev}
-            className="hidden h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-white/10 text-2xl text-white transition hover:bg-white/20 lg:inline-flex"
-            aria-label="Ảnh trước"
-          >
-            ‹
-          </button>
+        <div className="relative z-10 flex min-h-0 flex-1 px-3 pb-3 sm:px-5 sm:pb-5">
+          <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-[1.7rem] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_28%),linear-gradient(180deg,rgba(22,31,53,0.8),rgba(12,18,32,0.92))] p-3 sm:p-5">
+            <button
+              type="button"
+              onClick={onPrev}
+              className="absolute left-3 top-1/2 z-10 hidden h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-slate-950/45 text-3xl text-white backdrop-blur transition hover:bg-white/15 lg:inline-flex"
+              aria-label="Ảnh trước"
+            >
+              ‹
+            </button>
 
-          <div className="vehicle-stage vehicle-stage-lightbox overflow-hidden rounded-[1.75rem]">
-            <img
-              src={activeImage.fullUrl}
-              alt={activeImage.altText ?? title ?? "Ảnh xe"}
-              className="vehicle-stage-image h-[56vh] sm:h-[68vh]"
-            />
+            <div className="vehicle-stage vehicle-stage-lightbox h-full w-full rounded-[1.35rem]">
+              <img
+                src={activeImage.fullUrl}
+                alt={imageLabel}
+                className="vehicle-stage-image vehicle-stage-image-lightbox h-full max-h-[calc(100vh-19rem)] min-h-[18rem] w-full"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={onNext}
+              className="absolute right-3 top-1/2 z-10 hidden h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-slate-950/45 text-3xl text-white backdrop-blur transition hover:bg-white/15 lg:inline-flex"
+              aria-label="Ảnh tiếp theo"
+            >
+              ›
+            </button>
           </div>
-
-          <button
-            type="button"
-            onClick={onNext}
-            className="hidden h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-white/10 text-2xl text-white transition hover:bg-white/20 lg:inline-flex"
-            aria-label="Ảnh tiếp theo"
-          >
-            ›
-          </button>
         </div>
 
-        <div className="mt-5 flex items-center justify-between gap-3 lg:hidden">
+        <div className="relative z-10 flex items-center justify-between gap-3 px-5 pb-4 sm:px-7 lg:hidden">
           <button
             type="button"
             onClick={onPrev}
-            className="inline-flex flex-1 items-center justify-center rounded-full border border-white/15 bg-white/10 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/20"
+            className="inline-flex flex-1 items-center justify-center rounded-full border border-white/15 bg-white/10 px-4 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/15"
           >
             Ảnh trước
           </button>
           <button
             type="button"
             onClick={onNext}
-            className="inline-flex flex-1 items-center justify-center rounded-full border border-white/15 bg-white/10 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/20"
+            className="inline-flex flex-1 items-center justify-center rounded-full border border-white/15 bg-white/10 px-4 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/15"
           >
             Ảnh tiếp theo
           </button>
         </div>
 
-        <div className="mt-5 flex gap-3 overflow-x-auto pb-1">
-          {gallery.map((image, index) => (
-            <button
-              key={image.id ?? `${image.fullUrl}-${index}`}
-              type="button"
-              onClick={() => onSelect(index)}
-              className={`shrink-0 overflow-hidden rounded-2xl border-2 transition ${
-                index === currentIndex ? "border-brand-amber" : "border-white/10 opacity-70 hover:opacity-100"
-              }`}
-              aria-label={`Xem ảnh ${index + 1}`}
-            >
-              <div className="vehicle-thumb-stage h-20 w-24 sm:h-24 sm:w-28">
-                <img
-                  src={image.fullUrl}
-                  alt={image.altText ?? title ?? "Ảnh thu nhỏ"}
-                  className="vehicle-thumb-image"
-                />
-              </div>
-            </button>
-          ))}
+        <div className="relative z-10 border-t border-white/10 bg-slate-950/18 px-4 py-4 backdrop-blur-sm sm:px-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-white">{imageLabel}</p>
+              <p className="mt-1 text-xs uppercase tracking-[0.22em] text-slate-400">
+                Chọn nhanh ảnh khác
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
+            {gallery.map((image, index) => (
+              <button
+                key={image.id ?? `${image.fullUrl}-${index}`}
+                type="button"
+                onClick={() => onSelect(index)}
+                className={`group shrink-0 overflow-hidden rounded-[1.15rem] border transition ${
+                  index === currentIndex
+                    ? "border-brand-amber bg-white/10 shadow-[0_0_0_1px_rgba(184,138,59,0.28)]"
+                    : "border-white/10 bg-white/[0.03] opacity-80 hover:border-white/25 hover:opacity-100"
+                }`}
+                aria-label={`Xem ảnh ${index + 1}`}
+              >
+                <div className="vehicle-thumb-stage h-20 w-28 bg-white/95 sm:h-24 sm:w-32">
+                  <img
+                    src={image.fullUrl}
+                    alt={image.altText ?? title ?? "Ảnh thu nhỏ"}
+                    className="vehicle-thumb-image"
+                  />
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>

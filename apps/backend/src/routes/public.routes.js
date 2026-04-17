@@ -1,9 +1,20 @@
-import { Router } from "express";
+﻿import { Router } from "express";
 import { z } from "zod";
+import { env } from "../config/env.js";
 import { prisma } from "../config/prisma.js";
 import { createIpRateLimit } from "../middlewares/ipRateLimit.js";
 import { publishBookingEvent } from "../services/bookingEvents.js";
 import { sendBookingCreatedTelegramNotification } from "../services/telegramService.js";
+import { createBookingCaptchaChallenge, verifyBookingCaptcha } from "../utils/captcha.js";
+import {
+  validateBookingCooldown,
+  validateBookingSubmissionTiming
+} from "../utils/bookingProtection.js";
+import {
+  BOOKING_PROOF_OF_WORK_DIFFICULTY,
+  verifyBookingProofOfWork
+} from "../utils/proofOfWork.js";
+import { verifyTurnstileToken } from "../utils/turnstile.js";
 
 const router = Router();
 const PUBLIC_SITE_SETTING_KEYS = [
@@ -20,10 +31,15 @@ const PUBLIC_SITE_SETTING_KEYS = [
   "site_tagline",
   "zalo"
 ];
-const bookingRateLimit = createIpRateLimit({
+const captchaRateLimit = createIpRateLimit({
   windowMs: 60 * 1000,
-  maxRequests: 100,
-  message: "Bạn gửi booking quá nhanh từ cùng một IP. Vui lòng thử lại sau 1 phút."
+  maxRequests: 24,
+  message: "Bạn tải captcha quá nhanh. Vui lòng thử lại sau 1 phút."
+});
+const bookingRateLimit = createIpRateLimit({
+  windowMs: 10 * 60 * 1000,
+  maxRequests: 12,
+  message: "Bạn gửi booking quá nhiều trong thời gian ngắn. Vui lòng thử lại sau ít phút."
 });
 
 const bookingSchema = z.object({
@@ -42,8 +58,23 @@ const bookingSchema = z.object({
 
       return Number(value);
     }),
-  note: z.string().optional().nullable()
+  note: z.string().optional().nullable(),
+  bookingCaptchaToken: z.string().min(1),
+  bookingCaptchaAnswer: z.union([z.string(), z.number()]),
+  bookingProofNonce: z.string().min(1),
+  turnstileToken: z.string().optional().nullable(),
+  website: z.string().optional().nullable()
 });
+
+function getRequestIp(request) {
+  const forwardedFor = request.headers["x-forwarded-for"];
+
+  if (typeof forwardedFor === "string" && forwardedFor.trim()) {
+    return forwardedFor.split(",")[0].trim();
+  }
+
+  return request.ip ?? request.socket?.remoteAddress ?? "";
+}
 
 router.get("/site-settings", async (request, response) => {
   const settings = await prisma.siteSetting.findMany({
@@ -105,13 +136,89 @@ router.get("/vehicles/:slug", async (request, response) => {
   return response.json(vehicle);
 });
 
+router.get("/booking-captcha", captchaRateLimit, async (request, response) => {
+  const challenge = createBookingCaptchaChallenge();
+
+  return response.json({
+    ...challenge,
+    proofOfWork: {
+      challenge: challenge.token,
+      difficulty: BOOKING_PROOF_OF_WORK_DIFFICULTY
+    },
+    turnstile: {
+      enabled: env.turnstileEnabled,
+      siteKey: env.turnstileEnabled ? env.turnstileSiteKey : ""
+    }
+  });
+});
+
 router.post("/booking-requests", bookingRateLimit, async (request, response) => {
   const parsed = bookingSchema.safeParse(request.body);
 
   if (!parsed.success) {
     return response.status(400).json({
-      message: "Invalid booking payload",
+      message: "Vui lòng nhập đầy đủ thông tin liên hệ hợp lệ.",
       errors: parsed.error.flatten()
+    });
+  }
+
+  if (parsed.data.website?.trim()) {
+    return response.status(400).json({
+      message: "Xác thực captcha không hợp lệ. Vui lòng thử lại."
+    });
+  }
+
+  const captchaResult = verifyBookingCaptcha({
+    token: parsed.data.bookingCaptchaToken,
+    answer: parsed.data.bookingCaptchaAnswer
+  });
+
+  if (!captchaResult.ok) {
+    return response.status(400).json({
+      message: "Xác thực captcha không hợp lệ. Vui lòng thử lại."
+    });
+  }
+
+  const isProofValid = verifyBookingProofOfWork({
+    challenge: parsed.data.bookingCaptchaToken,
+    nonce: parsed.data.bookingProofNonce
+  });
+
+  if (!isProofValid) {
+    return response.status(400).json({
+      message: "Xác thực chống bot không hợp lệ. Vui lòng thử lại."
+    });
+  }
+
+  const timingValidation = validateBookingSubmissionTiming(captchaResult.issuedAt);
+
+  if (!timingValidation.ok) {
+    return response.status(400).json({
+      message: timingValidation.message
+    });
+  }
+
+  const turnstileResult = await verifyTurnstileToken({
+    token: parsed.data.turnstileToken,
+    remoteIp: getRequestIp(request)
+  });
+
+  if (!turnstileResult.ok) {
+    return response.status(turnstileResult.statusCode ?? 400).json({
+      message: turnstileResult.message
+    });
+  }
+
+  const cooldownValidation = validateBookingCooldown(request, parsed.data.phoneNumber);
+
+  if (!cooldownValidation.ok) {
+    if (cooldownValidation.retryAfter) {
+      response.setHeader("Retry-After", String(cooldownValidation.retryAfter));
+    }
+
+    return response.status(cooldownValidation.statusCode ?? 429).json({
+      message: cooldownValidation.message,
+      retryAfter: cooldownValidation.retryAfter
     });
   }
 

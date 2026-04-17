@@ -7,7 +7,24 @@ function ScrollToTop() {
   const location = useLocation();
 
   useEffect(() => {
-    if (location.hash) return;
+    if (location.hash) {
+      const elementId = decodeURIComponent(location.hash.slice(1));
+      const scrollToHashTarget = () => {
+        const element = document.getElementById(elementId);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      };
+
+      const frameId = window.requestAnimationFrame(scrollToHashTarget);
+      const timeoutId = window.setTimeout(scrollToHashTarget, 120);
+
+      return () => {
+        window.cancelAnimationFrame(frameId);
+        window.clearTimeout(timeoutId);
+      };
+    }
+
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [location.pathname, location.hash]);
 

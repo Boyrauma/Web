@@ -1,8 +1,14 @@
-﻿export default function BookingSection({
+﻿import TurnstileWidget from "./TurnstileWidget";
+
+export default function BookingSection({
   hotline,
   address,
   formData,
   submitState,
+  captchaState,
+  turnstileState,
+  handleTurnstileTokenChange,
+  handleTurnstileError,
   handleChange,
   handleSubmit
 }) {
@@ -87,6 +93,7 @@
               placeholder="Nguyễn Văn A"
               value={formData.customerName}
               onChange={handleChange}
+              required
             />
           </label>
           <label className="space-y-2">
@@ -94,9 +101,12 @@
             <input
               className="field"
               name="phoneNumber"
+              type="tel"
+              inputMode="tel"
               placeholder="09xx xxx xxx"
               value={formData.phoneNumber}
               onChange={handleChange}
+              required
             />
           </label>
           <label className="space-y-2">
@@ -107,6 +117,7 @@
               type="date"
               value={formData.tripDate}
               onChange={handleChange}
+              required
             />
           </label>
           <label className="space-y-2">
@@ -114,9 +125,13 @@
             <input
               className="field"
               name="passengerCount"
+              type="number"
+              inputMode="numeric"
+              min="1"
               placeholder="Ví dụ: 12"
               value={formData.passengerCount}
               onChange={handleChange}
+              required
             />
           </label>
           <label className="space-y-2 md:col-span-2">
@@ -127,6 +142,7 @@
               placeholder="Thanh Hóa, Sầm Sơn..."
               value={formData.pickupLocation}
               onChange={handleChange}
+              required
             />
           </label>
           <label className="space-y-2 md:col-span-2">
@@ -137,6 +153,7 @@
               placeholder="Ninh Bình, Hà Nội..."
               value={formData.dropoffLocation}
               onChange={handleChange}
+              required
             />
           </label>
           <label className="space-y-2 md:col-span-2">
@@ -149,10 +166,72 @@
               onChange={handleChange}
             />
           </label>
+          <input
+            type="text"
+            name="website"
+            value={formData.website}
+            onChange={handleChange}
+            className="hidden"
+            tabIndex="-1"
+            autoComplete="off"
+            aria-hidden="true"
+          />
+          <label className="space-y-2 md:col-span-2">
+            <span className="text-sm font-bold text-brand-navy">Xác thực chống spam</span>
+            <div className="rounded-[1.35rem] border border-[#e4d5bb] bg-[#fffaf2] px-4 py-3 text-sm font-semibold text-brand-navy">
+              {captchaState.loading
+                ? "Đang tải captcha..."
+                : captchaState.prompt || "Không thể tải captcha. Vui lòng thử lại."}
+            </div>
+            <input
+              className="field"
+              name="captchaAnswer"
+              inputMode="numeric"
+              placeholder="Nhập kết quả phép tính"
+              value={formData.captchaAnswer}
+              onChange={handleChange}
+              required
+            />
+          </label>
+          <div className="md:col-span-2 rounded-[1.35rem] border border-[#d7e2cf] bg-[#f5fbef] px-4 py-3 text-sm font-semibold text-slate-700">
+            {captchaState.proofLoading
+              ? "Đang chạy xác thực nâng cao chống bot..."
+              : captchaState.proofReady
+                ? `Xác thực nâng cao đã sẵn sàng. Độ khó: ${captchaState.proofDifficulty} bước.`
+                : captchaState.proofError || "Đang chờ xác thực nâng cao."}
+          </div>
+          {turnstileState.enabled ? (
+            <div className="md:col-span-2 space-y-3 rounded-[1.35rem] border border-[#dae4f2] bg-[#f8fbff] px-4 py-4">
+              <div>
+                <p className="text-sm font-bold text-brand-navy">Cloudflare Turnstile</p>
+                <p className="mt-1 text-sm text-slate-600">
+                  Hoàn tất xác thực này để chặn bot gửi form tự động từ bên ngoài website.
+                </p>
+              </div>
+              <TurnstileWidget
+                siteKey={turnstileState.siteKey}
+                resetKey={turnstileState.resetKey}
+                onTokenChange={handleTurnstileTokenChange}
+                onError={handleTurnstileError}
+              />
+              <p className="text-sm font-semibold text-slate-700">
+                {turnstileState.token
+                  ? "Xác thực Cloudflare đã sẵn sàng."
+                  : turnstileState.error || "Vui lòng hoàn tất xác thực Cloudflare trước khi gửi."}
+              </p>
+            </div>
+          ) : null}
           <button
             type="submit"
             className="rounded-2xl bg-[#b88a3b] px-6 py-4 font-bold text-white transition hover:bg-brand-navy md:col-span-2"
-            disabled={submitState.loading}
+            disabled={
+              submitState.loading ||
+              captchaState.loading ||
+              !captchaState.token ||
+              captchaState.proofLoading ||
+              !captchaState.proofNonce ||
+              (turnstileState.enabled && !turnstileState.token)
+            }
           >
             {submitState.loading ? "Đang gửi..." : "Liên hệ ngay"}
           </button>

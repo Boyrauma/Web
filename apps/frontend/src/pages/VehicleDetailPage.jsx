@@ -1,8 +1,9 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
 import StickyContactBar from "../components/StickyContactBar";
+import VehicleGalleryLightbox from "../components/VehicleGalleryLightbox";
 import { fetchSiteSettings, fetchVehicleBySlug, resolveAssetUrl } from "../services/api";
 import { applyDocumentBranding } from "../utils/branding";
 import { applySeo, buildVehicleSchema } from "../utils/seo";
@@ -12,6 +13,7 @@ export default function VehicleDetailPage() {
   const [siteSettings, setSiteSettings] = useState([]);
   const [vehicle, setVehicle] = useState(null);
   const [selectedImageUrl, setSelectedImageUrl] = useState("");
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [state, setState] = useState({ loading: true, error: "" });
 
   useEffect(() => {
@@ -50,10 +52,11 @@ export default function VehicleDetailPage() {
     ...image,
     fullUrl: resolveAssetUrl(image.imageUrl)
   }));
-  const currentImage =
-    gallery.find((image) => image.imageUrl === selectedImageUrl)?.fullUrl ??
-    gallery[0]?.fullUrl ??
-    "/assets/xecountybonghoi.jpg";
+  const selectedImageIndex = Math.max(
+    0,
+    gallery.findIndex((image) => image.imageUrl === selectedImageUrl)
+  );
+  const currentImage = gallery[selectedImageIndex]?.fullUrl ?? "/assets/xecountybonghoi.jpg";
 
   useEffect(() => {
     applyDocumentBranding({
@@ -101,6 +104,21 @@ export default function VehicleDetailPage() {
     vehicle
   ]);
 
+  function showPreviousImage() {
+    if (!gallery.length) return;
+    setSelectedImageUrl(gallery[(selectedImageIndex - 1 + gallery.length) % gallery.length].imageUrl);
+  }
+
+  function showNextImage() {
+    if (!gallery.length) return;
+    setSelectedImageUrl(gallery[(selectedImageIndex + 1) % gallery.length].imageUrl);
+  }
+
+  function showImageAt(index) {
+    if (!gallery[index]) return;
+    setSelectedImageUrl(gallery[index].imageUrl);
+  }
+
   return (
     <div className="min-h-screen bg-transparent text-slate-900">
       <SiteHeader
@@ -125,25 +143,59 @@ export default function VehicleDetailPage() {
           <div className="mt-8 space-y-10">
             <section className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr]">
               <div className="space-y-4">
-                <div className="vehicle-stage vehicle-stage-detail h-[420px] w-full rounded-[2rem] shadow-[0_28px_70px_rgba(20,35,60,0.14)]">
-                  <img
-                    src={currentImage}
-                    alt={vehicle.name}
-                    loading="lazy"
-                    decoding="async"
-                    className="vehicle-stage-image"
-                  />
+                <button
+                  type="button"
+                  onClick={() => setIsLightboxOpen(true)}
+                  className="group relative block w-full overflow-hidden rounded-[2rem] text-left shadow-[0_28px_70px_rgba(20,35,60,0.14)]"
+                  aria-label={`Xem bộ ảnh ${vehicle.name}`}
+                >
+                  <div className="vehicle-stage vehicle-stage-detail h-[420px] w-full">
+                    <img
+                      src={currentImage}
+                      alt={vehicle.name}
+                      loading="lazy"
+                      decoding="async"
+                      className="vehicle-stage-image transition duration-300 group-hover:scale-[1.03]"
+                    />
+                  </div>
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 bg-gradient-to-t from-slate-950/68 via-slate-950/20 to-transparent px-5 py-5 text-white">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.24em] text-brand-amber">
+                        Bộ ảnh chi tiết
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-white/90">
+                        Nhấn để xem ảnh ở kích thước lớn
+                      </p>
+                    </div>
+                    <span className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold backdrop-blur">
+                      {selectedImageIndex + 1} / {gallery.length || 1}
+                    </span>
+                  </div>
+                </button>
+
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-slate-500">
+                    Chọn ảnh để xem nhanh hoặc mở bộ ảnh toàn màn hình.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setIsLightboxOpen(true)}
+                    className="inline-flex shrink-0 items-center justify-center rounded-full border border-brand-navy/15 bg-white/85 px-4 py-2 text-sm font-bold text-brand-navy shadow-[0_12px_28px_rgba(20,35,60,0.08)] transition hover:border-brand-amber hover:text-brand-amber"
+                  >
+                    Xem ảnh lớn
+                  </button>
                 </div>
+
                 <div className="flex flex-wrap gap-3">
                   {gallery.map((image) => (
                     <button
                       key={image.id}
                       type="button"
                       onClick={() => setSelectedImageUrl(image.imageUrl)}
-                      className={`overflow-hidden rounded-2xl border-2 ${
+                      className={`overflow-hidden rounded-2xl border-2 transition ${
                         selectedImageUrl === image.imageUrl
-                          ? "border-brand-amber"
-                          : "border-transparent"
+                          ? "border-brand-amber shadow-[0_10px_24px_rgba(184,138,59,0.18)]"
+                          : "border-transparent hover:border-brand-navy/20"
                       }`}
                     >
                       <div className="vehicle-thumb-stage h-20 w-24">
@@ -215,12 +267,12 @@ export default function VehicleDetailPage() {
                   >
                     Gọi tư vấn
                   </a>
-                  <a
-                    href="/#booking"
+                  <Link
+                    to="/#booking"
                     className="rounded-2xl border border-brand-navy px-6 py-4 font-bold text-brand-navy transition hover:border-brand-amber hover:text-brand-amber"
                   >
                     Liên hệ ngay
-                  </a>
+                  </Link>
                 </div>
               </div>
             </section>
@@ -274,12 +326,12 @@ export default function VehicleDetailPage() {
                   >
                     {settingsMap.hotline ?? "0979 860 498"}
                   </a>
-                  <a
-                    href="/#booking"
+                  <Link
+                    to="/#booking"
                     className="block rounded-2xl border border-white/30 px-5 py-4 text-center font-bold text-white transition hover:bg-white/10"
                   >
                     Gửi yêu cầu liên hệ
-                  </a>
+                  </Link>
                 </div>
                 <div className="mt-8 grid gap-3">
                   <div className="rounded-2xl bg-white/10 px-4 py-3 text-sm font-semibold text-slate-100">
@@ -302,6 +354,17 @@ export default function VehicleDetailPage() {
         logoUrl={siteLogoUrl}
       />
       <StickyContactBar hotline={settingsMap.hotline} />
+      {isLightboxOpen && gallery.length ? (
+        <VehicleGalleryLightbox
+          gallery={gallery}
+          title={vehicle?.name}
+          currentIndex={selectedImageIndex}
+          onClose={() => setIsLightboxOpen(false)}
+          onPrev={showPreviousImage}
+          onNext={showNextImage}
+          onSelect={showImageAt}
+        />
+      ) : null}
     </div>
   );
 }

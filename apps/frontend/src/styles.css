@@ -153,9 +153,9 @@ summary {
 
 .vehicle-stage-lightbox {
   background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 30%),
-    linear-gradient(180deg, rgba(18, 27, 46, 0.98), rgba(10, 18, 33, 0.98));
-  padding: 0.75rem;
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(26, 37, 63, 0.84), rgba(10, 16, 29, 0.94));
+  padding: 1rem;
 }
 
 .vehicle-stage-image {
@@ -173,6 +173,12 @@ summary {
 
 .vehicle-stage-image-showcase {
   object-position: center 62%;
+}
+
+.vehicle-stage-image-lightbox {
+  object-fit: contain;
+  object-position: center center;
+  transform: none;
 }
 
 .vehicle-thumb-stage {
