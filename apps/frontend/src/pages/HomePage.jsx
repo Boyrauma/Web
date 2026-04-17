@@ -235,12 +235,6 @@ export default function HomePage() {
           siteName={settingsMap.site_name}
           backgroundImageUrl={heroBackgroundUrl}
         />
-        <ServicesSection
-          services={services}
-          error={pageState.error}
-          hotline={settingsMap.hotline}
-          address={settingsMap.address}
-        />
         <FleetSection
           vehicleCategories={vehicleCategories}
           resolveAssetUrl={resolveAssetUrl}
@@ -254,6 +248,12 @@ export default function HomePage() {
           selectedVehicleGallery={selectedVehicleGallery}
           selectedImageUrl={selectedImageUrl}
           setSelectedImageUrl={setSelectedImageUrl}
+        />
+        <ServicesSection
+          services={services}
+          error={pageState.error}
+          hotline={settingsMap.hotline}
+          address={settingsMap.address}
         />
         <ProcessSection />
         <BookingSection
