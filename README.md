@@ -38,6 +38,7 @@ Các file production đã có sẵn:
 - `docker-compose.prod.yml`
 - `.env.production.example`
 - `infra/nginx/nhaxedinhdung.vn.conf`
+- `BACKUP_RESTORE.md`
 
 Luồng deploy khuyến nghị:
 
@@ -61,6 +62,11 @@ Luồng deploy khuyến nghị:
    - `nginx -t`
    - `systemctl reload nginx`
 6. Cấp SSL bằng Certbot sau khi domain đã trỏ đúng về server
+
+Tai lieu restore day du:
+
+- xem `BACKUP_RESTORE.md` de backup va dung lai `DB + uploads + .env`
+- repo chi giu `code`, khong tu dong giu du lieu runtime
 
 Lưu ý khi public:
 
