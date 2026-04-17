@@ -180,14 +180,21 @@ export function buildVehicleSchema({ vehicle, siteName, canonicalUrl, images = [
   return [
     {
       "@context": "https://schema.org",
-      "@type": "Product",
+      "@type": ["Service", "TransportationService"],
       name: vehicle.name,
+      serviceType: vehicle.category?.name ?? "Dịch vụ vận chuyển hành khách",
       description: vehicle.description || vehicle.shortDescription || vehicle.name,
+      url: canonicalUrl,
       image: images,
       category: vehicle.category?.name,
-      brand: {
-        "@type": "Brand",
-        name: siteName
+      provider: {
+        "@type": "LocalBusiness",
+        name: siteName,
+        url: toAbsoluteUrl("/")
+      },
+      areaServed: {
+        "@type": "AdministrativeArea",
+        name: "Thanh Hóa, Việt Nam"
       }
     },
     {

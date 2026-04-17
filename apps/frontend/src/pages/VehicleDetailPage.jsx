@@ -85,7 +85,7 @@ export default function VehicleDetailPage() {
       description,
       canonicalPath,
       image: currentImage,
-      type: "product",
+      type: "website",
       siteName,
       keywords: vehicle?.category?.name
         ? `${vehicle.name}, ${vehicle.category.name}, thuê xe ${vehicle.name}, nhà xe Thanh Hóa`
