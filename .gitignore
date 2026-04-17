@@ -24,3 +24,6 @@ __pycache__/
 DockerDesktopWSL/
 release/
 homepage-static.html
+dinhdung_transport.sql
+backup-uploads/
+uploads.zip
