@@ -9,17 +9,17 @@ export default function FleetSection({ vehicleCategories, resolveAssetUrl, onOpe
   const fallbackGroups = [
     {
       title: "Xe 7 chỗ",
-      description: "Innova, Fortuner sạch sẽ, phù hợp gia đình và công tác.",
+      description: "Gọn cho gia đình nhỏ, chuyến sân bay và lịch công tác cần đi đúng giờ.",
       images: [{ id: "fallback-7", fullUrl: "/assets/xe7cho.jpg", altText: "Xe 7 chỗ" }]
     },
     {
       title: "Xe 16 chỗ",
-      description: "Transit, Solati trần cao, thoải mái cho hành trình dài.",
+      description: "Phù hợp đoàn vừa, đi tỉnh, đi lễ và hành trình dài cần không gian thoáng.",
       images: [{ id: "fallback-16", fullUrl: "/assets/xe16cho.jpg", altText: "Xe 16 chỗ" }]
     },
     {
       title: "Xe 29 - 35 chỗ",
-      description: "County, Samco, Thaco đời mới, êm ái và rộng rãi.",
+      description: "Dành cho đoàn đông, tour riêng, cưới hỏi hoặc công tác nhiều điểm dừng.",
       images: [
         {
           id: "fallback-35",
@@ -64,8 +64,12 @@ export default function FleetSection({ vehicleCategories, resolveAssetUrl, onOpe
         <div>
           <p className="text-sm font-bold uppercase tracking-[0.3em] text-brand-amber">Đội xe</p>
           <h3 className="mt-2 text-3xl font-black uppercase text-brand-navy">
-            Hệ thống xe đời mới
+            Dòng xe đang phục vụ thực tế
           </h3>
+          <p className="mt-3 max-w-2xl text-slate-600">
+            Không trưng bày cho có. Đây là các nhóm xe đang dùng để nhận chuyến gia đình, đón sân
+            bay, cưới hỏi, đoàn tour và hợp đồng doanh nghiệp.
+          </p>
         </div>
 
         <div className="mt-10 grid gap-8 md:auto-rows-fr md:grid-cols-3">
@@ -117,7 +121,9 @@ export default function FleetSection({ vehicleCategories, resolveAssetUrl, onOpe
 
               <div className="flex flex-1 flex-col space-y-4 p-6">
                 <h4 className="text-2xl font-extrabold text-brand-navy">{group.title}</h4>
-                <p className="min-h-[88px] text-slate-600">{group.description}</p>
+                <p className="min-h-[88px] text-slate-600">
+                  {group.description || "Nhóm xe đang được dùng cho các chuyến thực tế của nhà xe."}
+                </p>
 
                 <div className="mt-auto flex flex-wrap gap-3 pt-2">
                   <button
