@@ -53,9 +53,9 @@
               </>
             )}
           </h2>
-          <div className="hero-fade-delay hero-text-soft mx-auto mt-6 max-w-[700px] space-y-4">
-            <p className="mx-auto max-w-[680px] text-base font-semibold leading-8 text-slate-100 sm:text-lg">
-              {primarySubtitle}
+          <div className="hero-fade-delay hero-text-soft mx-auto mt-6 max-w-[860px] space-y-4">
+            <p className="mx-auto max-w-full text-base font-semibold leading-8 text-slate-100 sm:text-lg lg:whitespace-nowrap">
+              Dịch vụ vận chuyển chuyên nghiệp cho những chuyến đi cần sự an tâm và đúng hẹn.
             </p>
             <p className="mx-auto max-w-[680px] text-base font-semibold leading-8 text-slate-100 sm:text-lg">
               {resolvedSubtitle}
