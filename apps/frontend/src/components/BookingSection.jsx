@@ -12,6 +12,20 @@ export default function BookingSection({
   handleChange,
   handleSubmit
 }) {
+  const isBackgroundVerificationPreparing =
+    captchaState.loading || captchaState.proofLoading || !captchaState.token || !captchaState.proofNonce;
+  const isWaitingForTurnstile = turnstileState.enabled && !turnstileState.token;
+  const isSubmitDisabled =
+    submitState.loading || isBackgroundVerificationPreparing || isWaitingForTurnstile;
+
+  let submitLabel = "Liên hệ ngay";
+
+  if (submitState.loading) {
+    submitLabel = "Đang gửi...";
+  } else if (isBackgroundVerificationPreparing) {
+    submitLabel = "Đang chuẩn bị...";
+  }
+
   return (
     <section id="booking" className="site-shell mx-auto px-4 py-16 sm:px-6">
       <div className="grid gap-8 lg:grid-cols-[0.82fr_1.18fr]">
@@ -176,64 +190,22 @@ export default function BookingSection({
             autoComplete="off"
             aria-hidden="true"
           />
-          <label className="space-y-2 md:col-span-2">
-            <span className="text-sm font-bold text-brand-navy">Xác thực chống spam</span>
-            <div className="rounded-[1.35rem] border border-[#e4d5bb] bg-[#fffaf2] px-4 py-3 text-sm font-semibold text-brand-navy">
-              {captchaState.loading
-                ? "Đang tải captcha..."
-                : captchaState.prompt || "Không thể tải captcha. Vui lòng thử lại."}
-            </div>
-            <input
-              className="field"
-              name="captchaAnswer"
-              inputMode="numeric"
-              placeholder="Nhập kết quả phép tính"
-              value={formData.captchaAnswer}
-              onChange={handleChange}
-              required
-            />
-          </label>
-          <div className="md:col-span-2 rounded-[1.35rem] border border-[#d7e2cf] bg-[#f5fbef] px-4 py-3 text-sm font-semibold text-slate-700">
-            {captchaState.proofLoading
-              ? "Đang chạy xác thực nâng cao chống bot..."
-              : captchaState.proofReady
-                ? `Xác thực nâng cao đã sẵn sàng. Độ khó: ${captchaState.proofDifficulty} bước.`
-                : captchaState.proofError || "Đang chờ xác thực nâng cao."}
-          </div>
           {turnstileState.enabled ? (
-            <div className="md:col-span-2 space-y-3 rounded-[1.35rem] border border-[#dae4f2] bg-[#f8fbff] px-4 py-4">
-              <div>
-                <p className="text-sm font-bold text-brand-navy">Cloudflare Turnstile</p>
-                <p className="mt-1 text-sm text-slate-600">
-                  Hoàn tất xác thực này để chặn bot gửi form tự động từ bên ngoài website.
-                </p>
-              </div>
+            <div className="md:col-span-2 rounded-[1.35rem] border border-[#dae4f2] bg-[#f8fbff] px-4 py-3">
               <TurnstileWidget
                 siteKey={turnstileState.siteKey}
                 resetKey={turnstileState.resetKey}
                 onTokenChange={handleTurnstileTokenChange}
                 onError={handleTurnstileError}
               />
-              <p className="text-sm font-semibold text-slate-700">
-                {turnstileState.token
-                  ? "Xác thực Cloudflare đã sẵn sàng."
-                  : turnstileState.error || "Vui lòng hoàn tất xác thực Cloudflare trước khi gửi."}
-              </p>
             </div>
           ) : null}
           <button
             type="submit"
             className="rounded-2xl bg-[#b88a3b] px-6 py-4 font-bold text-white transition hover:bg-brand-navy md:col-span-2"
-            disabled={
-              submitState.loading ||
-              captchaState.loading ||
-              !captchaState.token ||
-              captchaState.proofLoading ||
-              !captchaState.proofNonce ||
-              (turnstileState.enabled && !turnstileState.token)
-            }
+            disabled={isSubmitDisabled}
           >
-            {submitState.loading ? "Đang gửi..." : "Liên hệ ngay"}
+            {submitLabel}
           </button>
           {submitState.message ? (
             <p className="md:col-span-2 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">

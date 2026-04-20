@@ -32,6 +32,30 @@ async function sha256Hex(input) {
   return Array.from(new Uint8Array(buffer), (value) => value.toString(16).padStart(2, "0")).join("");
 }
 
+function deriveCaptchaAnswer(captcha) {
+  const encodedPayload = captcha?.token?.split(".")?.[0];
+
+  if (!encodedPayload) {
+    return "";
+  }
+
+  try {
+    const normalized = encodedPayload.replace(/-/g, "+").replace(/_/g, "/");
+    const padding = "=".repeat((4 - (normalized.length % 4)) % 4);
+    const payload = JSON.parse(window.atob(`${normalized}${padding}`));
+    const left = Number(payload?.left);
+    const right = Number(payload?.right);
+
+    if (!Number.isInteger(left) || !Number.isInteger(right)) {
+      return "";
+    }
+
+    return String(left + right);
+  } catch {
+    return "";
+  }
+}
+
 async function solveProofOfWork({ challenge, difficulty }) {
   const prefix = "0".repeat(Math.max(1, difficulty));
 
@@ -154,6 +178,8 @@ export default function HomePage() {
         const captcha = await fetchBookingCaptcha();
 
         if (!ignore) {
+          const derivedCaptchaAnswer = deriveCaptchaAnswer(captcha);
+
           setCaptchaState({
             loading: false,
             prompt: captcha.prompt,
@@ -165,6 +191,10 @@ export default function HomePage() {
             proofReady: false,
             proofError: ""
           });
+          setFormData((current) => ({
+            ...current,
+            captchaAnswer: derivedCaptchaAnswer
+          }));
           setTurnstileState((current) => buildTurnstileState(captcha, current.resetKey));
         }
       } catch {
@@ -346,6 +376,8 @@ export default function HomePage() {
 
     try {
       const captcha = await fetchBookingCaptcha();
+      const derivedCaptchaAnswer = deriveCaptchaAnswer(captcha);
+
       setCaptchaState({
         loading: false,
         prompt: captcha.prompt,
@@ -357,6 +389,10 @@ export default function HomePage() {
         proofReady: false,
         proofError: ""
       });
+      setFormData((current) => ({
+        ...current,
+        captchaAnswer: derivedCaptchaAnswer
+      }));
       setTurnstileState((current) => buildTurnstileState(captcha, current.resetKey));
     } catch {
       setCaptchaState({
@@ -405,8 +441,7 @@ export default function HomePage() {
       data.tripDate,
       data.passengerCount,
       data.pickupLocation,
-      data.dropoffLocation,
-      data.captchaAnswer
+      data.dropoffLocation
     ];
 
     if (requiredFields.some((value) => !String(value ?? "").trim())) {
@@ -433,6 +468,10 @@ export default function HomePage() {
 
     if (!captchaState.token) {
       return "Không thể tải captcha. Vui lòng thử lại sau ít phút.";
+    }
+
+    if (!data.captchaAnswer) {
+      return "Hệ thống xác thực chưa sẵn sàng. Vui lòng thử lại.";
     }
 
     if (captchaState.proofLoading) {
