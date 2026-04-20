@@ -81,7 +81,7 @@ function resolveService(service) {
     description:
       serviceDescriptionMap[title] ||
       service.description?.trim() ||
-      "Dịch vụ được tối ưu để khách liên hệ nhanh, xác nhận gọn và triển khai lịch trình rõ ràng.",
+      "Nhà xe nhận lịch rõ ràng, gọi lại nhanh và chốt chuyến theo đúng nhu cầu thực tế.",
     icon: serviceIconMap[title] || "tour"
   };
 }
@@ -96,21 +96,25 @@ export default function ServicesSection({ services, error }) {
           {error}
         </div>
       ) : null}
-      <div className="mb-8 flex items-end justify-between gap-4">
-        <div>
+      <div className="mb-10 rounded-[2rem] border border-[#e8ddca] bg-[linear-gradient(180deg,#fffdf9_0%,#f8f1e6_100%)] px-6 py-7 shadow-[0_18px_44px_rgba(20,35,60,0.05)] sm:px-8">
+        <div className="max-w-3xl">
           <p className="text-sm font-bold uppercase tracking-[0.3em] text-brand-amber">Dịch vụ</p>
           <h3 className="display-serif mt-3 text-4xl text-brand-navy">
-            Những nhu cầu được đặt nhiều nhất
+            Những lịch xe khách gọi nhiều nhất
           </h3>
+          <p className="mt-4 text-slate-600">
+            Từ chuyến gia đình cần xe gọn đến lịch cưới hỏi, sân bay hay hợp đồng dài ngày, đây là
+            các nhu cầu nhà xe đang nhận và điều phối thường xuyên.
+          </p>
         </div>
       </div>
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
         {serviceItems.map((service) => (
           <div
             key={service.slug}
-            className="reveal-card hover-lift rounded-[1.75rem] border border-slate-200 bg-white p-6 text-center shadow-sm transition hover:shadow-premium"
+            className="reveal-card hover-lift rounded-[1.75rem] border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:shadow-premium"
           >
-            <div className="flex justify-center">
+            <div className="flex justify-start">
               <div className="relative flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-[1.6rem] border border-[#ead7b6] bg-[linear-gradient(180deg,#fffdf8_0%,#f6ebda_100%)] shadow-[0_18px_34px_rgba(184,138,59,0.16)]">
                 <div className="absolute inset-x-3 top-0 h-8 rounded-b-full bg-white/60 blur-md" />
                 <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-white/75 ring-1 ring-white/80">

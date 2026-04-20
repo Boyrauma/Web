@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
 import StickyContactBar from "../components/StickyContactBar";
@@ -8,8 +8,253 @@ import { fetchSiteSettings, fetchVehicleBySlug, resolveAssetUrl } from "../servi
 import { applyDocumentBranding } from "../utils/branding";
 import { applySeo, buildVehicleSchema } from "../utils/seo";
 
+function getVehicleNarrative(vehicle) {
+  const slug = vehicle?.slug ?? "";
+  const seatCount = vehicle?.seatCount ?? 0;
+
+  const bySlug = {
+    santafe: {
+      fit: "Gia đình đi tỉnh, đón sân bay và lịch công tác cần xe êm, gọn và dễ lên xuống.",
+      priority: "Ưu tiên sự riêng tư, khoang ngồi thoải mái và lịch trình rõ từ đầu.",
+      highlights: [
+        {
+          title: "Đi gia đình vừa đẹp",
+          body: "Hợp với nhà có người lớn tuổi hoặc trẻ nhỏ vì khoang ngồi dễ chịu, lên xe gọn và không quá cao."
+        },
+        {
+          title: "Đón sân bay nhẹ nhàng",
+          body: "Dòng xe này phù hợp các lịch đón tiễn cần đúng giờ, ít khách nhưng vẫn có chỗ cho hành lý cơ bản."
+        },
+        {
+          title: "Công tác nhìn chỉn chu",
+          body: "Khi cần đưa đón đối tác hoặc đi họp trong ngày, xe giữ được cảm giác lịch sự và nghiêm túc."
+        },
+        {
+          title: "Chốt tuyến linh hoạt",
+          body: "Dễ đi nội thành, liên huyện hoặc các lịch trình có vài điểm dừng mà vẫn giữ nhịp chuyến gọn."
+        }
+      ],
+      asideTitle: "Dòng xe này hợp lịch gia đình và công tác ngắn",
+      asideBody:
+        "Nếu bạn đang cần một xe 7 chỗ gọn, sạch và dễ đi nhiều kiểu cung đường trong ngày, bên nhà xe có thể rà lịch và giữ chuyến nhanh."
+    },
+    "vinfat-lux-a2-0": {
+      fit: "Đưa đón khách riêng, đi công việc trong ngày và những lịch cần xe 4 chỗ nhìn gọn gàng.",
+      priority: "Ưu tiên sự lịch sự, kín đáo và cảm giác xe riêng hơn là đi theo kiểu đoàn.",
+      highlights: [
+        {
+          title: "Hợp lịch tiếp khách",
+          body: "Phù hợp những chuyến cần hình ảnh chỉn chu, nhất là đưa đón đối tác hoặc khách cá nhân."
+        },
+        {
+          title: "Đi thành phố gọn",
+          body: "Dễ chạy tuyến ngắn, đưa đón nhiều điểm trong nội thành hoặc đi công việc bán kính vừa."
+        },
+        {
+          title: "Ngồi riêng tư hơn",
+          body: "So với xe đông chỗ, dòng này giữ cảm giác kín và thoải mái hơn cho khách ít người."
+        },
+        {
+          title: "Hợp lịch chốt nhanh",
+          body: "Khi lịch đi đã rõ giờ và số người ít, loại xe này thường dễ xếp chuyến và điều xe nhanh."
+        }
+      ],
+      asideTitle: "Phù hợp lịch 4 chỗ cần sự riêng và gọn",
+      asideBody:
+        "Nếu bạn cần một xe 4 chỗ cho lịch gặp khách, đi công việc hoặc đón tiễn cá nhân, bên nhà xe có thể tư vấn và giữ lịch nhanh."
+    },
+    "huyndai-solati": {
+      fit: "Đoàn vừa, đưa đón sự kiện, đi lễ hoặc lịch đi tỉnh cần không gian đứng ngồi thoáng hơn xe nhỏ.",
+      priority: "Ưu tiên khoang xe rộng, lên xuống thoải mái và giữ nhịp tốt cho nhóm khách 10 đến 16 người.",
+      highlights: [
+        {
+          title: "Khoang ngồi thoáng",
+          body: "Hợp với nhóm đi đường dài hoặc đoàn gia đình nhiều người cần cảm giác ngồi đỡ bí hơn xe nhỏ."
+        },
+        {
+          title: "Lên xuống gọn",
+          body: "Dễ dùng cho lịch có người lớn tuổi, khách mang đồ hoặc đoàn lên xuống nhiều điểm khác nhau."
+        },
+        {
+          title: "Đi lễ, đi tỉnh ổn",
+          body: "Dòng này hợp các chuyến đi tỉnh, đi lễ hoặc lịch cuối tuần cần đủ chỗ nhưng chưa tới xe khách lớn."
+        },
+        {
+          title: "Chở đoàn vừa đẹp",
+          body: "Khi số khách rơi vào khoảng giữa, Solati thường là phương án cân bằng giữa thoải mái và chi phí."
+        }
+      ],
+      asideTitle: "Đây là dòng xe hợp cho đoàn vừa cần ngồi thoải mái",
+      asideBody:
+        "Nếu lịch đi của bạn rơi vào nhóm 10 đến 16 khách, bên nhà xe có thể kiểm tra nhanh để xếp đúng xe và đúng giờ đón."
+    },
+    "huyndai-county": {
+      fit: "Đoàn đông vừa, hành hương, cưới hỏi và những tuyến đi tỉnh cần xe khách gọn nhưng đủ chỗ.",
+      priority: "Ưu tiên chở đoàn ổn định, ngồi theo nhóm và giữ chuyến rõ ràng cho lịch đã chốt sẵn.",
+      highlights: [
+        {
+          title: "Hợp đoàn 20 đến gần 30 khách",
+          body: "County phù hợp khi đoàn không quá lớn nhưng cần ngồi cùng một xe thay vì tách nhiều xe nhỏ."
+        },
+        {
+          title: "Đi lễ và tour ngắn ổn",
+          body: "Dòng xe này hay hợp với lịch hành hương, cưới hỏi hoặc tour ngắn trong ngày cần xe gọn mà đủ chỗ."
+        },
+        {
+          title: "Dễ điều phối lịch nhóm",
+          body: "Khi đã rõ số người và giờ xuất phát, loại xe này giúp điều hành chuyến đi nhóm rõ ràng hơn."
+        },
+        {
+          title: "Giữ hình ảnh nghiêm túc",
+          body: "Xe hợp các lịch cần sự chỉn chu vừa phải, không quá nhỏ mà cũng không tạo cảm giác xe đại trà."
+        }
+      ],
+      asideTitle: "County hợp những lịch đoàn cần chốt rõ từ đầu",
+      asideBody:
+        "Nếu đoàn của bạn đi theo nhóm 20 đến gần 30 người, bên nhà xe có thể rà lịch và tư vấn đúng phiên bản xe đang phù hợp."
+    },
+    "huyndai-universe": {
+      fit: "Đoàn lớn, tour đường dài, sự kiện công ty và lịch đưa đón đông người cần một xe đủ tải.",
+      priority: "Ưu tiên đủ chỗ, chạy đoàn lớn gọn và giảm việc chia khách sang nhiều xe khác nhau.",
+      highlights: [
+        {
+          title: "Chở đoàn lớn gọn hơn",
+          body: "Universe phù hợp những lịch có đông khách, giúp gom đoàn vào một xe thay vì tách lịch phức tạp."
+        },
+        {
+          title: "Đi tour dài ổn hơn",
+          body: "Những cung đường liên tỉnh hoặc lịch đi nhiều giờ hợp với xe lớn vì giữ nhịp đoàn ổn định hơn."
+        },
+        {
+          title: "Hợp sự kiện công ty",
+          body: "Đưa đón nhân sự, khách mời hoặc đoàn hội họp sẽ dễ điều phối hơn khi dùng một xe lớn đồng nhất."
+        },
+        {
+          title: "Chốt lịch sớm sẽ đẹp",
+          body: "Với dòng xe lớn, chốt trước giờ đi và điểm đón trả càng rõ thì việc điều xe càng chắc và đúng nhịp."
+        }
+      ],
+      asideTitle: "Dòng xe này hợp tour lớn và lịch công ty",
+      asideBody:
+        "Nếu bạn đang xếp một đoàn đông hoặc tuyến đường dài, nhà xe có thể kiểm tra sớm để giữ xe lớn phù hợp và lên lịch đón rõ ràng."
+    },
+    "thaco-evergreen": {
+      fit: "Đoàn doanh nghiệp, khách sự kiện và nhóm đi tỉnh cần xe 35 chỗ vừa tầm, không quá lớn như 45 chỗ.",
+      priority: "Ưu tiên chỗ ngồi cho đoàn tầm trung, giữ nhịp chuyến đi gọn và phù hợp nhiều kiểu tuyến.",
+      highlights: [
+        {
+          title: "Vừa cho đoàn tầm trung",
+          body: "Đây là lựa chọn cân bằng khi số khách nhiều hơn xe 29 chỗ nhưng chưa cần đẩy lên 45 chỗ."
+        },
+        {
+          title: "Hợp lịch công ty",
+          body: "Các chuyến đưa đón nhân viên, hội nhóm hoặc hoạt động nội bộ thường rất hợp với dòng xe 35 chỗ."
+        },
+        {
+          title: "Đi tỉnh và tour ngắn tốt",
+          body: "Xe phù hợp những tuyến liên tỉnh hoặc tour ngắn cần một xe chung cho cả đoàn nhưng vẫn gọn điều phối."
+        },
+        {
+          title: "Linh hoạt hơn xe lớn",
+          body: "So với xe 45 chỗ, loại này dễ cân đối hơn khi đoàn không quá đông mà vẫn muốn giữ một xe chung."
+        }
+      ],
+      asideTitle: "Xe 35 chỗ hợp đoàn công ty và nhóm vừa đông",
+      asideBody:
+        "Nếu số khách của bạn rơi vào nhóm 30 đến hơn 30 người, đây là loại xe đáng cân nhắc để giữ chuyến gọn mà không bị dư quá nhiều chỗ."
+    }
+  };
+
+  if (bySlug[slug]) {
+    return bySlug[slug];
+  }
+
+  if (seatCount <= 7) {
+    return {
+      fit: "Đi gia đình, sân bay và lịch công việc cần xe nhỏ gọn, dễ chốt giờ và dễ đi nhiều điểm.",
+      priority: "Ưu tiên riêng tư, đúng giờ và cảm giác ngồi thoải mái cho nhóm ít người.",
+      highlights: [
+        {
+          title: "Hợp khách ít người",
+          body: "Phù hợp lịch gia đình nhỏ, khách đi riêng hoặc những chuyến không cần xe quá nhiều chỗ."
+        },
+        {
+          title: "Đi nội thành gọn",
+          body: "Dễ xoay xở với lịch đón trả trong phố, đi sân bay hoặc di chuyển nhiều điểm trong ngày."
+        },
+        {
+          title: "Hình ảnh chỉn chu",
+          body: "Giữ cảm giác lịch sự và gọn gàng cho lịch công tác, gặp khách hoặc đưa đón cá nhân."
+        },
+        {
+          title: "Chốt tuyến nhanh",
+          body: "Khi lịch trình đã rõ, xe nhỏ thường dễ xếp chuyến và giữ giờ hơn."
+        }
+      ],
+      asideTitle: "Dòng xe nhỏ phù hợp lịch đi gọn",
+      asideBody:
+        "Nếu bạn cần một chuyến gia đình, sân bay hoặc công việc trong ngày, nhà xe có thể rà nhanh để tư vấn loại xe đúng nhu cầu."
+    };
+  }
+
+  if (seatCount <= 16) {
+    return {
+      fit: "Đoàn vừa, đi tỉnh, đi lễ hoặc lịch cần khoang xe thoáng hơn xe nhỏ.",
+      priority: "Ưu tiên không gian ngồi, lên xuống tiện và giữ chuyến gọn cho nhóm tầm trung.",
+      highlights: [
+        {
+          title: "Đủ chỗ cho đoàn vừa",
+          body: "Hợp nhóm khách không quá đông nhưng vẫn muốn đi cùng một xe cho dễ điều hành."
+        },
+        {
+          title: "Khoang xe thoáng hơn",
+          body: "Khi lịch đi nhiều giờ hoặc cần chỗ cho đồ cá nhân, xe 16 chỗ sẽ dễ chịu hơn nhóm xe nhỏ."
+        },
+        {
+          title: "Đi lễ, đi tỉnh ổn",
+          body: "Dễ dùng cho lịch nội tỉnh, liên tỉnh hoặc các chuyến cuối tuần đi theo nhóm."
+        },
+        {
+          title: "Giữ lịch trình rõ",
+          body: "Khi đã có số khách tương đối chắc, nhà xe sẽ dễ chốt loại xe này và sắp giờ đón."
+        }
+      ],
+      asideTitle: "Phù hợp nhóm khách tầm trung",
+      asideBody:
+        "Nếu lịch đi của bạn nằm trong nhóm đoàn vừa, nhà xe có thể kiểm tra và chốt nhanh loại xe 16 chỗ phù hợp."
+    };
+  }
+
+  return {
+    fit: "Đoàn đông, tour riêng và các lịch sự kiện cần một xe đủ chỗ, dễ điều phối theo nhóm.",
+    priority: "Ưu tiên gom đoàn gọn, rõ giờ đón trả và hạn chế chia khách sang nhiều xe khác nhau.",
+    highlights: [
+      {
+        title: "Hợp đi theo đoàn",
+        body: "Phù hợp các chuyến có đông khách, giúp giữ mọi người cùng một xe và dễ kiểm soát hành trình."
+      },
+      {
+        title: "Đi tỉnh và tour tốt",
+        body: "Những tuyến dài hoặc nhiều điểm dừng sẽ thuận hơn khi đoàn đi cùng một xe lớn."
+      },
+      {
+        title: "Dễ điều hành lịch nhóm",
+        body: "Khi giờ đi, điểm đón và số khách đã rõ, việc xếp xe lớn sẽ mạch lạc và chắc chuyến hơn."
+      },
+      {
+        title: "Hợp cưới hỏi, sự kiện",
+        body: "Dòng xe lớn thường hợp các lịch cần đưa đón tập trung và giữ hình ảnh thống nhất cho cả đoàn."
+      }
+    ],
+    asideTitle: "Dòng xe này hợp các lịch đông người",
+    asideBody:
+      "Nếu bạn đang xếp đoàn đông hoặc lịch sự kiện, nhà xe có thể kiểm tra nhanh để giữ đúng xe và chốt lộ trình rõ ràng."
+  };
+}
+
 export default function VehicleDetailPage() {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const [siteSettings, setSiteSettings] = useState([]);
   const [vehicle, setVehicle] = useState(null);
   const [selectedImageUrl, setSelectedImageUrl] = useState("");
@@ -57,6 +302,7 @@ export default function VehicleDetailPage() {
     gallery.findIndex((image) => image.imageUrl === selectedImageUrl)
   );
   const currentImage = gallery[selectedImageIndex]?.fullUrl ?? "/assets/xecountybonghoi.jpg";
+  const narrative = getVehicleNarrative(vehicle);
 
   useEffect(() => {
     applyDocumentBranding({
@@ -128,9 +374,13 @@ export default function VehicleDetailPage() {
         logoUrl={siteLogoUrl}
       />
       <main className="site-shell mx-auto px-4 py-16 sm:px-6">
-        <Link to="/" className="text-sm font-bold uppercase tracking-[0.2em] text-brand-amber">
-          Quay lại trang chủ
-        </Link>
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="text-sm font-bold uppercase tracking-[0.2em] text-brand-amber"
+        >
+          Quay lại trang trước
+        </button>
 
         {state.loading ? <p className="mt-6 text-slate-500">Đang tải dữ liệu xe...</p> : null}
         {state.error ? (
@@ -230,34 +480,18 @@ export default function VehicleDetailPage() {
                 <p className="mt-6 text-slate-600">
                   {vehicle.description || vehicle.shortDescription}
                 </p>
-                {vehicle.features?.length ? (
-                  <div className="mt-6 flex flex-wrap gap-2">
-                    {vehicle.features.map((feature) => (
-                      <span
-                        key={feature}
-                        className="rounded-full bg-brand-sky px-4 py-2 text-sm font-semibold text-brand-navy"
-                      >
-                        {feature}
-                      </span>
-                    ))}
-                  </div>
-                ) : null}
                 <div className="mt-8 grid gap-3 sm:grid-cols-2">
                   <div className="rounded-[1.25rem] bg-slate-100 p-4">
                     <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-amber">
                       Phù hợp
                     </p>
-                    <p className="mt-2 font-bold text-brand-navy">
-                      Công tác, du lịch, sân bay, sự kiện
-                    </p>
+                    <p className="mt-2 font-bold leading-7 text-brand-navy">{narrative.fit}</p>
                   </div>
                   <div className="rounded-[1.25rem] bg-slate-100 p-4">
                     <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-amber">
                       Ưu tiên
                     </p>
-                    <p className="mt-2 font-bold text-brand-navy">
-                      Xe sạch, đúng giờ, hỗ trợ theo lịch trình
-                    </p>
+                    <p className="mt-2 font-bold leading-7 text-brand-navy">{narrative.priority}</p>
                   </div>
                 </div>
                 <div className="mt-8 flex flex-wrap gap-3">
@@ -280,33 +514,15 @@ export default function VehicleDetailPage() {
             <section className="grid gap-6 lg:grid-cols-[1fr_0.95fr]">
               <div className="rounded-[2rem] border border-[#e4d5bb] bg-white/92 p-8 shadow-[0_24px_70px_rgba(20,35,60,0.08)]">
                 <p className="text-sm font-bold uppercase tracking-[0.25em] text-brand-amber">
-                  Lý do nên chọn dòng xe này
+                  Dòng xe này hợp với kiểu chuyến nào
                 </p>
                 <div className="mt-6 grid gap-4 md:grid-cols-2">
-                  <div className="rounded-[1.5rem] bg-slate-50 p-5">
-                    <h2 className="text-lg font-extrabold text-brand-navy">Không gian dễ chịu</h2>
-                    <p className="mt-2 text-sm leading-7 text-slate-600">
-                      Phù hợp lịch trình nhiều giờ với khoang ngồi thoải mái và dễ sắp xếp người đi.
-                    </p>
-                  </div>
-                  <div className="rounded-[1.5rem] bg-slate-50 p-5">
-                    <h2 className="text-lg font-extrabold text-brand-navy">Hình ảnh chỉnh chu</h2>
-                    <p className="mt-2 text-sm leading-7 text-slate-600">
-                      Thích hợp cho tiếp khách, sự kiện, cưới hỏi hoặc đoàn cần cảm giác chuyên nghiệp.
-                    </p>
-                  </div>
-                  <div className="rounded-[1.5rem] bg-slate-50 p-5">
-                    <h2 className="text-lg font-extrabold text-brand-navy">Linh hoạt tuyến đường</h2>
-                    <p className="mt-2 text-sm leading-7 text-slate-600">
-                      Dùng tốt cho nội tỉnh, liên tỉnh, sân bay và các hành trình nhiều điểm dừng.
-                    </p>
-                  </div>
-                  <div className="rounded-[1.5rem] bg-slate-50 p-5">
-                    <h2 className="text-lg font-extrabold text-brand-navy">Hỗ trợ nhanh</h2>
-                    <p className="mt-2 text-sm leading-7 text-slate-600">
-                      Luồng quản trị đã tối ưu để liên hệ, chốt lịch và phản hồi yêu cầu nhanh hơn.
-                    </p>
-                  </div>
+                  {narrative.highlights.map((item) => (
+                    <div key={item.title} className="rounded-[1.5rem] bg-slate-50 p-5">
+                      <h2 className="text-lg font-extrabold text-brand-navy">{item.title}</h2>
+                      <p className="mt-2 text-sm leading-7 text-slate-600">{item.body}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -314,11 +530,8 @@ export default function VehicleDetailPage() {
                 <p className="text-sm font-bold uppercase tracking-[0.25em] text-brand-amber">
                   Cần chốt xe nhanh?
                 </p>
-                <h2 className="mt-3 text-3xl font-black">Liên hệ để giữ lịch trình phù hợp</h2>
-                <p className="mt-4 text-slate-200">
-                  Chỉ cần gọi hoặc gửi yêu cầu liên hệ, hệ thống admin sẽ nhận booking và phản hồi
-                  để xác nhận ngay dòng xe phù hợp.
-                </p>
+                <h2 className="mt-3 text-3xl font-black">{narrative.asideTitle}</h2>
+                <p className="mt-4 text-slate-200">{narrative.asideBody}</p>
                 <div className="mt-6 space-y-3">
                   <a
                     href={`tel:${settingsMap.hotline ?? "0979860498"}`}

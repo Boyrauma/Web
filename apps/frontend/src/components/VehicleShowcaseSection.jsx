@@ -108,20 +108,6 @@ export default function VehicleShowcaseSection({
               <p className="text-slate-600">
                 {selectedVehicle.description || selectedVehicle.shortDescription}
               </p>
-
-              {selectedVehicle.features?.length ? (
-                <div className="flex flex-wrap gap-2">
-                  {selectedVehicle.features.map((feature) => (
-                    <span
-                      key={feature}
-                      className="rounded-full bg-brand-sky px-4 py-2 text-sm font-semibold text-brand-navy"
-                    >
-                      {feature}
-                    </span>
-                  ))}
-                </div>
-              ) : null}
-
               <Link
                 to={`/xe/${selectedVehicle.slug}`}
                 className="inline-flex rounded-full bg-brand-navy px-5 py-3 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-brand-amber"

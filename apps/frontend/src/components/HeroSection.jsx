@@ -17,7 +17,11 @@
   const resolvedSubtitle =
     heroSubtitle?.trim() && heroSubtitle.trim() !== legacySubtitle
       ? heroSubtitle.trim()
-      : "Dịch vụ vận chuyển chuyên nghiệp, đúng hẹn và rõ ràng cho những hành trình cần sự an tâm.";
+      : "Nhận lịch gia đình, sân bay, cưới hỏi và đoàn công tác với cách làm việc gọn, rõ và đúng giờ từ Thanh Hóa.";
+  const primarySubtitle =
+    "Dịch vụ vận chuyển chuyên nghiệp, đúng hẹn và rõ ràng cho những hành trình cần sự an tâm.";
+  const trustLine =
+    "Phục vụ xe 4 đến 45 chỗ cho những lịch đi cần người nghe máy rõ ràng và sắp chuyến cẩn thận.";
 
   return (
     <section className="hero-surface relative left-1/2 right-1/2 min-h-[680px] w-screen -translate-x-1/2 overflow-hidden border-b border-[#c8ab74]/35">
@@ -38,7 +42,7 @@
       <div className="relative mx-auto flex min-h-[680px] w-full max-w-[920px] items-center justify-center px-4 py-14 text-center sm:px-6 lg:py-20">
         <div className="max-w-[820px]">
           <span className="hero-fade inline-flex rounded-full border border-[#d3b277]/25 bg-white/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.28em] text-[#d9bb84]">
-            Nhà xe uy tín tại Thanh Hóa
+            Nhà xe Định Dung · Thanh Hóa
           </span>
           <h2 className="display-serif hero-fade-delay hero-text-strong mt-6 text-4xl leading-[1.04] text-white sm:text-5xl lg:text-[4.15rem]">
             {isCustomTitle ? (
@@ -49,24 +53,25 @@
               </>
             )}
           </h2>
-          <p className="hero-fade-delay hero-text-soft mx-auto mt-6 max-w-[620px] text-base font-semibold leading-8 text-slate-100 sm:text-lg">
-            {resolvedSubtitle}
-          </p>
-          <div
-            className="hero-fade-delay-2 hero-text-soft hotline-glow mx-auto mt-6 inline-flex rounded-full border border-[#d3b277]/30 bg-white/12 px-7 py-4 text-base font-extrabold uppercase tracking-[0.18em] text-white sm:text-lg"
-          >
-            Hotline: {hotline ?? "0979 860 498"}
+          <div className="hero-fade-delay hero-text-soft mx-auto mt-6 max-w-[700px] space-y-4">
+            <p className="mx-auto max-w-[680px] text-base font-semibold leading-8 text-slate-100 sm:text-lg">
+              {primarySubtitle}
+            </p>
+            <p className="mx-auto max-w-[680px] text-base font-semibold leading-8 text-slate-100 sm:text-lg">
+              {resolvedSubtitle}
+            </p>
+            <p className="mx-auto max-w-[680px] text-[15px] font-semibold leading-7 text-slate-200/90 sm:text-base">
+              Phục vụ xe 4 đến 45 chỗ cho những lịch đi cần người nghe máy rõ ràng và sắp
+              chuyến <span className="whitespace-nowrap">cẩn thận.</span>
+            </p>
           </div>
-          <div className="hero-fade-delay-2 mx-auto mt-8 flex max-w-[540px] flex-wrap items-center justify-center gap-3">
-            <span className="float-soft rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-slate-100">
-              Xe 4 - 45 chỗ
-            </span>
-            <span className="float-soft rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-slate-100 [animation-delay:180ms]">
-              Đúng hẹn
-            </span>
-            <span className="float-soft rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-slate-100 [animation-delay:360ms]">
-              Điều phối rõ ràng
-            </span>
+          <div className="hero-fade-delay-2 mt-8">
+            <a
+              href={`tel:${hotline ?? "0979860498"}`}
+              className="hero-text-soft hotline-glow inline-flex rounded-full border border-[#d3b277]/30 bg-white/12 px-7 py-4 text-base font-extrabold uppercase tracking-[0.18em] text-white sm:text-lg"
+            >
+              Hotline: {hotline ?? "0979 860 498"}
+            </a>
           </div>
         </div>
       </div>

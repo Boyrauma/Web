@@ -1,8 +1,8 @@
 ﻿import { Link, useLocation } from "react-router-dom";
 
 const navItems = [
-  { href: "#dich-vu", label: "Dịch vụ" },
   { href: "#doi-xe", label: "Đội xe" },
+  { href: "#dich-vu", label: "Dịch vụ" },
   { href: "#booking", label: "Liên hệ" },
   {
     href: "https://mail.google.com/mail/?view=cm&fs=1&to=nguyenducmanh261996@gmail.com&su=Ph%E1%BA%A3n%20h%E1%BB%93i%20t%E1%BB%AB%20kh%C3%A1ch%20h%C3%A0ng&body=T%C3%B4i%20mu%E1%BB%91n%20g%E1%BB%ADi%20ph%E1%BA%A3n%20h%E1%BB%93i%20v%E1%BB%81%20d%E1%BB%8Bch%20v%E1%BB%A5%3A%0A",

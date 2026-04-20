@@ -9,6 +9,10 @@
   scroll-behavior: smooth;
 }
 
+html {
+  scroll-padding-top: 6.5rem;
+}
+
 body {
   margin: 0;
   font-family: "Manrope", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -90,6 +94,13 @@ summary {
   width: min(90vw, 1480px);
 }
 
+#dich-vu,
+#doi-xe,
+#showcase-xe,
+#booking {
+  scroll-margin-top: 6.5rem;
+}
+
 .reveal-card {
   animation: reveal-up 700ms ease both;
 }
@@ -152,10 +163,8 @@ summary {
 }
 
 .vehicle-stage-lightbox {
-  background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.12), transparent 34%),
-    linear-gradient(180deg, rgba(26, 37, 63, 0.84), rgba(10, 16, 29, 0.94));
-  padding: 1rem;
+  background: transparent;
+  padding: 0;
 }
 
 .vehicle-stage-image {
@@ -179,6 +188,7 @@ summary {
   object-fit: contain;
   object-position: center center;
   transform: none;
+  border-radius: 0;
 }
 
 .vehicle-thumb-stage {

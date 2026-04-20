@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+﻿import { useEffect } from "react";
 
 export default function VehicleGalleryLightbox({
   gallery,
@@ -73,33 +73,61 @@ export default function VehicleGalleryLightbox({
           </p>
         </div>
 
-        <div className="relative z-10 flex min-h-0 flex-1 px-3 pb-3 sm:px-5 sm:pb-5">
-          <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-[1.7rem] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_28%),linear-gradient(180deg,rgba(22,31,53,0.8),rgba(12,18,32,0.92))] p-3 sm:p-5">
-            <button
-              type="button"
-              onClick={onPrev}
-              className="absolute left-3 top-1/2 z-10 hidden h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-slate-950/45 text-3xl text-white backdrop-blur transition hover:bg-white/15 lg:inline-flex"
-              aria-label="Ảnh trước"
-            >
-              ‹
-            </button>
-
-            <div className="vehicle-stage vehicle-stage-lightbox h-full w-full rounded-[1.35rem]">
-              <img
-                src={activeImage.fullUrl}
-                alt={imageLabel}
-                className="vehicle-stage-image vehicle-stage-image-lightbox h-full max-h-[calc(100vh-19rem)] min-h-[18rem] w-full"
-              />
+        <div className="relative z-10 flex min-h-0 flex-1 px-1 pb-1 sm:px-3 sm:pb-3">
+          <div className="grid min-h-0 flex-1 grid-cols-[5.25rem_minmax(0,1fr)] gap-2 rounded-[1.7rem] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.04),transparent_28%),linear-gradient(180deg,rgba(18,27,46,0.58),rgba(10,16,29,0.76))] p-1 sm:grid-cols-[6.25rem_minmax(0,1fr)] sm:gap-3 sm:p-2">
+            <div className="min-h-0 overflow-hidden rounded-[1.2rem] border border-white/10 bg-slate-950/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+              <div className="flex max-h-full flex-col gap-2 overflow-y-auto p-2 sm:gap-3 sm:p-2">
+                {gallery.map((image, index) => (
+                  <button
+                    key={image.id ?? `${image.fullUrl}-${index}`}
+                    type="button"
+                    onClick={() => onSelect(index)}
+                    className={`group shrink-0 overflow-hidden rounded-[1rem] border-2 transition ${
+                      index === currentIndex
+                        ? "border-brand-amber shadow-[0_0_0_1px_rgba(184,138,59,0.28)]"
+                        : "border-white/15 opacity-80 hover:border-white/40 hover:opacity-100"
+                    }`}
+                    aria-label={`Xem ảnh ${index + 1}`}
+                  >
+                    <div className="vehicle-thumb-stage aspect-[4/5] w-full bg-white/95">
+                      <img
+                        src={image.fullUrl}
+                        alt={image.altText ?? title ?? "Ảnh thu nhỏ"}
+                        className="vehicle-thumb-image"
+                      />
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <button
-              type="button"
-              onClick={onNext}
-              className="absolute right-3 top-1/2 z-10 hidden h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-slate-950/45 text-3xl text-white backdrop-blur transition hover:bg-white/15 lg:inline-flex"
-              aria-label="Ảnh tiếp theo"
-            >
-              ›
-            </button>
+            <div className="relative flex min-h-0 items-center justify-center overflow-hidden rounded-[1.35rem] border border-white/6 bg-transparent">
+              <button
+                type="button"
+                onClick={onPrev}
+                className="absolute left-3 top-1/2 z-10 hidden h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-slate-950/45 text-3xl text-white backdrop-blur transition hover:bg-white/15 lg:inline-flex"
+                aria-label="Ảnh trước"
+              >
+                ‹
+              </button>
+
+              <div className="vehicle-stage vehicle-stage-lightbox h-full w-full px-0">
+                <img
+                  src={activeImage.fullUrl}
+                  alt={imageLabel}
+                  className="vehicle-stage-image vehicle-stage-image-lightbox max-h-[calc(100vh-3.5rem)] min-h-0 w-auto max-w-full"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={onNext}
+                className="absolute right-3 top-1/2 z-10 hidden h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-slate-950/45 text-3xl text-white backdrop-blur transition hover:bg-white/15 lg:inline-flex"
+                aria-label="Ảnh tiếp theo"
+              >
+                ›
+              </button>
+            </div>
           </div>
         </div>
 
@@ -120,38 +148,8 @@ export default function VehicleGalleryLightbox({
           </button>
         </div>
 
-        <div className="relative z-10 border-t border-white/10 bg-slate-950/18 px-4 py-4 backdrop-blur-sm sm:px-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-white">{imageLabel}</p>
-              <p className="mt-1 text-xs uppercase tracking-[0.22em] text-slate-400">
-                Chọn nhanh ảnh khác
-              </p>
-            </div>
-          </div>
-          <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
-            {gallery.map((image, index) => (
-              <button
-                key={image.id ?? `${image.fullUrl}-${index}`}
-                type="button"
-                onClick={() => onSelect(index)}
-                className={`group shrink-0 overflow-hidden rounded-[1.15rem] border transition ${
-                  index === currentIndex
-                    ? "border-brand-amber bg-white/10 shadow-[0_0_0_1px_rgba(184,138,59,0.28)]"
-                    : "border-white/10 bg-white/[0.03] opacity-80 hover:border-white/25 hover:opacity-100"
-                }`}
-                aria-label={`Xem ảnh ${index + 1}`}
-              >
-                <div className="vehicle-thumb-stage h-20 w-28 bg-white/95 sm:h-24 sm:w-32">
-                  <img
-                    src={image.fullUrl}
-                    alt={image.altText ?? title ?? "Ảnh thu nhỏ"}
-                    className="vehicle-thumb-image"
-                  />
-                </div>
-              </button>
-            ))}
-          </div>
+        <div className="relative z-10 border-t border-white/10 bg-slate-950/18 px-4 py-3 backdrop-blur-sm sm:px-6">
+          <p className="truncate text-sm font-semibold text-white">{imageLabel}</p>
         </div>
       </div>
     </div>
