@@ -17,11 +17,11 @@
   const resolvedSubtitle =
     heroSubtitle?.trim() && heroSubtitle.trim() !== legacySubtitle
       ? heroSubtitle.trim()
-      : "Nhận lịch gia đình, sân bay, cưới hỏi và đoàn công tác với cách làm việc gọn, rõ và đúng giờ từ Thanh Hóa.";
+      : "Nhận lịch gia đình, sân bay, cưới hỏi và đoàn công tác tại Thanh Hóa.";
   const primarySubtitle =
-    "Dịch vụ vận chuyển chuyên nghiệp, đúng hẹn và rõ ràng cho những hành trình cần sự an tâm.";
+    "Dịch vụ vận chuyển chuyên nghiệp cho những chuyến đi cần sự an tâm và đúng hẹn.";
   const trustLine =
-    "Phục vụ xe 4 đến 45 chỗ cho những lịch đi cần người nghe máy rõ ràng và sắp chuyến cẩn thận.";
+    "Đội xe từ 4 đến 45 chỗ, đáp ứng từ nhu cầu đi riêng đến các chuyến đi theo đoàn.";
 
   return (
     <section className="hero-surface relative left-1/2 right-1/2 min-h-[680px] w-screen -translate-x-1/2 overflow-hidden border-b border-[#c8ab74]/35">
@@ -61,8 +61,7 @@
               {resolvedSubtitle}
             </p>
             <p className="mx-auto max-w-[680px] text-[15px] font-semibold leading-7 text-slate-200/90 sm:text-base">
-              Phục vụ xe 4 đến 45 chỗ cho những lịch đi cần người nghe máy rõ ràng và sắp
-              chuyến <span className="whitespace-nowrap">cẩn thận.</span>
+              {trustLine}
             </p>
           </div>
           <div className="hero-fade-delay-2 mt-8">
