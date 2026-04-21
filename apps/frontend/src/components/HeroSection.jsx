@@ -30,6 +30,9 @@
           <img
             src={backgroundImageUrl}
             alt=""
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
             className="absolute inset-0 h-full w-full object-cover object-center opacity-80"
           />
         ) : null}

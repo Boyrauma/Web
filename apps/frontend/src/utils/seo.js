@@ -1,4 +1,4 @@
-function ensureMeta(selector, attributes) {
+﻿function ensureMeta(selector, attributes) {
   let element = document.head.querySelector(selector);
 
   if (!element) {

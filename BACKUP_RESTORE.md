@@ -205,6 +205,27 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
 docker compose exec backend npx prisma migrate deploy
 ```
 
+## 6.1. Backup nhanh tren Ubuntu
+
+Neu server dang chay on dinh va ban muon backup nhanh ca `DB + uploads + .env`:
+
+```bash
+chmod +x /opt/nhaxedinhdung/scripts/backup-prod.sh
+/opt/nhaxedinhdung/scripts/backup-prod.sh
+```
+
+Backup se nam o:
+
+```bash
+/root/backups/nhaxedinhdung/<timestamp>/
+```
+
+Trong do co:
+
+- `dinhdung_transport.sql`
+- `uploads.tar.gz`
+- `.env`
+
 ## 7. Kiem tra cuoi cung
 
 Server duoc coi la dong nhat voi server cu khi ban da co du:
