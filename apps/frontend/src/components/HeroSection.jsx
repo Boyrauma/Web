@@ -42,12 +42,12 @@
         <div className="absolute bottom-[-80px] left-10 h-40 w-40 rounded-full bg-white/5 blur-3xl" />
       </div>
 
-      <div className="relative mx-auto flex min-h-[680px] w-full max-w-[920px] items-center justify-center px-4 py-14 text-center sm:px-6 lg:py-20">
-        <div className="max-w-[820px]">
+      <div className="relative mx-auto flex min-h-[680px] w-full max-w-[1320px] items-center px-4 py-16 sm:px-6 lg:py-24">
+        <div className="max-w-[860px] text-left">
           <span className="hero-fade inline-flex rounded-full border border-[#d3b277]/25 bg-white/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.28em] text-[#d9bb84]">
             Nhà xe Định Dung · Thanh Hóa
           </span>
-          <h2 className="display-serif hero-fade-delay hero-text-strong mt-6 text-4xl leading-[1.04] text-white sm:text-5xl lg:text-[4.15rem]">
+          <h2 className="display-serif hero-fade-delay hero-text-strong mt-7 max-w-[860px] text-4xl leading-[1.04] text-white sm:text-5xl lg:text-[4.8rem]">
             {isCustomTitle ? (
               resolvedTitle
             ) : (
@@ -56,18 +56,18 @@
               </>
             )}
           </h2>
-          <div className="hero-fade-delay hero-text-soft mx-auto mt-6 max-w-[860px] space-y-4">
-            <p className="mx-auto max-w-full text-base font-semibold leading-8 text-slate-100 sm:text-lg lg:whitespace-nowrap">
+          <div className="hero-fade-delay hero-text-soft mt-7 max-w-[760px] space-y-4">
+            <p className="max-w-[760px] text-base font-semibold leading-8 text-slate-100 sm:text-lg lg:whitespace-nowrap">
               Dịch vụ vận chuyển chuyên nghiệp cho những chuyến đi cần sự an tâm và đúng hẹn.
             </p>
-            <p className="mx-auto max-w-[680px] text-base font-semibold leading-8 text-slate-100 sm:text-lg">
+            <p className="max-w-[640px] text-base font-semibold leading-8 text-slate-100 sm:text-lg">
               {resolvedSubtitle}
             </p>
-            <p className="mx-auto max-w-[680px] text-[15px] font-semibold leading-7 text-slate-200/90 sm:text-base">
+            <p className="max-w-[640px] text-[15px] font-semibold leading-7 text-slate-200/90 sm:text-base">
               {trustLine}
             </p>
           </div>
-          <div className="hero-fade-delay-2 mt-8">
+          <div className="hero-fade-delay-2 mt-10">
             <a
               href={`tel:${hotline ?? "0979860498"}`}
               className="hero-text-soft hotline-glow inline-flex rounded-full border border-[#d3b277]/30 bg-white/12 px-7 py-4 text-base font-extrabold uppercase tracking-[0.18em] text-white sm:text-lg"

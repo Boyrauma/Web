@@ -1,4 +1,4 @@
-﻿import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 const navItems = [
   { href: "#doi-xe", label: "Đội xe" },
@@ -26,7 +26,11 @@ export default function SiteHeader({ siteName, siteTagline, hotline, logoUrl }) 
           <div className="flex min-w-0 items-center gap-4">
             {logoUrl ? (
               <div className="flex h-14 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-premium">
-                <img src={logoUrl} alt={displayName} className="h-full w-full bg-white object-cover object-center" />
+                <img
+                  src={logoUrl}
+                  alt={displayName}
+                  className="h-full w-full bg-white object-cover object-center"
+                />
               </div>
             ) : (
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#14233c] text-lg font-extrabold text-[#f6efe3] shadow-premium">

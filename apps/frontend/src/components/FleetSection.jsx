@@ -1,4 +1,4 @@
-﻿function dedupeImages(images) {
+function dedupeImages(images) {
   return images.filter(
     (image, index, array) =>
       image.fullUrl && array.findIndex((item) => item.fullUrl === image.fullUrl) === index
@@ -75,7 +75,7 @@ export default function FleetSection({ vehicleCategories, resolveAssetUrl, onOpe
           {groups.map((group) => (
             <article
               key={group.title}
-              className="reveal-card hover-lift flex min-h-[472px] h-full flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm transition hover:shadow-premium"
+              className="reveal-card hover-lift flex h-full min-h-[472px] flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm transition hover:shadow-premium"
             >
               <button
                 type="button"
@@ -125,4 +125,3 @@ export default function FleetSection({ vehicleCategories, resolveAssetUrl, onOpe
     </section>
   );
 }
-
