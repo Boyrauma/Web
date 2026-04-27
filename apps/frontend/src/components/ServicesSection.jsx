@@ -1,10 +1,15 @@
 ﻿function ServiceIcon({ type }) {
-  const common = "h-6 w-6 text-[#183051]";
+  const common = "h-[22px] w-[22px] text-[#173154]";
 
   if (type === "wedding") {
     return (
       <svg viewBox="0 0 24 24" fill="none" className={common} aria-hidden="true">
-        <path d="M12 20s-6.5-3.9-6.5-9.2A3.8 3.8 0 0 1 9.3 7c1.2 0 2.1.5 2.7 1.4.6-.9 1.5-1.4 2.7-1.4a3.8 3.8 0 0 1 3.8 3.8C18.5 16.1 12 20 12 20Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+        <path
+          d="M12 20s-6.5-3.9-6.5-9.2A3.8 3.8 0 0 1 9.3 7c1.2 0 2.1.5 2.7 1.4.6-.9 1.5-1.4 2.7-1.4a3.8 3.8 0 0 1 3.8 3.8C18.5 16.1 12 20 12 20Z"
+          stroke="currentColor"
+          strokeWidth="1.65"
+          strokeLinejoin="round"
+        />
       </svg>
     );
   }
@@ -12,7 +17,12 @@
   if (type === "airport") {
     return (
       <svg viewBox="0 0 24 24" fill="none" className={common} aria-hidden="true">
-        <path d="m3 14 8-2 3-8 2 1-1.7 7 4.7 2.3-.9 1.7-4.8-1.2L12 20l-1.6-.8.7-4.5-4.4 1Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+        <path
+          d="m3 14 8-2 3-8 2 1-1.7 7 4.7 2.3-.9 1.7-4.8-1.2L12 20l-1.6-.8.7-4.5-4.4 1Z"
+          stroke="currentColor"
+          strokeWidth="1.65"
+          strokeLinejoin="round"
+        />
       </svg>
     );
   }
@@ -20,18 +30,39 @@
   if (type === "contract") {
     return (
       <svg viewBox="0 0 24 24" fill="none" className={common} aria-hidden="true">
-        <path d="M7 4h8l4 4v12H7z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-        <path d="M15 4v4h4M10 12h6M10 16h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <path
+          d="M7 4h8l4 4v12H7z"
+          stroke="currentColor"
+          strokeWidth="1.65"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M15 4v4h4M10 12h6M10 16h6"
+          stroke="currentColor"
+          strokeWidth="1.65"
+          strokeLinecap="round"
+        />
       </svg>
     );
   }
 
   return (
     <svg viewBox="0 0 24 24" fill="none" className={common} aria-hidden="true">
-      <path d="M4 16c0-3.3 2.7-6 6-6h4c3.3 0 6 2.7 6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      <path d="M7 16V9a2 2 0 0 1 2-2h5.5a2.5 2.5 0 0 1 2.5 2.5V16M9 16h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="9" cy="16.5" r="1.2" fill="currentColor" />
-      <circle cx="16" cy="16.5" r="1.2" fill="currentColor" />
+      <path
+        d="M4 16c0-3.3 2.7-6 6-6h4c3.3 0 6 2.7 6 6"
+        stroke="currentColor"
+        strokeWidth="1.65"
+        strokeLinecap="round"
+      />
+      <path
+        d="M7 16V9a2 2 0 0 1 2-2h5.5a2.5 2.5 0 0 1 2.5 2.5V16M9 16h6"
+        stroke="currentColor"
+        strokeWidth="1.65"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="9" cy="16.5" r="1" fill="currentColor" />
+      <circle cx="16" cy="16.5" r="1" fill="currentColor" />
     </svg>
   );
 }
@@ -67,7 +98,9 @@ const serviceDefinitions = [
   }
 ];
 
-const serviceIconMap = Object.fromEntries(serviceDefinitions.map((service) => [service.title, service.icon]));
+const serviceIconMap = Object.fromEntries(
+  serviceDefinitions.map((service) => [service.title, service.icon])
+);
 const serviceDescriptionMap = Object.fromEntries(
   serviceDefinitions.map((service) => [service.title, service.description])
 );
@@ -115,9 +148,9 @@ export default function ServicesSection({ services, error }) {
             className="reveal-card hover-lift rounded-[1.75rem] border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:shadow-premium"
           >
             <div className="flex justify-start">
-              <div className="relative flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-[1.6rem] border border-[#ead7b6] bg-[linear-gradient(180deg,#fffdf8_0%,#f6ebda_100%)] shadow-[0_18px_34px_rgba(184,138,59,0.16)]">
-                <div className="absolute inset-x-3 top-0 h-8 rounded-b-full bg-white/60 blur-md" />
-                <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-white/75 ring-1 ring-white/80">
+              <div className="relative flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-[1.55rem] border border-[#ead7b6] bg-[linear-gradient(180deg,#fffdf8_0%,#f6ebda_100%)] shadow-[0_16px_30px_rgba(184,138,59,0.14)]">
+                <div className="absolute inset-x-3 top-0 h-8 rounded-b-full bg-white/55 blur-md" />
+                <div className="relative flex h-11 w-11 items-center justify-center rounded-[1.1rem] bg-white/80 ring-1 ring-white/85">
                   <ServiceIcon type={service.icon} />
                 </div>
               </div>
@@ -130,4 +163,3 @@ export default function ServicesSection({ services, error }) {
     </section>
   );
 }
-

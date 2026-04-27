@@ -12,14 +12,12 @@
   const isCustomTitle = heroTitle?.trim() && heroTitle.trim() !== legacyTitle;
   const hasBackgroundImage = backgroundImageUrl?.trim();
 
-  const resolvedTitle = isCustomTitle ? heroTitle.trim() : "Đồng hành chỉn chu cùng";
+  const resolvedTitle = isCustomTitle ? heroTitle.trim() : "Đi đúng giờ, về đúng hẹn.";
 
   const resolvedSubtitle =
     heroSubtitle?.trim() && heroSubtitle.trim() !== legacySubtitle
       ? heroSubtitle.trim()
       : "Nhận lịch gia đình, sân bay, cưới hỏi và đoàn công tác tại Thanh Hóa.";
-  const primarySubtitle =
-    "Dịch vụ vận chuyển chuyên nghiệp cho những chuyến đi cần sự an tâm và đúng hẹn.";
   const trustLine =
     "Đội xe từ 4 đến 45 chỗ, đáp ứng từ nhu cầu đi riêng đến các chuyến đi theo đoàn.";
 
@@ -42,28 +40,25 @@
         <div className="absolute bottom-[-80px] left-10 h-40 w-40 rounded-full bg-white/5 blur-3xl" />
       </div>
 
-      <div className="relative mx-auto flex min-h-[680px] w-full max-w-[1320px] items-center px-4 py-16 sm:px-6 lg:py-24">
-        <div className="max-w-[860px] text-left">
+      <div className="relative mx-auto flex min-h-[680px] w-full max-w-[1320px] items-center justify-center px-4 py-16 text-center sm:px-6 lg:py-24">
+        <div className="max-w-[920px]">
           <span className="hero-fade inline-flex rounded-full border border-[#d3b277]/25 bg-white/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.28em] text-[#d9bb84]">
             Nhà xe Định Dung · Thanh Hóa
           </span>
-          <h2 className="display-serif hero-fade-delay hero-text-strong mt-7 max-w-[860px] text-4xl leading-[1.04] text-white sm:text-5xl lg:text-[4.8rem]">
-            {isCustomTitle ? (
-              resolvedTitle
-            ) : (
-              <>
-                {resolvedTitle} <span className="whitespace-nowrap">{resolvedSiteName}</span>
-              </>
-            )}
+          <h2 className="display-serif hero-fade-delay hero-text-strong mt-7 text-[2.15rem] leading-[1.02] tracking-[-0.035em] text-white sm:text-[3.8rem] lg:text-[4.9rem]">
+            {resolvedSiteName}
           </h2>
-          <div className="hero-fade-delay hero-text-soft mt-7 max-w-[760px] space-y-4">
-            <p className="max-w-[760px] text-base font-semibold leading-8 text-slate-100 sm:text-lg lg:whitespace-nowrap">
+          <p className="display-serif hero-fade-delay hero-text-strong mt-5 mx-auto max-w-[880px] text-4xl leading-[1.04] text-[#f6efe3] sm:text-5xl lg:whitespace-nowrap lg:text-[4.5rem]">
+            {resolvedTitle}
+          </p>
+          <div className="hero-fade-delay hero-text-soft mx-auto mt-7 max-w-[860px] space-y-4">
+            <p className="mx-auto max-w-[860px] text-base font-semibold leading-8 text-slate-100 sm:text-lg lg:whitespace-nowrap">
               Dịch vụ vận chuyển chuyên nghiệp cho những chuyến đi cần sự an tâm và đúng hẹn.
             </p>
-            <p className="max-w-[640px] text-base font-semibold leading-8 text-slate-100 sm:text-lg">
+            <p className="mx-auto max-w-[640px] text-base font-semibold leading-8 text-slate-100 sm:text-lg">
               {resolvedSubtitle}
             </p>
-            <p className="max-w-[640px] text-[15px] font-semibold leading-7 text-slate-200/90 sm:text-base">
+            <p className="mx-auto max-w-[860px] text-base font-semibold leading-8 text-slate-100 sm:text-lg lg:whitespace-nowrap">
               {trustLine}
             </p>
           </div>
