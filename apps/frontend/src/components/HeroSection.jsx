@@ -42,10 +42,7 @@
 
       <div className="relative mx-auto flex min-h-[680px] w-full max-w-[1320px] items-center justify-center px-4 py-16 text-center sm:px-6 lg:py-24">
         <div className="max-w-[920px]">
-          <span className="hero-fade inline-flex rounded-full border border-[#d3b277]/25 bg-white/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.28em] text-[#d9bb84]">
-            Nhà xe Định Dung · Thanh Hóa
-          </span>
-          <h2 className="display-serif hero-fade-delay hero-text-strong mt-7 text-[2.15rem] leading-[1.02] tracking-[-0.035em] text-white sm:text-[3.8rem] lg:text-[4.9rem]">
+          <h2 className="display-serif hero-fade-delay hero-text-strong text-[2.15rem] leading-[1.02] tracking-[-0.035em] text-white sm:text-[3.8rem] lg:text-[4.9rem]">
             {resolvedSiteName}
           </h2>
           <p className="display-serif hero-fade-delay hero-text-strong mt-5 mx-auto max-w-[880px] text-4xl leading-[1.04] text-[#f6efe3] sm:text-5xl lg:whitespace-nowrap lg:text-[4.5rem]">
