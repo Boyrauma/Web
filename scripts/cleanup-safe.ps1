@@ -20,6 +20,10 @@ function Test-ProtectedPath {
 
   $normalizedPath = [System.IO.Path]::GetFullPath($Path)
 
+  if ($normalizedPath -match "(^|[\\/])node_modules([\\/]|$)") {
+    return $true
+  }
+
   foreach ($protectedRoot in $protectedRoots) {
     $normalizedRoot = [System.IO.Path]::GetFullPath($protectedRoot)
     if ($normalizedPath.StartsWith($normalizedRoot, [System.StringComparison]::OrdinalIgnoreCase)) {

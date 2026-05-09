@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../config/prisma.js";
 import { requireAdminAuth } from "../middlewares/authMiddleware.js";
+import { resolveAdminPermissions } from "../utils/adminPermissions.js";
 import {
   ADMIN_AUTH_COOKIE,
   buildAdminAuthCookieOptions,
@@ -138,7 +139,8 @@ router.post("/login", async (request, response) => {
       id: admin.id,
       email: admin.email,
       fullName: admin.fullName,
-      role: admin.role
+      role: admin.role,
+      permissions: resolveAdminPermissions(admin.role, admin.permissions)
     }
   });
 });
@@ -151,6 +153,7 @@ router.get("/me", requireAdminAuth, async (request, response) => {
       email: true,
       fullName: true,
       role: true,
+      permissions: true,
       isActive: true,
       updatedAt: true
     }
@@ -164,7 +167,10 @@ router.get("/me", requireAdminAuth, async (request, response) => {
   response.cookie(ADMIN_AUTH_COOKIE, token, buildAdminAuthCookieOptions());
 
   return response.json({
-    admin
+    admin: {
+      ...admin,
+      permissions: resolveAdminPermissions(admin.role, admin.permissions)
+    }
   });
 });
 
@@ -211,6 +217,7 @@ router.post("/change-password", requireAdminAuth, async (request, response) => {
       email: true,
       fullName: true,
       role: true,
+      permissions: true,
       isActive: true,
       updatedAt: true
     }

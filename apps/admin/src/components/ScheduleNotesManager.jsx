@@ -13,6 +13,7 @@ const scheduleStatuses = [
   { value: "completed", label: "Hoàn thành" },
   { value: "cancelled", label: "Hủy" }
 ];
+const bookingScheduleStepStatuses = new Set(["confirmed", "assigned", "scheduled"]);
 
 function formatDateTime(value) {
   if (!value) return "Chưa có thời gian";
@@ -67,7 +68,7 @@ function buildScheduleItems(notes = [], bookings = []) {
   }));
 
   const bookingItems = bookings
-    .filter((booking) => booking.tripDate && booking.status === "scheduled" && !linkedBookingIds.has(booking.id))
+    .filter((booking) => bookingScheduleStepStatuses.has(booking.status) && !linkedBookingIds.has(booking.id))
     .map((booking) => ({
       id: booking.id,
       kind: "booking",
@@ -93,7 +94,11 @@ function createBookingDraft(booking) {
     dropoffLocation: booking.dropoffLocation ?? "",
     tripDate: toDateTimeInputValue(booking.tripDate),
     note: booking.note ?? "",
-    status: booking.status ?? "new"
+    internalNote: booking.internalNote ?? "",
+    cancelReason: booking.cancelReason ?? "",
+    status: booking.status ?? "new",
+    assignedVehicleId: booking.assignedVehicleId ?? "",
+    assignedDriverId: booking.assignedDriverId ?? ""
   };
 }
 
@@ -115,6 +120,7 @@ function createScheduleDraft(note) {
 export default function ScheduleNotesManager({
   notes,
   vehicles,
+  drivers = [],
   bookings,
   scheduleNoteForm,
   editingScheduleNoteId,
@@ -125,9 +131,6 @@ export default function ScheduleNotesManager({
   handleInlineUpdateBooking,
   handleDeleteScheduleNote,
   resetScheduleNoteForm,
-  handleCreateScheduleFromBooking,
-  handleCreateTripPaymentFromSchedule,
-  handleEditTripPayment,
   handleDeleteBooking
 }) {
   const [inlineEditingKey, setInlineEditingKey] = useState("");
@@ -151,7 +154,9 @@ export default function ScheduleNotesManager({
               data.phoneNumber,
               data.pickupLocation,
               data.dropoffLocation,
-              data.note
+              data.note,
+              data.assignedVehicle?.name,
+              data.assignedDriver?.fullName
             ]
           : [
               data.title,
@@ -172,7 +177,7 @@ export default function ScheduleNotesManager({
           ? true
           : item.kind === "note"
             ? data.vehicleId === vehicleFilterId
-            : false;
+            : data.assignedVehicleId === vehicleFilterId;
 
       if (!matchVehicle) return false;
 
@@ -289,7 +294,7 @@ export default function ScheduleNotesManager({
           <div>
             <h3 className="admin-title text-2xl font-extrabold text-admin-ink">Lịch xe đã tạo</h3>
             <p className="mt-2 text-sm text-admin-steel">
-              Hiển thị lịch xe thủ công và booking từ website có ngày đi để nắm thông tin điều phối.
+              Booking đã xác nhận và lịch tạo tay sẽ tự nằm ở đây. Chỉ cần sửa trực tiếp nếu có thay đổi.
             </p>
           </div>
           <span className="admin-pill bg-slate-100 text-slate-700">{visibleScheduleItems.length} mục</span>
@@ -344,7 +349,9 @@ export default function ScheduleNotesManager({
                           <p className="text-lg font-extrabold text-admin-ink">{booking.customerName || "Booking từ website"}</p>
                         )}
                       </div>
-                      <p className="mt-1 text-sm font-semibold text-admin-steel">Chưa gán xe - {formatDateTime(isInlineEditing ? inlineDraft.tripDate : booking.tripDate)}</p>
+                      <p className="mt-1 text-sm font-semibold text-admin-steel">
+                        {booking.assignedVehicle?.name ?? "Chưa gán xe"} - {formatDateTime(isInlineEditing ? inlineDraft.tripDate : booking.tripDate)}
+                      </p>
                     </div>
                     {isInlineEditing ? (
                       <select className="admin-select w-full sm:w-44" name="status" value={inlineDraft.status} onChange={handleInlineFieldChange}>
@@ -359,24 +366,26 @@ export default function ScheduleNotesManager({
                     <>
                       <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                         <div className="rounded-[1rem] bg-white px-4 py-3"><p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Liên hệ</p><div className="mt-3 space-y-3"><input className="admin-field" name="phoneNumber" value={inlineDraft.phoneNumber} onChange={handleInlineFieldChange} placeholder="Số điện thoại" /><input className="admin-field" type="datetime-local" name="tripDate" value={inlineDraft.tripDate} onChange={handleInlineFieldChange} /></div></div>
-                        <div className="rounded-[1rem] bg-white px-4 py-3 md:col-span-2 xl:col-span-2"><p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Lộ trình</p><div className="mt-3 grid gap-3 md:grid-cols-2"><input className="admin-field" name="pickupLocation" value={inlineDraft.pickupLocation} onChange={handleInlineFieldChange} placeholder="Điểm đón" /><input className="admin-field" name="dropoffLocation" value={inlineDraft.dropoffLocation} onChange={handleInlineFieldChange} placeholder="Điểm trả" /></div></div>
+                        <div className="rounded-[1rem] bg-white px-4 py-3"><p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Lộ trình</p><div className="mt-3 space-y-3"><input className="admin-field" name="pickupLocation" value={inlineDraft.pickupLocation} onChange={handleInlineFieldChange} placeholder="Điểm đón" /><input className="admin-field" name="dropoffLocation" value={inlineDraft.dropoffLocation} onChange={handleInlineFieldChange} placeholder="Điểm trả" /></div></div>
+                        <div className="rounded-[1rem] bg-white px-4 py-3"><p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Điều phối</p><div className="mt-3 space-y-3"><select className="admin-select" name="assignedVehicleId" value={inlineDraft.assignedVehicleId} onChange={handleInlineFieldChange}><option value="">Chưa gán xe</option>{vehicles.map((vehicle) => <option key={vehicle.id} value={vehicle.id}>{vehicle.name}</option>)}</select><select className="admin-select" name="assignedDriverId" value={inlineDraft.assignedDriverId} onChange={handleInlineFieldChange}><option value="">Chưa gán tài xế</option>{drivers.map((driver) => <option key={driver.id} value={driver.id}>{driver.fullName}</option>)}</select></div></div>
                       </div>
                       <textarea className="admin-field admin-textarea mt-4" name="note" value={inlineDraft.note} onChange={handleInlineFieldChange} placeholder="Ghi chú booking" />
                     </>
                   ) : (
                     <>
-                      <div className="mt-4 grid gap-3 md:grid-cols-2">
+                      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                         <div className="rounded-[1rem] bg-white px-4 py-3"><p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Khách hàng</p><p className="mt-2 text-sm font-semibold text-admin-ink">{booking.customerName || "Chưa ghi tên"}</p><p className="mt-1 text-sm text-admin-steel">{booking.phoneNumber || "Chưa ghi số điện thoại"}</p></div>
                         <div className="rounded-[1rem] bg-white px-4 py-3"><p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Lộ trình</p><p className="mt-2 text-sm font-semibold text-admin-ink">{booking.pickupLocation || "Chưa có điểm đón"}</p><p className="mt-1 text-sm text-admin-steel">{booking.dropoffLocation || "Chưa có điểm trả"}</p></div>
+                        <div className="rounded-[1rem] bg-white px-4 py-3"><p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Điều phối</p><p className="mt-2 text-sm font-semibold text-admin-ink">{booking.assignedVehicle?.name || "Chưa gán xe"}</p><p className="mt-1 text-sm text-admin-steel">{booking.assignedDriver?.fullName || "Chưa gán tài xế"}</p></div>
                       </div>
                       {booking.note ? <p className="mt-4 rounded-[1rem] bg-white px-4 py-3 text-sm leading-7 text-admin-steel">{booking.note}</p> : null}
                     </>
                   )}
 
                   <div className="mt-4 flex flex-wrap gap-2">
-                  <button type="button" onClick={() => (isInlineEditing ? saveBookingInlineEdit(booking.id) : startBookingInlineEdit(booking))} className="admin-button-secondary" disabled={savingInlineKey === currentKey}>{isInlineEditing ? savingInlineKey === currentKey ? "Đang lưu..." : "Lưu" : "Sửa"}</button>
-                  {isInlineEditing ? <button type="button" onClick={cancelInlineEdit} className="admin-button-ghost" disabled={savingInlineKey === currentKey}>Hủy</button> : null}
-                  <button type="button" onClick={() => handleDeleteBooking(booking.id)} className="admin-button-danger" disabled={savingInlineKey === currentKey}>Xóa</button>
+                    <button type="button" onClick={() => (isInlineEditing ? saveBookingInlineEdit(booking.id) : startBookingInlineEdit(booking))} className="admin-button-secondary" disabled={savingInlineKey === currentKey}>{isInlineEditing ? savingInlineKey === currentKey ? "Đang lưu..." : "Lưu" : "Sửa lịch"}</button>
+                    {isInlineEditing ? <button type="button" onClick={cancelInlineEdit} className="admin-button-ghost" disabled={savingInlineKey === currentKey}>Hủy</button> : null}
+                    <button type="button" onClick={() => handleDeleteBooking(booking.id)} className="admin-button-danger" disabled={savingInlineKey === currentKey}>Xóa</button>
                   </div>
                 </div>
               );

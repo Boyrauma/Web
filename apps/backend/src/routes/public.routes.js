@@ -14,6 +14,7 @@ import {
   BOOKING_PROOF_OF_WORK_DIFFICULTY,
   verifyBookingProofOfWork
 } from "../utils/proofOfWork.js";
+import { normalizePhoneKey } from "../utils/phone.js";
 import { verifyTurnstileToken } from "../utils/turnstile.js";
 
 const router = Router();
@@ -222,16 +223,37 @@ router.post("/booking-requests", bookingRateLimit, async (request, response) => 
     });
   }
 
-  const booking = await prisma.bookingRequest.create({
-    data: {
-      customerName: parsed.data.customerName,
-      phoneNumber: parsed.data.phoneNumber,
-      pickupLocation: parsed.data.pickupLocation,
-      dropoffLocation: parsed.data.dropoffLocation,
-      passengerCount: parsed.data.passengerCount,
-      note: parsed.data.note ?? null,
-      tripDate: parsed.data.tripDate ? new Date(parsed.data.tripDate) : null
+  const customerName = parsed.data.customerName.trim();
+  const phoneNumber = parsed.data.phoneNumber.trim();
+  const phoneKey = normalizePhoneKey(phoneNumber);
+
+  const booking = await prisma.$transaction(async (tx) => {
+    if (phoneKey) {
+      await tx.customer.upsert({
+        where: { phoneKey },
+        update: {
+          fullName: customerName,
+          phoneNumber
+        },
+        create: {
+          fullName: customerName,
+          phoneNumber,
+          phoneKey
+        }
+      });
     }
+
+    return tx.bookingRequest.create({
+      data: {
+        customerName,
+        phoneNumber,
+        pickupLocation: parsed.data.pickupLocation,
+        dropoffLocation: parsed.data.dropoffLocation,
+        passengerCount: parsed.data.passengerCount,
+        note: parsed.data.note ?? null,
+        tripDate: parsed.data.tripDate ? new Date(parsed.data.tripDate) : null
+      }
+    });
   });
 
   publishBookingEvent("booking.created", booking);

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Nhà xe Định Dung">
+  <rect width="512" height="512" rx="112" fill="#111827"/>
+  <circle cx="256" cy="256" r="174" fill="#f8fafc"/>
+  <circle cx="256" cy="256" r="138" fill="#183253"/>
+  <path fill="#d8ae63" d="M135 288c10-47 48-82 95-89l39-6c44-7 85 20 97 63l13 48h-44l-9-34c-6-22-27-36-50-32l-39 6c-28 4-51 24-59 52l-2 8h-44l3-16Z"/>
+  <path fill="#ffffff" d="M151 322h233c15 0 27 12 27 27v10H124v-10c0-15 12-27 27-27Z"/>
+  <circle cx="190" cy="362" r="29" fill="#111827"/>
+  <circle cx="190" cy="362" r="12" fill="#f8fafc"/>
+  <circle cx="345" cy="362" r="29" fill="#111827"/>
+  <circle cx="345" cy="362" r="12" fill="#f8fafc"/>
+  <path fill="#d8ae63" d="M158 154h196v36H158z"/>
+  <path fill="#ffffff" d="M177 163h21v18h-21zm42 0h21v18h-21zm42 0h21v18h-21zm42 0h21v18h-21z"/>
+</svg>

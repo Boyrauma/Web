@@ -1,5 +1,6 @@
 import { prisma } from "../config/prisma.js";
 import { ADMIN_AUTH_COOKIE, verifyAdminToken } from "../utils/auth.js";
+import { adminHasPermission } from "../utils/adminPermissions.js";
 
 export async function requireAdminAuth(request, response, next) {
   const authHeader = request.headers.authorization ?? "";
@@ -25,6 +26,7 @@ export async function requireAdminAuth(request, response, next) {
         email: true,
         fullName: true,
         role: true,
+        permissions: true,
         isActive: true,
         updatedAt: true
       }
@@ -50,10 +52,41 @@ export async function requireAdminAuth(request, response, next) {
       sub: admin.id,
       email: admin.email,
       fullName: admin.fullName,
-      role: admin.role
+      role: admin.role,
+      permissions: admin.permissions ?? []
     };
     return next();
   } catch (error) {
     return response.status(401).json({ message: "Invalid token" });
   }
+}
+
+export function requireAdminPermission(...requiredPermissions) {
+  return function checkAdminPermission(request, response, next) {
+    const hasAllPermissions = requiredPermissions.every((permission) =>
+      adminHasPermission(request.admin, permission)
+    );
+
+    if (!hasAllPermissions) {
+      return response.status(403).json({
+        message: "Bạn không có quyền truy cập chức năng này."
+      });
+    }
+
+    return next();
+  };
+}
+
+export function requireAdminRole(...allowedRoles) {
+  return function checkAdminRole(request, response, next) {
+    const currentRole = request.admin?.role;
+
+    if (!currentRole || !allowedRoles.includes(currentRole)) {
+      return response.status(403).json({
+        message: "Bạn không có quyền truy cập chức năng này."
+      });
+    }
+
+    return next();
+  };
 }

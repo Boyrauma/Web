@@ -225,6 +225,98 @@ export async function fetchAdminDashboard(token) {
   return data;
 }
 
+export async function fetchActivityLogs(token, { entityType = "all", action = "all", limit = 100 } = {}) {
+  const searchParams = new URLSearchParams();
+
+  if (entityType && entityType !== "all") {
+    searchParams.set("entityType", entityType);
+  }
+
+  if (action && action !== "all") {
+    searchParams.set("action", action);
+  }
+
+  searchParams.set("limit", String(limit));
+
+  const response = await apiFetch(`${API_URL}/admin/activity-logs?${searchParams.toString()}`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  const data = await readJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(data?.message ?? "Không thể tải nhật ký thao tác");
+  }
+
+  return data;
+}
+
+export async function fetchAdminUsers(token) {
+  const response = await apiFetch(`${API_URL}/admin/admin-users`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  const data = await readJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(data?.message ?? "Không thể tải tài khoản admin");
+  }
+
+  return data;
+}
+
+export async function createAdminUser(token, payload) {
+  const response = await apiFetch(`${API_URL}/admin/admin-users`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(payload)
+  });
+  const data = await readJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(data?.message ?? "Không thể tạo tài khoản admin");
+  }
+
+  return data;
+}
+
+export async function updateAdminUser(token, id, payload) {
+  const response = await apiFetch(`${API_URL}/admin/admin-users/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(payload)
+  });
+  const data = await readJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(data?.message ?? "Không thể cập nhật tài khoản admin");
+  }
+
+  return data;
+}
+
+export async function deleteAdminUser(token, id) {
+  const response = await apiFetch(`${API_URL}/admin/admin-users/${id}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    const data = await readJsonResponse(response);
+    throw new Error(data?.message ?? "Không thể xóa tài khoản admin");
+  }
+}
+
 export async function fetchAdminBookings(token) {
   const response = await apiFetch(`${API_URL}/admin/booking-requests`, {
     headers: {
@@ -238,6 +330,71 @@ export async function fetchAdminBookings(token) {
   }
 
   return data;
+}
+
+export async function fetchCustomers(token) {
+  const response = await apiFetch(`${API_URL}/admin/customers`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  const data = await readJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(data?.message ?? "Không thể tải khách hàng");
+  }
+
+  return data;
+}
+
+export async function createCustomer(token, payload) {
+  const response = await apiFetch(`${API_URL}/admin/customers`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(payload)
+  });
+  const data = await readJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(data?.message ?? "Không thể lưu khách hàng");
+  }
+
+  return data;
+}
+
+export async function updateCustomer(token, id, payload) {
+  const response = await apiFetch(`${API_URL}/admin/customers/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(payload)
+  });
+  const data = await readJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(data?.message ?? "Không thể cập nhật khách hàng");
+  }
+
+  return data;
+}
+
+export async function deleteCustomer(token, id) {
+  const response = await apiFetch(`${API_URL}/admin/customers/${id}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    const data = await readJsonResponse(response);
+    throw new Error(data?.message ?? "Không thể xóa khách hàng");
+  }
 }
 
 export function connectBookingStream(token, { onMessage, onError }) {
@@ -467,6 +624,173 @@ export async function fetchVehicleTripPayments(token, scope = "active") {
   }
 
   return data;
+}
+
+export async function fetchTripExpenses(token) {
+  const response = await apiFetch(`${API_URL}/admin/trip-expenses`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  const data = await readJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(data?.message ?? "Không thể tải chi phí chuyến đi");
+  }
+
+  return data;
+}
+
+export async function createTripExpense(token, payload) {
+  const response = await apiFetch(`${API_URL}/admin/trip-expenses`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(payload)
+  });
+  const data = await readJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(data?.message ?? "Không thể tạo chi phí chuyến đi");
+  }
+
+  return data;
+}
+
+export async function updateTripExpense(token, id, payload) {
+  const response = await apiFetch(`${API_URL}/admin/trip-expenses/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(payload)
+  });
+  const data = await readJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(data?.message ?? "Không thể cập nhật chi phí chuyến đi");
+  }
+
+  return data;
+}
+
+export async function deleteTripExpense(token, id) {
+  const response = await apiFetch(`${API_URL}/admin/trip-expenses/${id}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    const data = await readJsonResponse(response);
+    throw new Error(data?.message ?? "Không thể xóa chi phí chuyến đi");
+  }
+}
+
+export async function fetchReminders(token, scope = "active") {
+  const searchParams = new URLSearchParams();
+  searchParams.set("scope", scope);
+
+  const response = await apiFetch(`${API_URL}/admin/reminders?${searchParams.toString()}`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  const data = await readJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(data?.message ?? "Không thể tải nhắc việc");
+  }
+
+  return data;
+}
+
+export async function createReminder(token, payload) {
+  const response = await apiFetch(`${API_URL}/admin/reminders`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(payload)
+  });
+  const data = await readJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(data?.message ?? "Không thể tạo nhắc việc");
+  }
+
+  return data;
+}
+
+export async function updateReminder(token, id, payload) {
+  const response = await apiFetch(`${API_URL}/admin/reminders/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(payload)
+  });
+  const data = await readJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(data?.message ?? "Không thể cập nhật nhắc việc");
+  }
+
+  return data;
+}
+
+export async function updateReminderStatus(token, id, status) {
+  const response = await apiFetch(`${API_URL}/admin/reminders/${id}/status`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({ status })
+  });
+  const data = await readJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(data?.message ?? "Không thể cập nhật trạng thái nhắc việc");
+  }
+
+  return data;
+}
+
+export async function processDueReminders(token) {
+  const response = await apiFetch(`${API_URL}/admin/reminders/process-due`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  const data = await readJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(data?.message ?? "Không thể chạy nhắc việc");
+  }
+
+  return data;
+}
+
+export async function deleteReminder(token, id) {
+  const response = await apiFetch(`${API_URL}/admin/reminders/${id}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    const data = await readJsonResponse(response);
+    throw new Error(data?.message ?? "Không thể xóa nhắc việc");
+  }
 }
 
 export async function restoreVehicleTripPayment(token, id) {
@@ -727,6 +1051,136 @@ export async function deleteVehicleCategory(token, id) {
   if (!response.ok) {
     const data = await readJsonResponse(response);
     throw new Error(data?.message ?? "Không thể xóa nhóm xe");
+  }
+}
+
+export async function fetchDrivers(token) {
+  const response = await apiFetch(`${API_URL}/admin/drivers`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  const data = await readJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(data?.message ?? "Không thể tải tài xế");
+  }
+
+  return data;
+}
+
+export async function createDriver(token, payload) {
+  const response = await apiFetch(`${API_URL}/admin/drivers`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(payload)
+  });
+  const data = await readJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(data?.message ?? "Không thể tạo tài xế");
+  }
+
+  return data;
+}
+
+export async function updateDriver(token, id, payload) {
+  const response = await apiFetch(`${API_URL}/admin/drivers/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(payload)
+  });
+  const data = await readJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(data?.message ?? "Không thể cập nhật tài xế");
+  }
+
+  return data;
+}
+
+export async function deleteDriver(token, id) {
+  const response = await apiFetch(`${API_URL}/admin/drivers/${id}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    const data = await readJsonResponse(response);
+    throw new Error(data?.message ?? "Không thể xóa tài xế");
+  }
+}
+
+export async function fetchTrips(token) {
+  const response = await apiFetch(`${API_URL}/admin/trips`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  const data = await readJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(data?.message ?? "Không thể tải chuyến đi");
+  }
+
+  return data;
+}
+
+export async function createTrip(token, payload) {
+  const response = await apiFetch(`${API_URL}/admin/trips`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(payload)
+  });
+  const data = await readJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(data?.message ?? "Không thể tạo chuyến đi");
+  }
+
+  return data;
+}
+
+export async function updateTrip(token, id, payload) {
+  const response = await apiFetch(`${API_URL}/admin/trips/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(payload)
+  });
+  const data = await readJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(data?.message ?? "Không thể cập nhật chuyến đi");
+  }
+
+  return data;
+}
+
+export async function deleteTrip(token, id) {
+  const response = await apiFetch(`${API_URL}/admin/trips/${id}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    const data = await readJsonResponse(response);
+    throw new Error(data?.message ?? "Không thể xóa chuyến đi");
   }
 }
 

@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "node --watch src/server.js",
+    "build": "node --check src/server.js",
+    "lint": "eslint src --ext js",
     "start": "node src/server.js",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",

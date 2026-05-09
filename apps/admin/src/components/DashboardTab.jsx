@@ -1,6 +1,7 @@
-﻿import { getBookingStatusClass, getBookingStatusLabel } from "../utils/bookingStatus";
+import { getBookingStatusClass, getBookingStatusLabel } from "../utils/bookingStatus";
 
 const WEEKDAY_LABELS = ["Th 2", "Th 3", "Th 4", "Th 5", "Th 6", "Th 7", "CN"];
+const BOOKING_SCHEDULE_STEP_STATUSES = new Set(["confirmed", "assigned", "scheduled"]);
 
 function startOfMonth(date) {
   return new Date(date.getFullYear(), date.getMonth(), 1);
@@ -143,12 +144,69 @@ function buildRecentRequests(bookings = []) {
     .slice(0, 5);
 }
 
+function isSameDay(value, date) {
+  if (!value) return false;
+  const nextDate = new Date(value);
+  if (Number.isNaN(nextDate.getTime())) return false;
+
+  return formatDayKey(nextDate) === formatDayKey(date);
+}
+
+function isActiveScheduleStatus(status) {
+  return !["completed", "canceled", "cancelled"].includes(status);
+}
+
+function countTodayScheduleItems(scheduleNotes = [], trips = [], bookings = [], today = new Date()) {
+  const scheduledBookingIds = new Set(
+    scheduleNotes.map((note) => note.bookingRequestId).filter(Boolean)
+  );
+  const scheduleCount = scheduleNotes.filter(
+    (note) => isSameDay(note.tripDate, today) && isActiveScheduleStatus(note.status)
+  ).length;
+  const tripCount = trips.filter(
+    (trip) => isSameDay(trip.tripDate, today) && isActiveScheduleStatus(trip.status)
+  ).length;
+  const bookingCount = bookings.filter(
+    (booking) =>
+      isSameDay(booking.tripDate, today) &&
+      BOOKING_SCHEDULE_STEP_STATUSES.has(booking.status) &&
+      !scheduledBookingIds.has(booking.id)
+  ).length;
+
+  return scheduleCount + tripCount + bookingCount;
+}
+
+function countDueReminders(reminders = [], today = new Date()) {
+  const endOfToday = new Date(today);
+  endOfToday.setHours(23, 59, 59, 999);
+
+  return reminders.filter((reminder) => {
+    if (!["pending", "failed"].includes(reminder.status)) return false;
+    const remindAt = new Date(reminder.remindAt);
+    if (Number.isNaN(remindAt.getTime())) return false;
+    return remindAt.getTime() <= endOfToday.getTime();
+  }).length;
+}
+
+function countUnpaidPayments(payments = []) {
+  return payments.filter((payment) => payment.paymentStatus !== "paid").length;
+}
+
 export default function DashboardTab({
   stats,
   bookings,
   scheduleNotes,
+  trips,
+  drivers,
+  pendingBookings,
+  assignedDrivers,
+  busyVehicles,
+  payments = [],
+  reminders = [],
   handleOpenBookings,
-  handleOpenScheduleNotes
+  handleOpenScheduleNotes,
+  handleOpenVehicleTripPayments,
+  handleOpenReminders
 }) {
   const today = new Date();
   const monthLabel = today.toLocaleDateString("vi-VN", {
@@ -159,10 +217,47 @@ export default function DashboardTab({
   const currentMonth = today.getMonth();
   const calendarMap = buildCalendarMap(scheduleNotes, bookings);
   const recentRequests = buildRecentRequests(bookings);
+  const todayScheduleItemCount = countTodayScheduleItems(scheduleNotes, trips, bookings, today);
+  const unpaidPaymentCount = countUnpaidPayments(payments);
+  const dueReminderCount = countDueReminders(reminders, today);
+  const todayWorkCards = [
+    {
+      label: "Booking cần xử lý",
+      value: pendingBookings.length,
+      description: "Gọi khách, chốt lịch, gán xe hoặc tài xế.",
+      action: "Mở Booking",
+      onClick: handleOpenBookings,
+      className: "border-amber-200 bg-amber-50"
+    },
+    {
+      label: "Lịch chạy hôm nay",
+      value: todayScheduleItemCount,
+      description: "Theo dõi xe và tài xế đã được điều phối.",
+      action: "Mở Lịch xe",
+      onClick: handleOpenScheduleNotes,
+      className: "border-sky-200 bg-sky-50"
+    },
+    {
+      label: "Chưa thu tiền",
+      value: unpaidPaymentCount,
+      description: "Hoàn tất phiếu tiền xe sau chuyến.",
+      action: "Mở Tiền xe",
+      onClick: handleOpenVehicleTripPayments,
+      className: "border-emerald-200 bg-emerald-50"
+    },
+    {
+      label: "Nhắc việc đến hạn",
+      value: dueReminderCount,
+      description: "Các việc cần gọi lại hoặc kiểm tra trong ngày.",
+      action: "Mở Nhắc việc",
+      onClick: handleOpenReminders,
+      className: "border-rose-200 bg-rose-50"
+    }
+  ];
 
   return (
     <>
-      <section className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         {stats.map((item) => (
           <div key={item.label} className="admin-card admin-kpi rounded-[1.25rem] p-6">
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-admin-steel">
@@ -173,66 +268,173 @@ export default function DashboardTab({
         ))}
       </section>
 
+      <section className="mt-8 grid gap-4 xl:grid-cols-4">
+        {todayWorkCards.map((item) => (
+          <article
+            key={item.label}
+            className={`admin-card rounded-[1.25rem] border p-6 ${item.className}`}
+          >
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-admin-steel">
+              {item.label}
+            </p>
+            <p className="admin-title mt-4 text-4xl font-extrabold text-admin-ink">
+              {item.value}
+            </p>
+            <p className="mt-2 min-h-[44px] text-sm leading-6 text-admin-steel">
+              {item.description}
+            </p>
+            <button type="button" className="admin-button-ghost mt-5 !py-2" onClick={item.onClick}>
+              {item.action}
+            </button>
+          </article>
+        ))}
+      </section>
+
       <section className="mt-8 grid gap-6 2xl:grid-cols-[minmax(0,1.2fr)_420px]">
-        <div className="admin-card rounded-[1.25rem] p-6">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h3 className="admin-title text-2xl font-extrabold text-admin-ink">Lịch xe tháng này</h3>
-              <p className="mt-2 text-sm text-admin-steel">
-                Hiển thị cả lịch xe đã tạo và booking từ website có ngày đi để điều phối nhanh hơn.
-              </p>
+        <div className="space-y-6">
+          <div className="admin-card rounded-[1.25rem] p-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h3 className="admin-title text-2xl font-extrabold text-admin-ink">
+                  Luồng xử lý hôm nay
+                </h3>
+                <p className="mt-2 text-sm text-admin-steel">
+                  Khi xác nhận xong, dữ liệu tự chuyển sang bước tiếp theo để tránh nhập trùng.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleOpenBookings}
+                className="admin-button-ghost"
+              >
+                Mở booking
+              </button>
             </div>
-            <div className="text-right">
-              <p className="text-lg font-extrabold capitalize text-admin-ink">{monthLabel}</p>
+
+            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div className="rounded-[1rem] bg-slate-50 px-4 py-4">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                  1. Booking
+                </p>
+                <p className="mt-3 text-2xl font-extrabold text-admin-ink">
+                  {pendingBookings.length}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-admin-steel">Chờ xác nhận</p>
+              </div>
+
+              <div className="rounded-[1rem] bg-slate-50 px-4 py-4">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                  2. Lịch xe
+                </p>
+                <p className="mt-3 text-2xl font-extrabold text-admin-ink">
+                  {todayScheduleItemCount}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-admin-steel">Đang điều phối hôm nay</p>
+              </div>
+
+              <div className="rounded-[1rem] bg-slate-50 px-4 py-4">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                  3. Tiền xe
+                </p>
+                <p className="mt-3 text-2xl font-extrabold text-admin-ink">
+                  {unpaidPaymentCount}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-admin-steel">Chưa thu hoặc chưa chốt</p>
+              </div>
+
+              <div className="rounded-[1rem] bg-slate-50 px-4 py-4">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                  4. Tài xế
+                </p>
+                <p className="mt-3 text-2xl font-extrabold text-admin-ink">
+                  {assignedDrivers.length}/{drivers.length}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-admin-steel">Đã có lịch / tổng tài xế</p>
+              </div>
+
+              <div className="rounded-[1rem] bg-slate-50 px-4 py-4">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                  5. Xe
+                </p>
+                <p className="mt-3 text-2xl font-extrabold text-admin-ink">
+                  {busyVehicles.length}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-admin-steel">Xe đang dùng trong ngày</p>
+              </div>
+
+              <div className="rounded-[1rem] bg-slate-50 px-4 py-4">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                  6. Nhắc việc
+                </p>
+                <p className="mt-3 text-2xl font-extrabold text-admin-ink">
+                  {dueReminderCount}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-admin-steel">Đến hạn trong ngày</p>
+              </div>
             </div>
           </div>
 
-          <div className="mt-6 grid grid-cols-7 gap-2">
-            {WEEKDAY_LABELS.map((label) => (
-              <div
-                key={label}
-                className="rounded-[0.9rem] bg-slate-100 px-3 py-3 text-center text-xs font-extrabold uppercase tracking-[0.18em] text-slate-500"
-              >
-                {label}
+          <div className="admin-card rounded-[1.25rem] p-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h3 className="admin-title text-2xl font-extrabold text-admin-ink">Lịch xe tháng này</h3>
+                <p className="mt-2 text-sm text-admin-steel">
+                  Hiển thị cả lịch xe đã tạo và booking từ website có ngày đi để điều phối nhanh hơn.
+                </p>
               </div>
-            ))}
-            {calendarDays.map((date) => {
-              const dayKey = formatDayKey(date);
-              const dayItems = calendarMap[dayKey] ?? [];
-              const isCurrentMonth = date.getMonth() === currentMonth;
-              const isToday = formatDayKey(date) === formatDayKey(today);
-              return (
+              <div className="text-right">
+                <p className="text-lg font-extrabold capitalize text-admin-ink">{monthLabel}</p>
+              </div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-7 gap-2">
+              {WEEKDAY_LABELS.map((label) => (
                 <div
-                  key={dayKey}
-                  className={`min-h-[148px] rounded-[1rem] border px-3 py-3 ${
-                    isCurrentMonth
-                      ? "border-slate-200 bg-white"
-                      : "border-slate-100 bg-slate-50/70 text-slate-400"
-                  } ${isToday ? "ring-2 ring-emerald-200" : ""}`}
+                  key={label}
+                  className="rounded-[0.9rem] bg-slate-100 px-3 py-3 text-center text-xs font-extrabold uppercase tracking-[0.18em] text-slate-500"
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-extrabold text-admin-ink">{date.getDate()}</span>
-                    {dayItems.length ? (
-                      <span className="rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-bold text-emerald-700">
-                        {dayItems.length} mục
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className="mt-3 space-y-2">
-                    {dayItems.slice(0, 2).map((item) => renderCalendarItem(item))}
-                    {dayItems.length > 2 ? (
-                      <button
-                        type="button"
-                        onClick={handleOpenScheduleNotes}
-                        className="text-xs font-bold text-admin-ink"
-                      >
-                        Xem thêm {dayItems.length - 2} mục
-                      </button>
-                    ) : null}
-                  </div>
+                  {label}
                 </div>
-              );
-            })}
+              ))}
+              {calendarDays.map((date) => {
+                const dayKey = formatDayKey(date);
+                const dayItems = calendarMap[dayKey] ?? [];
+                const isCurrentMonth = date.getMonth() === currentMonth;
+                const isToday = formatDayKey(date) === formatDayKey(today);
+
+                return (
+                  <div
+                    key={dayKey}
+                    className={`min-h-[148px] rounded-[1rem] border px-3 py-3 ${
+                      isCurrentMonth
+                        ? "border-slate-200 bg-white"
+                        : "border-slate-100 bg-slate-50/70 text-slate-400"
+                    } ${isToday ? "ring-2 ring-emerald-200" : ""}`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-extrabold text-admin-ink">{date.getDate()}</span>
+                      {dayItems.length ? (
+                        <span className="rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-bold text-emerald-700">
+                          {dayItems.length} mục
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="mt-3 space-y-2">
+                      {dayItems.slice(0, 2).map((item) => renderCalendarItem(item))}
+                      {dayItems.length > 2 ? (
+                        <button
+                          type="button"
+                          onClick={handleOpenScheduleNotes}
+                          className="text-xs font-bold text-admin-ink"
+                        >
+                          Xem thêm {dayItems.length - 2} mục
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 

@@ -26,6 +26,7 @@ const TELEGRAM_EVENT_LABELS = {
   "booking.created": "Booking mới",
   "booking.updated": "Booking cập nhật",
   "booking.deleted": "Booking bị xóa",
+  "reminder.due": "Nhắc việc đến hạn",
   "telegram.test": "Kiểm tra kết nối"
 };
 
@@ -380,6 +381,54 @@ function buildBookingDeletedMessage(booking, config) {
   ].join("\n");
 }
 
+function buildReminderMessage(reminder, config) {
+  const lines = [
+    buildMessageHeader(config.siteName, "Nhắc việc đến hạn"),
+    "",
+    `<b>Việc cần làm:</b> ${formatValue(reminder.title, "Không rõ")}`,
+    `<b>Thời gian nhắc:</b> ${escapeHtml(formatDate(reminder.remindAt))}`,
+    `<b>Loại:</b> ${formatValue(reminder.reminderType, "manual")}`
+  ];
+
+  const booking = reminder.bookingRequest;
+  const scheduleNote = reminder.scheduleNote;
+  const trip = reminder.trip;
+  const vehicle = reminder.vehicle ?? booking?.assignedVehicle ?? scheduleNote?.vehicle ?? trip?.vehicle;
+  const driver = reminder.driver ?? booking?.assignedDriver ?? trip?.driver;
+  const route =
+    booking || scheduleNote || trip
+      ? `${formatValue(
+          booking?.pickupLocation ?? scheduleNote?.pickupLocation ?? trip?.pickupLocation,
+          "?"
+        )} → ${formatValue(
+          booking?.dropoffLocation ?? scheduleNote?.dropoffLocation ?? trip?.dropoffLocation,
+          "?"
+        )}`
+      : "";
+
+  if (booking?.customerName || scheduleNote?.customerName) {
+    lines.push(`<b>Khách:</b> ${formatValue(booking?.customerName ?? scheduleNote?.customerName)}`);
+  }
+
+  if (route) {
+    lines.push(`<b>Lộ trình:</b> ${route}`);
+  }
+
+  if (vehicle?.name) {
+    lines.push(`<b>Xe:</b> ${formatValue(vehicle.name)}`);
+  }
+
+  if (driver?.fullName) {
+    lines.push(`<b>Tài xế:</b> ${formatValue(driver.fullName)}`);
+  }
+
+  if (reminder.note) {
+    lines.push(`<b>Ghi chú:</b> ${formatValue(reminder.note, "Không có")}`);
+  }
+
+  return lines.join("\n");
+}
+
 export function describeNotificationEvent(eventType) {
   return getEventLabel(eventType);
 }
@@ -487,5 +536,15 @@ export async function sendTelegramTestMessage() {
   return sendConfiguredTelegramMessage(message, {
     bypassEnabled: true,
     eventType: "telegram.test"
+  });
+}
+
+export async function sendReminderTelegramNotification(reminder) {
+  const config = await loadTelegramConfig();
+  const message = buildReminderMessage(reminder, config);
+
+  return sendConfiguredTelegramMessage(message, {
+    eventType: "reminder.due",
+    bookingId: reminder.bookingRequestId ?? null
   });
 }

@@ -150,7 +150,7 @@ function createInlineDraftFromSource(item, fallbackVehicleId = "") {
   return {
     scheduleNoteId: note?.id ?? "",
     bookingRequestId: booking?.id ?? note?.bookingRequestId ?? "",
-    vehicleId: note?.vehicleId ?? fallbackVehicleId,
+    vehicleId: note?.vehicleId ?? booking?.assignedVehicleId ?? fallbackVehicleId,
     title:
       note?.title?.trim() ||
       (booking?.customerName?.trim() ? `Tiền xe - ${booking.customerName.trim()}` : "Tiền xe"),
@@ -208,7 +208,7 @@ function buildPaymentItems(scheduleNotes = [], bookings = [], payments = [], lin
   }).filter(Boolean);
 
   const bookingItems = bookings
-    .filter((booking) => booking.tripDate && !scheduleNoteByBookingId.has(booking.id))
+    .filter((booking) => !scheduleNoteByBookingId.has(booking.id))
     .map((booking) => {
       const payment = paymentByBookingId.get(booking.id) ?? null;
       const hiddenLinkedPayment = linkedPaymentByBookingId.get(booking.id) ?? null;
@@ -447,8 +447,6 @@ export default function VehicleTripPaymentsTab({
   handleInlineUpdateTripPayment,
   handleDeleteTripPayment,
   resetTripPaymentForm,
-  handleCreateTripPaymentFromSchedule,
-  handleCreateTripPaymentFromBooking,
   handleDeleteBooking,
   handleDeleteScheduleNote
 }) {
@@ -585,10 +583,10 @@ export default function VehicleTripPaymentsTab({
         <div className="flex items-center justify-between gap-4">
           <div>
             <h3 className="admin-title text-2xl font-extrabold text-admin-ink">
-              {editingTripPaymentId ? "Sửa phiếu tiền xe" : "Thêm phiếu tiền xe"}
+              {editingTripPaymentId ? "Sửa phiếu tiền xe" : "Phiếu tiền xe phát sinh"}
             </h3>
             <p className="mt-2 text-sm text-admin-steel">
-              Phiếu tiền xe sẽ tự được đưa vào mục Dữ liệu để truy xuất theo ngày, tháng hoặc theo tên xe.
+              Booking và lịch xe hoàn thành sẽ tự hiện ở danh sách bên phải. Form này chỉ dùng cho khoản phát sinh ngoài luồng.
             </p>
           </div>
           {editingTripPaymentId ? (
@@ -729,7 +727,7 @@ export default function VehicleTripPaymentsTab({
               ? "Đang lưu..."
               : editingTripPaymentId
                 ? "Cập nhật phiếu tiền xe"
-                : "Tạo phiếu tiền xe"}
+                : "Lưu phiếu phát sinh"}
           </button>
         </div>
       </form>
@@ -741,7 +739,7 @@ export default function VehicleTripPaymentsTab({
               Quản lý tiền xe chạy
             </h3>
             <p className="mt-2 text-sm text-admin-steel">
-              Theo dõi từng xe đã thu hay chưa thu, đồng thời quản lý luôn khách đặt xe đã có ngày đi để xử lý nhanh hơn.
+              Chỉ hiển thị chuyến cần thu tiền. Khi đánh dấu đã thu, phiếu sẽ chuyển sang mục Dữ liệu.
             </p>
           </div>
           <span className="admin-pill bg-slate-100 text-slate-700">{visibleItems.length} mục</span>
@@ -1105,7 +1103,7 @@ export default function VehicleTripPaymentsTab({
                           ? savingInlineId === item.id
                             ? "Đang lưu..."
                             : "Lưu"
-                          : "Sửa"}
+                          : "Sửa / thu tiền"}
                       </button>
                       {isInlineEditing ? (
                         <button
@@ -1143,7 +1141,7 @@ export default function VehicleTripPaymentsTab({
                           ? savingInlineId === item.id
                             ? "Đang lưu..."
                             : "Lưu"
-                          : "Sửa"}
+                          : "Sửa / thu tiền"}
                       </button>
                       {isInlineEditing ? (
                         <button

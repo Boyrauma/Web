@@ -19,6 +19,7 @@ export function signAdminToken(admin) {
       email: admin.email,
       role: admin.role,
       fullName: admin.fullName,
+      permissions: admin.permissions ?? [],
       sessionIssuedAt: Date.now()
     },
     env.jwtSecret,
