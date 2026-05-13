@@ -23,6 +23,7 @@ const PUBLIC_SITE_SETTING_KEYS = [
   "browser_title",
   "favicon_url",
   "footer_text",
+  "group_link",
   "hero_background_url",
   "hero_subtitle",
   "hero_title",

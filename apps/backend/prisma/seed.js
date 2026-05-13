@@ -145,6 +145,7 @@ async function main() {
     { key: "favicon_url", value: "/favicon.svg", group: "branding" },
     { key: "hotline", value: "0979860498", group: "contact" },
     { key: "zalo", value: "https://zalo.me/0979860498", group: "contact" },
+    { key: "group_link", value: "", group: "contact" },
     { key: "address", value: "555 Quang Trung 2, Phường Hạc Thành, Thanh Hóa", group: "contact" },
     { key: "hero_title", value: "Vạn dặm bình an, trọn vẹn niềm tin", group: "homepage" },
     {

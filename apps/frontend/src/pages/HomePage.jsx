@@ -314,6 +314,7 @@ export default function HomePage() {
         hotline: settingsMap.hotline,
         address: settingsMap.address,
         zalo: settingsMap.zalo,
+        groupLink: settingsMap.group_link,
         services: servicesForSchema
       })
     });
@@ -323,6 +324,7 @@ export default function HomePage() {
     settingsMap.address,
     settingsMap.browser_title,
     settingsMap.hero_subtitle,
+    settingsMap.group_link,
     settingsMap.hotline,
     settingsMap.site_name,
     settingsMap.zalo,
@@ -622,9 +624,10 @@ export default function HomePage() {
         footerText={settingsMap.footer_text}
         hotline={settingsMap.hotline}
         address={settingsMap.address}
+        groupLink={settingsMap.group_link}
         logoUrl={siteLogoUrl}
       />
-      <StickyContactBar hotline={settingsMap.hotline} />
+      <StickyContactBar hotline={settingsMap.hotline} groupLink={settingsMap.group_link} />
       {fleetGalleryState.open ? (
         <VehicleGalleryLightbox
           gallery={fleetGalleryState.images}

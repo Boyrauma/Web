@@ -150,8 +150,11 @@ export function buildLocalBusinessSchema({
   hotline,
   address,
   zalo,
+  groupLink,
   services = []
 }) {
+  const sameAs = [zalo, groupLink].filter(Boolean);
+
   return [
     {
       "@context": "https://schema.org",
@@ -163,7 +166,7 @@ export function buildLocalBusinessSchema({
       logo,
       telephone: hotline,
       address,
-      sameAs: zalo ? [zalo] : undefined,
+      sameAs: sameAs.length ? sameAs : undefined,
       areaServed: "Thanh Hóa, Việt Nam",
       knowsAbout: services.length ? services : undefined
     },

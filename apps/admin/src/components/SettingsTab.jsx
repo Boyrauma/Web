@@ -8,6 +8,7 @@ const COMMON_FIELDS = [
   { key: "footer_text", label: "Nội dung footer", group: "branding", type: "textarea" },
   { key: "hotline", label: "Hotline", group: "contact", type: "text" },
   { key: "zalo", label: "Link Zalo", group: "contact", type: "text" },
+  { key: "group_link", label: "Link nhóm nhà xe", group: "contact", type: "text" },
   { key: "address", label: "Địa chỉ", group: "contact", type: "textarea" },
   { key: "hero_title", label: "Tiêu đề hero", group: "homepage", type: "text" },
   { key: "hero_subtitle", label: "Mô tả hero", group: "homepage", type: "textarea" },

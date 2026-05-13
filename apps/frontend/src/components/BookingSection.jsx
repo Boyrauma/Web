@@ -1,8 +1,7 @@
-﻿import TurnstileWidget from "./TurnstileWidget";
+import TurnstileWidget from "./TurnstileWidget";
 
 export default function BookingSection({
   hotline,
-  address,
   formData,
   submitState,
   captchaState,
@@ -18,7 +17,7 @@ export default function BookingSection({
   const isSubmitDisabled =
     submitState.loading || isBackgroundVerificationPreparing || isWaitingForTurnstile;
 
-  let submitLabel = "Liên hệ ngay";
+  let submitLabel = "Gửi lịch xe";
 
   if (submitState.loading) {
     submitLabel = "Đang gửi...";
@@ -28,53 +27,50 @@ export default function BookingSection({
 
   return (
     <section id="booking" className="site-shell mx-auto px-4 py-16 sm:px-6">
-      <div className="grid gap-8 lg:grid-cols-[0.82fr_1.18fr]">
-        <div className="space-y-5">
-          <p className="text-sm font-bold uppercase tracking-[0.3em] text-brand-amber">Liên hệ</p>
-          <h3 className="text-3xl font-black uppercase text-brand-navy">
-            Gửi lịch trình để nhà xe sắp chuyến gọn và đúng nhu cầu
-          </h3>
-          <p className="text-slate-600">
-            Chỉ cần để lại ngày đi, số khách, điểm đón và điểm đến. Bên tôi sẽ gọi lại để chốt xe,
-            báo lịch và xác nhận nhanh theo chuyến thực tế.
+      <div className="grid gap-8 lg:grid-cols-[0.76fr_1.24fr]">
+        <div className="rounded-[2rem] border border-[#e4d5bb] bg-[#fffaf2] p-6 shadow-[0_20px_60px_rgba(20,35,60,0.06)] lg:p-8">
+          <p className="text-sm font-bold uppercase tracking-[0.3em] text-brand-amber">
+            Đặt lịch xe
           </p>
-          <div className="rounded-[2rem] bg-[#14233c] p-6 text-white shadow-premium">
-            <p className="text-sm uppercase tracking-[0.25em] text-brand-amber">Hotline</p>
-            <a href={`tel:${hotline ?? "0979860498"}`} className="mt-3 block text-3xl font-black">
+          <h3 className="mt-3 text-3xl font-black uppercase leading-tight text-brand-navy">
+            Gửi thông tin chuyến đi, nhà xe gọi lại để chốt lịch
+          </h3>
+          <p className="mt-4 text-base leading-7 text-slate-600">
+            Phần này chỉ cần nhập lịch trình chính. Các chi tiết như loại xe, giờ đón và chi phí sẽ
+            được xác nhận lại qua điện thoại để tránh sai thông tin.
+          </p>
+
+          <div className="mt-7 space-y-3">
+            {[
+              "Nhập ngày đi, số khách và tuyến đường.",
+              "Nhà xe kiểm tra xe phù hợp với lịch thực tế.",
+              "Gọi lại để chốt giờ đón, xe và chi phí."
+            ].map((item, index) => (
+              <div
+                key={item}
+                className="flex gap-3 rounded-[1.25rem] border border-[#eadcc4] bg-white/80 p-4"
+              >
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#14233c] text-sm font-black text-white">
+                  {index + 1}
+                </span>
+                <p className="text-sm font-semibold leading-6 text-slate-700">{item}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-7 rounded-[1.5rem] bg-[#14233c] p-5 text-white">
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#d3b277]">
+              Cần gấp?
+            </p>
+            <a href={`tel:${hotline ?? "0979860498"}`} className="mt-2 block text-2xl font-black">
               {hotline ?? "0979 860 498"}
             </a>
-            <p className="mt-4 text-slate-200">
-              Địa chỉ: {address ?? "555 Quang Trung 2, Phường Hạc Thành, Thanh Hóa"}
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <span className="rounded-full bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-100">
-                Tư vấn theo lịch thật
-              </span>
-              <span className="rounded-full bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-100">
-                Chốt xe đúng quy mô đoàn
-              </span>
-            </div>
-          </div>
-          <div className="rounded-[1.75rem] border border-[#e6dbc7] bg-[#fffaf2] p-5">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-amber">
-              Cách làm việc
-            </p>
-            <div className="mt-4 space-y-3 text-sm leading-7 text-slate-700">
-              <p>
-                Điền càng rõ lịch đi, số khách và cung đường thì bên tôi càng dễ chốt đúng loại xe
-                và thời gian đón.
-              </p>
-              <p>
-                Với chuyến gia đình, cưới hỏi, đón sân bay hay đoàn công tác, nhà xe sẽ gọi lại để
-                rà lịch và xác nhận trước khi nhận chuyến.
-              </p>
-            </div>
           </div>
         </div>
 
         <form
           onSubmit={handleSubmit}
-          className="grid gap-4 rounded-[2rem] border border-[#e4d5bb] bg-white/92 p-6 shadow-[0_24px_70px_rgba(20,35,60,0.08)] md:grid-cols-2"
+          className="grid gap-4 rounded-[2rem] border border-[#e4d5bb] bg-white/95 p-6 shadow-[0_24px_70px_rgba(20,35,60,0.08)] md:grid-cols-2"
         >
           <label className="space-y-2">
             <span className="text-sm font-bold text-brand-navy">Họ và tên</span>
@@ -168,7 +164,7 @@ export default function BookingSection({
             aria-hidden="true"
           />
           {turnstileState.enabled ? (
-            <div className="md:col-span-2 rounded-[1.35rem] border border-[#dae4f2] bg-[#f8fbff] px-4 py-3">
+            <div className="rounded-[1.35rem] border border-[#dae4f2] bg-[#f8fbff] px-4 py-3 md:col-span-2">
               <TurnstileWidget
                 siteKey={turnstileState.siteKey}
                 resetKey={turnstileState.resetKey}
@@ -185,12 +181,12 @@ export default function BookingSection({
             {submitLabel}
           </button>
           {submitState.message ? (
-            <p className="md:col-span-2 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+            <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 md:col-span-2">
               {submitState.message}
             </p>
           ) : null}
           {submitState.error ? (
-            <p className="md:col-span-2 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
+            <p className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 md:col-span-2">
               {submitState.error}
             </p>
           ) : null}
