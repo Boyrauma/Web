@@ -23,6 +23,7 @@ import {
 import { hashPassword } from "../utils/auth.js";
 import { ALL_ADMIN_PERMISSIONS, resolveAdminPermissions } from "../utils/adminPermissions.js";
 import { normalizePhoneKey } from "../utils/phone.js";
+import { ensureDefaultSiteSettings } from "../utils/siteSettings.js";
 
 const router = Router();
 
@@ -2639,6 +2640,8 @@ router.patch("/vehicle-images/:id", requireAdminPermission("vehicles.manage"), a
 });
 
 router.get("/site-settings", requireAdminPermission("settings.manage"), async (request, response) => {
+  await ensureDefaultSiteSettings(prisma);
+
   const settings = await prisma.siteSetting.findMany({
     orderBy: [{ group: "asc" }, { key: "asc" }]
   });

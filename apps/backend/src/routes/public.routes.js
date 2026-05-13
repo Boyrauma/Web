@@ -15,24 +15,13 @@ import {
   verifyBookingProofOfWork
 } from "../utils/proofOfWork.js";
 import { normalizePhoneKey } from "../utils/phone.js";
+import {
+  ensureDefaultSiteSettings,
+  PUBLIC_SITE_SETTING_KEYS
+} from "../utils/siteSettings.js";
 import { verifyTurnstileToken } from "../utils/turnstile.js";
 
 const router = Router();
-const PUBLIC_SITE_SETTING_KEYS = [
-  "address",
-  "browser_title",
-  "favicon_url",
-  "footer_text",
-  "group_link",
-  "hero_background_url",
-  "hero_subtitle",
-  "hero_title",
-  "hotline",
-  "logo_url",
-  "site_name",
-  "site_tagline",
-  "zalo"
-];
 const captchaRateLimit = createIpRateLimit({
   windowMs: 60 * 1000,
   maxRequests: 24,
@@ -79,6 +68,8 @@ function getRequestIp(request) {
 }
 
 router.get("/site-settings", async (request, response) => {
+  await ensureDefaultSiteSettings(prisma);
+
   const settings = await prisma.siteSetting.findMany({
     where: {
       key: {
