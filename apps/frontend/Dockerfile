@@ -1,9 +1,11 @@
 FROM node:22-alpine AS build
 WORKDIR /app
 
-COPY package.json ./
+COPY package.json package-lock.json ./
 COPY apps/frontend/package.json ./apps/frontend/package.json
-RUN npm install
+COPY apps/admin/package.json ./apps/admin/package.json
+COPY apps/backend/package.json ./apps/backend/package.json
+RUN npm ci --workspace @dinhdung/frontend --include-workspace-root
 
 COPY apps/frontend ./apps/frontend
 WORKDIR /app/apps/frontend

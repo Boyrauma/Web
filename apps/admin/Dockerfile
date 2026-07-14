@@ -3,9 +3,11 @@ WORKDIR /app
 ARG VITE_BASE_PATH=/
 ENV VITE_BASE_PATH=${VITE_BASE_PATH}
 
-COPY package.json ./
+COPY package.json package-lock.json ./
+COPY apps/frontend/package.json ./apps/frontend/package.json
 COPY apps/admin/package.json ./apps/admin/package.json
-RUN npm install
+COPY apps/backend/package.json ./apps/backend/package.json
+RUN npm ci --workspace @dinhdung/admin --include-workspace-root
 
 COPY apps/admin ./apps/admin
 WORKDIR /app/apps/admin

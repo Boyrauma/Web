@@ -133,7 +133,7 @@ export default function SiteFooter({ siteName, footerText, hotline, address, log
         </div>
       </div>
       <div className="relative border-t border-white/10">
-        <div className="site-shell mx-auto px-4 py-5 text-center text-sm text-slate-300 sm:px-6">
+        <div className="site-shell mx-auto px-4 pb-28 pt-5 text-center text-sm text-slate-300 sm:px-6 lg:py-5">
           <p>{resolvedSiteName} vận hành dịch vụ thuê xe với thông tin chuyến đi được xác nhận rõ ràng trước khi điều phối.</p>
         </div>
       </div>

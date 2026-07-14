@@ -22,7 +22,7 @@
     "Đội xe từ 4 đến 45 chỗ, đáp ứng từ nhu cầu đi riêng đến các chuyến đi theo đoàn.";
 
   return (
-    <section className="hero-surface relative left-1/2 right-1/2 min-h-[680px] w-screen -translate-x-1/2 overflow-hidden border-b border-[#c8ab74]/35">
+    <section className="hero-surface relative min-h-[680px] w-full overflow-hidden border-b border-[#c8ab74]/35">
       <div className="pointer-events-none absolute inset-0">
         {hasBackgroundImage ? (
           <img
@@ -42,9 +42,9 @@
 
       <div className="relative mx-auto flex min-h-[680px] w-full max-w-[1320px] items-center justify-center px-4 py-16 text-center sm:px-6 lg:py-24">
         <div className="max-w-[920px]">
-          <h2 className="display-serif hero-fade-delay hero-text-strong text-[2.15rem] leading-[1.02] tracking-[-0.035em] text-white sm:text-[3.8rem] lg:text-[4.9rem]">
+          <h1 className="display-serif hero-fade-delay hero-text-strong text-[2.15rem] leading-[1.02] tracking-[-0.035em] text-white sm:text-[3.8rem] lg:text-[4.9rem]">
             {resolvedSiteName}
-          </h2>
+          </h1>
           <p className="display-serif hero-fade-delay hero-text-strong mt-5 mx-auto max-w-[880px] text-4xl leading-[1.04] text-[#f6efe3] sm:text-5xl lg:whitespace-nowrap lg:text-[4.5rem]">
             {resolvedTitle}
           </p>

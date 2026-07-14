@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import BookingSection from "../components/BookingSection";
+import FaqSection from "../components/FaqSection";
 import FleetSection from "../components/FleetSection";
 import HeroSection from "../components/HeroSection";
 import ProcessSection from "../components/ProcessSection";
@@ -7,6 +8,7 @@ import ServicesSection from "../components/ServicesSection";
 import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
 import StickyContactBar from "../components/StickyContactBar";
+import TestimonialSection from "../components/TestimonialSection";
 import VehicleGalleryLightbox from "../components/VehicleGalleryLightbox";
 import VehicleShowcaseSection from "../components/VehicleShowcaseSection";
 import { applyDocumentBranding } from "../utils/branding";
@@ -605,7 +607,9 @@ export default function HomePage() {
           hotline={settingsMap.hotline}
           address={settingsMap.address}
         />
+        <TestimonialSection />
         <ProcessSection />
+        <FaqSection />
         <BookingSection
           hotline={settingsMap.hotline}
           address={settingsMap.address}
