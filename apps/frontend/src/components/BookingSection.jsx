@@ -70,9 +70,9 @@ export default function BookingSection({
 
         <form
           onSubmit={handleSubmit}
-          className="grid gap-4 rounded-[2rem] border border-[#e4d5bb] bg-white/95 p-6 shadow-[0_24px_70px_rgba(20,35,60,0.08)] md:grid-cols-2"
+          className="grid grid-cols-[minmax(0,1fr)] gap-4 rounded-[2rem] border border-[#e4d5bb] bg-white/95 p-6 shadow-[0_24px_70px_rgba(20,35,60,0.08)] md:grid-cols-2"
         >
-          <label className="space-y-2">
+          <label className="min-w-0 space-y-2">
             <span className="text-sm font-bold text-brand-navy">Họ và tên</span>
             <input
               className="field"
@@ -83,7 +83,7 @@ export default function BookingSection({
               required
             />
           </label>
-          <label className="space-y-2">
+          <label className="min-w-0 space-y-2">
             <span className="text-sm font-bold text-brand-navy">Số điện thoại</span>
             <input
               className="field"
@@ -96,7 +96,7 @@ export default function BookingSection({
               required
             />
           </label>
-          <label className="space-y-2">
+          <label className="min-w-0 space-y-2">
             <span className="text-sm font-bold text-brand-navy">Ngày đi</span>
             <input
               className="field"
@@ -107,7 +107,7 @@ export default function BookingSection({
               required
             />
           </label>
-          <label className="space-y-2">
+          <label className="min-w-0 space-y-2">
             <span className="text-sm font-bold text-brand-navy">Số người</span>
             <input
               className="field"
@@ -121,7 +121,7 @@ export default function BookingSection({
               required
             />
           </label>
-          <label className="space-y-2 md:col-span-2">
+          <label className="min-w-0 space-y-2 md:col-span-2">
             <span className="text-sm font-bold text-brand-navy">Điểm đón</span>
             <input
               className="field"
@@ -132,7 +132,7 @@ export default function BookingSection({
               required
             />
           </label>
-          <label className="space-y-2 md:col-span-2">
+          <label className="min-w-0 space-y-2 md:col-span-2">
             <span className="text-sm font-bold text-brand-navy">Điểm đến</span>
             <input
               className="field"
@@ -143,7 +143,7 @@ export default function BookingSection({
               required
             />
           </label>
-          <label className="space-y-2 md:col-span-2">
+          <label className="min-w-0 space-y-2 md:col-span-2">
             <span className="text-sm font-bold text-brand-navy">Nhu cầu chi tiết</span>
             <textarea
               className="field min-h-32"
