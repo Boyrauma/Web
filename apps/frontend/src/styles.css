@@ -87,6 +87,22 @@ summary {
   outline-offset: 1px;
 }
 
+/* Safari on iOS gives date controls a wider intrinsic minimum size. */
+.field-date {
+  display: block;
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  -webkit-min-logical-width: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.field-date::-webkit-date-and-time-value,
+.field-date::-webkit-datetime-edit {
+  min-width: 0;
+}
+
 .display-serif {
   font-family: "Prata", Georgia, serif;
   letter-spacing: -0.025em;

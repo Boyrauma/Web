@@ -99,7 +99,7 @@ export default function BookingSection({
           <label className="min-w-0 space-y-2">
             <span className="text-sm font-bold text-brand-navy">Ngày đi</span>
             <input
-              className="field"
+              className="field field-date"
               name="tripDate"
               type="date"
               value={formData.tripDate}
