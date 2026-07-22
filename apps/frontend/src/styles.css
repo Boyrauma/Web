@@ -87,6 +87,11 @@ summary {
   outline-offset: 1px;
 }
 
+input.field {
+  display: block;
+  block-size: 3.25rem;
+}
+
 /* Safari on iOS gives date controls a wider intrinsic minimum size. */
 .field-date {
   display: block;
@@ -98,9 +103,25 @@ summary {
   appearance: none;
 }
 
+input.field.field-date {
+  block-size: calc(3.25rem - 2px);
+  height: calc(3.25rem - 2px);
+}
+
 .field-date::-webkit-date-and-time-value,
 .field-date::-webkit-datetime-edit {
   min-width: 0;
+}
+
+.turnstile-frame {
+  min-width: 0;
+}
+
+.turnstile-widget {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  justify-content: center;
 }
 
 .display-serif {

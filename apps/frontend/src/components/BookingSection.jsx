@@ -164,7 +164,7 @@ export default function BookingSection({
             aria-hidden="true"
           />
           {turnstileState.enabled ? (
-            <div className="rounded-[1.35rem] border border-[#dae4f2] bg-[#f8fbff] px-4 py-3 md:col-span-2">
+            <div className="turnstile-frame rounded-[1.35rem] border border-[#dae4f2] bg-[#f8fbff] px-4 py-3 md:col-span-2">
               <TurnstileWidget
                 siteKey={turnstileState.siteKey}
                 resetKey={turnstileState.resetKey}

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 let turnstileScriptPromise;
 
@@ -43,11 +43,31 @@ function getTurnstileErrorMessage(errorCode) {
   return "Xác thực Cloudflare đang gặp lỗi. Vui lòng thử lại.";
 }
 
+function getTurnstileSize() {
+  return window.matchMedia("(max-width: 480px)").matches ? "compact" : "flexible";
+}
+
 export default function TurnstileWidget({ siteKey, resetKey, onTokenChange, onError }) {
   const containerRef = useRef(null);
   const widgetIdRef = useRef(null);
   const onTokenChangeRef = useRef(onTokenChange);
   const onErrorRef = useRef(onError);
+  const [widgetSize, setWidgetSize] = useState(getTurnstileSize);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 480px)");
+    const handleChange = () => setWidgetSize(mediaQuery.matches ? "compact" : "flexible");
+
+    handleChange();
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener("change", handleChange);
+      return () => mediaQuery.removeEventListener("change", handleChange);
+    }
+
+    mediaQuery.addListener(handleChange);
+    return () => mediaQuery.removeListener(handleChange);
+  }, []);
 
   useEffect(() => {
     onTokenChangeRef.current = onTokenChange;
@@ -73,7 +93,7 @@ export default function TurnstileWidget({ siteKey, resetKey, onTokenChange, onEr
           sitekey: siteKey,
           action: "booking",
           theme: "light",
-          size: "flexible",
+          size: widgetSize,
           callback: (token) => {
             onErrorRef.current("");
             onTokenChangeRef.current(token ?? "");
@@ -105,7 +125,7 @@ export default function TurnstileWidget({ siteKey, resetKey, onTokenChange, onEr
         widgetIdRef.current = null;
       }
     };
-  }, [siteKey]);
+  }, [siteKey, widgetSize]);
 
   useEffect(() => {
     if (widgetIdRef.current === null || !window.turnstile?.reset) {
@@ -117,5 +137,5 @@ export default function TurnstileWidget({ siteKey, resetKey, onTokenChange, onEr
     window.turnstile.reset(widgetIdRef.current);
   }, [resetKey]);
 
-  return <div ref={containerRef} className="min-h-[68px]" />;
+  return <div ref={containerRef} className="turnstile-widget min-h-[68px]" />;
 }
