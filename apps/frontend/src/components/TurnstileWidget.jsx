@@ -44,7 +44,8 @@ function getTurnstileErrorMessage(errorCode) {
 }
 
 function getTurnstileSize() {
-  return window.matchMedia("(max-width: 359px)").matches ? "compact" : "flexible";
+  // Cloudflare's flexible widget needs more horizontal space than this form has on phones.
+  return window.matchMedia("(max-width: 639px)").matches ? "compact" : "flexible";
 }
 
 export default function TurnstileWidget({ siteKey, resetKey, onTokenChange, onError }) {
@@ -55,7 +56,7 @@ export default function TurnstileWidget({ siteKey, resetKey, onTokenChange, onEr
   const [widgetSize, setWidgetSize] = useState(getTurnstileSize);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(max-width: 359px)");
+    const mediaQuery = window.matchMedia("(max-width: 639px)");
     const handleChange = () => setWidgetSize(mediaQuery.matches ? "compact" : "flexible");
 
     handleChange();

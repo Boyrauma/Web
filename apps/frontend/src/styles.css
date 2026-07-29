@@ -135,16 +135,9 @@ input.field.field-date {
 }
 
 @media (max-width: 639px) {
-  .turnstile-frame,
-  .turnstile-widget--flexible {
+  .turnstile-widget--compact > div,
+  .turnstile-widget--compact iframe {
     display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .turnstile-widget--flexible > div,
-  .turnstile-widget--flexible iframe {
-    display: block;
     margin: 0 !important;
   }
 }
