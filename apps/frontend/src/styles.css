@@ -134,6 +134,21 @@ input.field.field-date {
   justify-content: center;
 }
 
+@media (max-width: 639px) {
+  .turnstile-frame,
+  .turnstile-widget--flexible {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .turnstile-widget--flexible > div,
+  .turnstile-widget--flexible iframe {
+    display: block;
+    margin: 0 !important;
+  }
+}
+
 .display-serif {
   font-family: "Prata", Georgia, serif;
   letter-spacing: -0.025em;
