@@ -13,7 +13,7 @@ export default function ProcessSection() {
             <p className="text-sm font-bold uppercase tracking-[0.3em] text-brand-amber">
               Quy trình
             </p>
-            <h3 className="display-serif mt-3 text-4xl">Đặt xe nhanh trong 3 bước</h3>
+            <h2 className="display-serif mt-3 text-4xl">Đặt xe nhanh trong 3 bước</h2>
           </div>
         </div>
         <div className="mt-10 grid gap-5 md:grid-cols-3">

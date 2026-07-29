@@ -32,9 +32,9 @@ export default function BookingSection({
           <p className="text-sm font-bold uppercase tracking-[0.3em] text-brand-amber">
             Đặt lịch xe
           </p>
-          <h3 className="mt-3 text-3xl font-black uppercase leading-tight text-brand-navy">
+          <h2 className="mt-3 text-3xl font-black uppercase leading-tight text-brand-navy">
             Gửi thông tin chuyến đi, nhà xe gọi lại để chốt lịch
-          </h3>
+          </h2>
           <p className="mt-4 text-base leading-7 text-slate-600">
             Phần này chỉ cần nhập lịch trình chính. Các chi tiết như loại xe, giờ đón và chi phí sẽ
             được xác nhận lại qua điện thoại để tránh sai thông tin.

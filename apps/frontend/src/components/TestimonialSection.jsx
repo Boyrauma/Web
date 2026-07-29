@@ -24,9 +24,9 @@ export default function TestimonialSection() {
           <p className="text-sm font-bold uppercase tracking-[0.3em] text-brand-amber">
             Phản hồi
           </p>
-          <h3 className="display-serif mt-3 text-4xl text-brand-navy">
+          <h2 className="display-serif mt-3 text-4xl text-brand-navy">
             Những cảm nhận thường thấy từ khách hàng đã sử dụng dịch vụ
-          </h3>
+          </h2>
         </div>
       </div>
       <div className="mt-10 grid gap-6 lg:grid-cols-3">

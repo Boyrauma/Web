@@ -66,9 +66,9 @@ export default function FleetSection({ vehicleCategories, resolveAssetUrl, onOpe
       <div className="site-shell mx-auto px-4 sm:px-6">
         <div className="max-w-3xl">
           <p className="text-sm font-bold uppercase tracking-[0.3em] text-brand-amber">Đội xe</p>
-          <h3 className="mt-2 text-3xl font-black uppercase text-brand-navy">
+          <h2 className="mt-2 text-3xl font-black uppercase text-brand-navy">
             Chọn đúng nhóm xe cho đúng kiểu chuyến đi
-          </h3>
+          </h2>
         </div>
 
         <div className="mt-10 grid gap-8 md:auto-rows-fr md:grid-cols-3">
@@ -103,7 +103,7 @@ export default function FleetSection({ vehicleCategories, resolveAssetUrl, onOpe
               </button>
 
               <div className="flex flex-1 flex-col space-y-4 p-6">
-                <h4 className="text-2xl font-extrabold text-brand-navy">{group.title}</h4>
+                <h3 className="text-2xl font-extrabold text-brand-navy">{group.title}</h3>
                 <p className="min-h-[88px] text-slate-600">
                   {group.description || "Nhóm xe đang được dùng cho các chuyến thực tế của nhà xe."}
                 </p>

@@ -29,9 +29,9 @@ export default function FaqSection() {
           <p className="text-sm font-bold uppercase tracking-[0.3em] text-brand-amber">
             Giải đáp nhanh
           </p>
-          <h3 className="mt-2 text-3xl font-black uppercase text-brand-navy">
+          <h2 className="mt-2 text-3xl font-black uppercase text-brand-navy">
             Câu hỏi khách hàng thường hỏi
-          </h3>
+          </h2>
           <p className="mt-4 text-slate-600">
             Những thông tin quan trọng nhất được gom lại để khách mới dễ quyết định hơn, không cần
             gọi nhiều lần mới nắm được quy trình.

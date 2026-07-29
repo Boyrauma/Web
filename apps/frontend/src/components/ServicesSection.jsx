@@ -132,9 +132,9 @@ export default function ServicesSection({ services, error }) {
       <div className="mb-10 rounded-[2rem] border border-[#e8ddca] bg-[linear-gradient(180deg,#fffdf9_0%,#f8f1e6_100%)] px-6 py-7 shadow-[0_18px_44px_rgba(20,35,60,0.05)] sm:px-8">
         <div className="max-w-3xl">
           <p className="text-sm font-bold uppercase tracking-[0.3em] text-brand-amber">Dịch vụ</p>
-          <h3 className="display-serif mt-3 text-4xl text-brand-navy">
+          <h2 className="display-serif mt-3 text-4xl text-brand-navy">
             Những lịch xe khách gọi nhiều nhất
-          </h3>
+          </h2>
           <p className="mt-4 text-slate-600">
             Từ chuyến gia đình cần xe gọn đến lịch cưới hỏi, sân bay hay hợp đồng dài ngày, đây là
             các nhu cầu nhà xe đang nhận và điều phối thường xuyên.

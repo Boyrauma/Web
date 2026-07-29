@@ -21,9 +21,9 @@ export default function VehicleShowcaseSection({
           <p className="text-sm font-bold uppercase tracking-[0.3em] text-brand-amber">
             Chi tiết xe
           </p>
-          <h3 className="text-3xl font-black uppercase text-brand-navy">
+          <h2 className="text-3xl font-black uppercase text-brand-navy">
             Chọn xe phù hợp cho hành trình của bạn
-          </h3>
+          </h2>
           <div className="space-y-3">
             {flattenedVehicles.length ? (
               flattenedVehicles.map((vehicle) => (
@@ -96,9 +96,9 @@ export default function VehicleShowcaseSection({
                   <p className="text-sm font-bold uppercase tracking-[0.25em] text-brand-amber">
                     {selectedVehicle.categoryName}
                   </p>
-                  <h4 className="mt-2 text-3xl font-black text-brand-navy">
+                  <h3 className="mt-2 text-3xl font-black text-brand-navy">
                     {selectedVehicle.name}
-                  </h4>
+                  </h3>
                 </div>
                 <div className="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-bold text-brand-navy">
                   {selectedVehicle.seatCount} chỗ
