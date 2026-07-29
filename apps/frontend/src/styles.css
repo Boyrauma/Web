@@ -115,8 +115,6 @@ input.field.field-date {
 
 .turnstile-frame {
   min-width: 0;
-  width: min(100%, 21rem);
-  justify-self: center;
 }
 
 .turnstile-widget {
@@ -124,12 +122,6 @@ input.field.field-date {
   width: 100%;
   min-width: 0;
   justify-content: center;
-}
-
-@media (max-width: 480px) {
-  .turnstile-frame {
-    width: min(100%, 12.75rem);
-  }
 }
 
 .display-serif {
