@@ -44,7 +44,7 @@ function getTurnstileErrorMessage(errorCode) {
 }
 
 function getTurnstileSize() {
-  return window.matchMedia("(max-width: 480px)").matches ? "compact" : "flexible";
+  return window.matchMedia("(max-width: 359px)").matches ? "compact" : "flexible";
 }
 
 export default function TurnstileWidget({ siteKey, resetKey, onTokenChange, onError }) {
@@ -55,7 +55,7 @@ export default function TurnstileWidget({ siteKey, resetKey, onTokenChange, onEr
   const [widgetSize, setWidgetSize] = useState(getTurnstileSize);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(max-width: 480px)");
+    const mediaQuery = window.matchMedia("(max-width: 359px)");
     const handleChange = () => setWidgetSize(mediaQuery.matches ? "compact" : "flexible");
 
     handleChange();
@@ -137,5 +137,10 @@ export default function TurnstileWidget({ siteKey, resetKey, onTokenChange, onEr
     window.turnstile.reset(widgetIdRef.current);
   }, [resetKey]);
 
-  return <div ref={containerRef} className="turnstile-widget min-h-[68px]" />;
+  return (
+    <div
+      ref={containerRef}
+      className={`turnstile-widget turnstile-widget--${widgetSize} min-h-[68px]`}
+    />
+  );
 }

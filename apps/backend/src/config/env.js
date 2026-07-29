@@ -28,7 +28,7 @@ if ((rawTurnstileSiteKey && !rawTurnstileSecretKey) || (!rawTurnstileSiteKey && 
   throw new Error("TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY must be configured together.");
 }
 
-const turnstileEnabled = Boolean(rawTurnstileSiteKey && rawTurnstileSecretKey);
+const turnstileEnabled = isProduction && Boolean(rawTurnstileSiteKey && rawTurnstileSecretKey);
 
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? "development",

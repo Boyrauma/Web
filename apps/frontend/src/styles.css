@@ -115,12 +115,22 @@ input.field.field-date {
 
 .turnstile-frame {
   min-width: 0;
+  width: 100%;
 }
 
 .turnstile-widget {
-  display: flex;
   width: 100%;
   min-width: 0;
+}
+
+.turnstile-widget--flexible > div,
+.turnstile-widget--flexible iframe {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.turnstile-widget--compact {
+  display: flex;
   justify-content: center;
 }
 
