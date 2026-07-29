@@ -579,7 +579,7 @@ export default function HomePage() {
         hotline={settingsMap.hotline}
         logoUrl={siteLogoUrl}
       />
-      <main>
+      <main id="main-content" tabIndex="-1">
         <HeroSection
           heroTitle={settingsMap.hero_title}
           heroSubtitle={settingsMap.hero_subtitle}

@@ -68,6 +68,25 @@ summary {
   cursor: pointer;
 }
 
+.skip-link {
+  position: fixed;
+  top: -4rem;
+  left: 1rem;
+  z-index: 100;
+  border-radius: 999px;
+  background: #14233c;
+  padding: 0.75rem 1rem;
+  color: #fff;
+  font-weight: 800;
+  transition: top 180ms ease;
+}
+
+.skip-link:focus {
+  top: 1rem;
+  outline: 2px solid #b88a3b;
+  outline-offset: 3px;
+}
+
 .field {
   box-sizing: border-box;
   width: 100%;
@@ -176,6 +195,21 @@ input.field.field-date {
 
 .site-shell-narrow {
   width: min(90vw, 1480px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 #dich-vu,

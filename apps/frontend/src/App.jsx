@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import HomePage from "./pages/HomePage";
-import VehicleDetailPage from "./pages/VehicleDetailPage";
+
+const VehicleDetailPage = lazy(() => import("./pages/VehicleDetailPage"));
 
 function ScrollToTop() {
   const location = useLocation();
@@ -34,10 +35,20 @@ function ScrollToTop() {
 export default function App() {
   return (
     <BrowserRouter>
+      <a href="#main-content" className="skip-link">
+        Bỏ qua đến nội dung chính
+      </a>
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/xe/:slug" element={<VehicleDetailPage />} />
+        <Route
+          path="/xe/:slug"
+          element={
+            <Suspense fallback={null}>
+              <VehicleDetailPage />
+            </Suspense>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );

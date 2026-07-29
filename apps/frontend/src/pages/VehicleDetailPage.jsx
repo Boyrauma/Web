@@ -373,7 +373,7 @@ export default function VehicleDetailPage() {
         hotline={settingsMap.hotline}
         logoUrl={siteLogoUrl}
       />
-      <main className="site-shell mx-auto px-4 py-16 sm:px-6">
+      <main id="main-content" tabIndex="-1" className="site-shell mx-auto px-4 py-16 sm:px-6">
         <button
           type="button"
           onClick={() => navigate(-1)}

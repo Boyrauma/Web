@@ -77,6 +77,7 @@ export default function BookingSection({
             <input
               className="field"
               name="customerName"
+              autoComplete="name"
               placeholder="Nguyễn Văn A"
               value={formData.customerName}
               onChange={handleChange}
@@ -90,6 +91,7 @@ export default function BookingSection({
               name="phoneNumber"
               type="tel"
               inputMode="tel"
+              autoComplete="tel"
               placeholder="09xx xxx xxx"
               value={formData.phoneNumber}
               onChange={handleChange}
@@ -181,12 +183,19 @@ export default function BookingSection({
             {submitLabel}
           </button>
           {submitState.message ? (
-            <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 md:col-span-2">
+            <p
+              role="status"
+              aria-live="polite"
+              className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 md:col-span-2"
+            >
               {submitState.message}
             </p>
           ) : null}
           {submitState.error ? (
-            <p className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 md:col-span-2">
+            <p
+              role="alert"
+              className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 md:col-span-2"
+            >
               {submitState.error}
             </p>
           ) : null}
