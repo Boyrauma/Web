@@ -89,7 +89,9 @@ export async function fetchVehicleBySlug(slug) {
   const data = await readJsonResponse(response);
 
   if (!response.ok) {
-    throw new Error(data?.message ?? "Không thể tải chi tiết xe.");
+    const error = new Error(data?.message ?? "Không thể tải chi tiết xe.");
+    error.statusCode = response.status;
+    throw error;
   }
 
   return data;

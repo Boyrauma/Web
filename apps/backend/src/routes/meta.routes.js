@@ -23,19 +23,35 @@ function getPublicBaseUrl(request) {
 
 router.get("/sitemap.xml", async (request, response) => {
   const baseUrl = getPublicBaseUrl(request);
-  const vehicles = await prisma.vehicle.findMany({
-    where: { isPublished: true },
-    select: {
-      slug: true,
-      updatedAt: true
-    },
-    orderBy: { updatedAt: "desc" }
-  });
+  const [vehicles, latestService, latestSiteSetting] = await Promise.all([
+    prisma.vehicle.findMany({
+      where: { isPublished: true },
+      select: {
+        slug: true,
+        updatedAt: true
+      },
+      orderBy: { updatedAt: "desc" }
+    }),
+    prisma.service.findFirst({
+      orderBy: { updatedAt: "desc" },
+      select: { updatedAt: true }
+    }),
+    prisma.siteSetting.findFirst({
+      orderBy: { updatedAt: "desc" },
+      select: { updatedAt: true }
+    })
+  ]);
+  const homepageLastModified = [latestService?.updatedAt, latestSiteSetting?.updatedAt]
+    .filter(Boolean)
+    .reduce(
+      (latest, updatedAt) => (updatedAt > latest ? updatedAt : latest),
+      vehicles[0]?.updatedAt ?? new Date(0)
+    );
 
   const entries = [
     {
       loc: new URL("/", baseUrl).toString(),
-      lastmod: new Date().toISOString()
+      lastmod: homepageLastModified.toISOString()
     },
     ...vehicles.map((vehicle) => ({
       loc: new URL(`/xe/${vehicle.slug}`, baseUrl).toString(),

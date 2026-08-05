@@ -33,22 +33,52 @@ const bookingRateLimit = createIpRateLimit({
   message: "Bạn gửi booking quá nhiều trong thời gian ngắn. Vui lòng thử lại sau ít phút."
 });
 
+function parseTripDate(value) {
+  const matchedDate = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value ?? "");
+
+  if (!matchedDate) {
+    return null;
+  }
+
+  const [, year, month, day] = matchedDate;
+  const tripDate = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
+
+  if (
+    tripDate.getUTCFullYear() !== Number(year) ||
+    tripDate.getUTCMonth() !== Number(month) - 1 ||
+    tripDate.getUTCDate() !== Number(day)
+  ) {
+    return null;
+  }
+
+  const currentDateParts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts();
+  const datePartMap = Object.fromEntries(
+    currentDateParts
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, Number(part.value)])
+  );
+  const today = Date.UTC(datePartMap.year, datePartMap.month - 1, datePartMap.day);
+
+  return tripDate.getTime() < today ? null : tripDate;
+}
+
 const bookingSchema = z.object({
-  customerName: z.string().min(2),
-  phoneNumber: z.string().min(8),
-  pickupLocation: z.string().min(2),
-  dropoffLocation: z.string().min(2),
-  tripDate: z.string().optional().nullable(),
+  customerName: z.string().trim().min(2),
+  phoneNumber: z.string().trim().min(8),
+  pickupLocation: z.string().trim().min(2),
+  dropoffLocation: z.string().trim().min(2),
+  tripDate: z.string().trim().min(1),
   passengerCount: z
     .union([z.string(), z.number()])
-    .optional()
     .transform((value) => {
-      if (value === undefined || value === null || value === "") {
-        return null;
-      }
-
       return Number(value);
-    }),
+    })
+    .refine((value) => Number.isInteger(value) && value > 0),
   note: z.string().optional().nullable(),
   bookingCaptchaToken: z.string().min(1),
   bookingCaptchaAnswer: z.union([z.string(), z.number()]),
@@ -161,6 +191,14 @@ router.post("/booking-requests", bookingRateLimit, async (request, response) => 
     });
   }
 
+  const tripDate = parseTripDate(parsed.data.tripDate);
+
+  if (!tripDate) {
+    return response.status(400).json({
+      message: "Ngày đi không hợp lệ hoặc đã qua. Vui lòng chọn lại ngày đi."
+    });
+  }
+
   const captchaResult = verifyBookingCaptcha({
     token: parsed.data.bookingCaptchaToken,
     answer: parsed.data.bookingCaptchaAnswer
@@ -243,7 +281,7 @@ router.post("/booking-requests", bookingRateLimit, async (request, response) => 
         dropoffLocation: parsed.data.dropoffLocation,
         passengerCount: parsed.data.passengerCount,
         note: parsed.data.note ?? null,
-        tripDate: parsed.data.tripDate ? new Date(parsed.data.tripDate) : null
+        tripDate
       }
     });
   });

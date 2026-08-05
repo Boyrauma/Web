@@ -1,5 +1,14 @@
 import TurnstileWidget from "./TurnstileWidget";
 
+function getTodayInputValue() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
 export default function BookingSection({
   hotline,
   formData,
@@ -16,6 +25,7 @@ export default function BookingSection({
   const isWaitingForTurnstile = turnstileState.enabled && !turnstileState.token;
   const isSubmitDisabled =
     submitState.loading || isBackgroundVerificationPreparing || isWaitingForTurnstile;
+  const minimumTripDate = getTodayInputValue();
 
   let submitLabel = "Gửi lịch xe";
 
@@ -104,6 +114,7 @@ export default function BookingSection({
               className="field field-date"
               name="tripDate"
               type="date"
+              min={minimumTripDate}
               value={formData.tripDate}
               onChange={handleChange}
               required

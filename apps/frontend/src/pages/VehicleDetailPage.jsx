@@ -259,10 +259,14 @@ export default function VehicleDetailPage() {
   const [vehicle, setVehicle] = useState(null);
   const [selectedImageUrl, setSelectedImageUrl] = useState("");
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-  const [state, setState] = useState({ loading: true, error: "" });
+  const [state, setState] = useState({ loading: true, error: "", notFound: false });
 
   useEffect(() => {
     let ignore = false;
+
+    setVehicle(null);
+    setSelectedImageUrl("");
+    setState({ loading: true, error: "", notFound: false });
 
     async function loadData() {
       try {
@@ -275,11 +279,15 @@ export default function VehicleDetailPage() {
           setSiteSettings(settingsData);
           setVehicle(vehicleData);
           setSelectedImageUrl(vehicleData.images?.[0]?.imageUrl ?? "");
-          setState({ loading: false, error: "" });
+          setState({ loading: false, error: "", notFound: false });
         }
       } catch (error) {
         if (!ignore) {
-          setState({ loading: false, error: error.message });
+          setState({
+            loading: false,
+            error: error.statusCode === 404 ? "" : error.message,
+            notFound: error.statusCode === 404
+          });
         }
       }
     }
@@ -311,11 +319,19 @@ export default function VehicleDetailPage() {
   }, [settingsMap.favicon_url]);
 
   useEffect(() => {
+    if (state.loading) {
+      return;
+    }
+
     const siteName = settingsMap.site_name ?? "Nhà xe Định Dung";
-    const title = vehicle?.name
+    const title = state.notFound
+      ? `Không tìm thấy xe | ${siteName}`
+      : vehicle?.name
       ? `${vehicle.name} | ${siteName}`
       : settingsMap.browser_title ?? `${siteName} | Chi tiết xe`;
-    const description =
+    const description = state.notFound
+      ? "Dòng xe này không còn hiển thị. Hãy xem lại đội xe đang phục vụ của Nhà xe Định Dung."
+      :
       vehicle?.description ||
       vehicle?.shortDescription ||
       `Chi tiết dòng xe ${vehicle?.name ?? ""} tại ${siteName}. Xem hình ảnh, số chỗ và liên hệ đặt xe nhanh.`;
@@ -336,6 +352,7 @@ export default function VehicleDetailPage() {
       image: currentImage,
       type: "website",
       siteName,
+      robots: state.notFound ? "noindex,follow" : "index,follow",
       keywords: vehicle?.category?.name
         ? `${vehicle.name}, ${vehicle.category.name}, thuê xe ${vehicle.name}, nhà xe Thanh Hóa`
         : undefined,
@@ -347,6 +364,8 @@ export default function VehicleDetailPage() {
     settingsMap.browser_title,
     settingsMap.site_name,
     slug,
+    state.loading,
+    state.notFound,
     vehicle
   ]);
 
@@ -387,6 +406,25 @@ export default function VehicleDetailPage() {
           <div className="mt-6 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
             {state.error}
           </div>
+        ) : null}
+        {state.notFound ? (
+          <section className="mt-8 rounded-[2rem] border border-[#e4d5bb] bg-white/92 p-8 text-center shadow-[0_24px_70px_rgba(20,35,60,0.08)] sm:p-12">
+            <p className="text-sm font-bold uppercase tracking-[0.24em] text-brand-amber">
+              Không tìm thấy xe
+            </p>
+            <h1 className="mt-3 text-3xl font-black text-brand-navy">
+              Dòng xe này hiện không còn hiển thị
+            </h1>
+            <p className="mx-auto mt-4 max-w-2xl text-slate-600">
+              Hãy quay lại đội xe để xem các dòng xe đang phục vụ và gửi nhu cầu để nhà xe tư vấn.
+            </p>
+            <Link
+              to="/#doi-xe"
+              className="mt-7 inline-flex rounded-full bg-[#14233c] px-6 py-3 font-bold text-white transition hover:bg-[#b88a3b]"
+            >
+              Xem đội xe
+            </Link>
+          </section>
         ) : null}
 
         {vehicle ? (
