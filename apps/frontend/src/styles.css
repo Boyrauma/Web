@@ -83,7 +83,7 @@ summary {
 
 .skip-link:focus {
   top: 1rem;
-  outline: 2px solid #b88a3b;
+  outline: 2px solid #9a5c00;
   outline-offset: 3px;
 }
 
@@ -102,7 +102,7 @@ summary {
 }
 
 .field:focus {
-  outline: 2px solid #b88a3b;
+  outline: 2px solid #9a5c00;
   outline-offset: 1px;
 }
 

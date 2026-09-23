@@ -34,7 +34,7 @@ export default function SiteHeader({ siteName, siteTagline, hotline, logoUrl }) 
               </div>
             )}
             <Link to="/" className="min-w-0">
-              <p className="hidden truncate text-[11px] font-bold uppercase tracking-[0.3em] text-[#b88a3b] sm:block">
+              <p className="hidden truncate text-[11px] font-bold uppercase tracking-[0.3em] text-[#9a5c00] sm:block">
                 {siteTagline ?? "Dịch vụ vận tải Thanh Hóa"}
               </p>
               <p className="truncate text-lg font-black uppercase text-[#14233c] sm:text-2xl">
@@ -59,7 +59,7 @@ export default function SiteHeader({ siteName, siteTagline, hotline, logoUrl }) 
             </nav>
             <a
               href={`tel:${hotline ?? "0979860498"}`}
-              className="hover-lift rounded-full bg-[#14233c] px-5 py-3 text-sm font-bold text-[#f6efe3] transition hover:bg-[#b88a3b]"
+              className="hover-lift rounded-full bg-[#14233c] px-5 py-3 text-sm font-bold text-[#f6efe3] transition hover:bg-[#9a5c00]"
             >
               {hotline ?? "0979 860 498"}
             </a>
@@ -67,7 +67,7 @@ export default function SiteHeader({ siteName, siteTagline, hotline, logoUrl }) 
 
           <a
             href={`tel:${hotline ?? "0979860498"}`}
-            className="hover-lift shrink-0 rounded-full bg-[#14233c] px-4 py-3 text-sm font-bold text-[#f6efe3] transition hover:bg-[#b88a3b] lg:hidden"
+            className="hover-lift shrink-0 rounded-full bg-[#14233c] px-4 py-3 text-sm font-bold text-[#f6efe3] transition hover:bg-[#9a5c00] lg:hidden"
           >
             Gọi ngay
           </a>

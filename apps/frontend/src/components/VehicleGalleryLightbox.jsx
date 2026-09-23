@@ -1,4 +1,4 @@
-﻿import { useEffect } from "react";
+﻿import { useEffect, useRef } from "react";
 
 export default function VehicleGalleryLightbox({
   gallery,
@@ -9,37 +9,117 @@ export default function VehicleGalleryLightbox({
   onNext,
   onSelect
 }) {
+  const dialogRef = useRef(null);
+  const closeButtonRef = useRef(null);
+  const actionsRef = useRef({ onClose, onPrev, onNext });
   const activeImage = gallery[currentIndex];
   const galleryLabel = title ? `Bộ ảnh ${title}` : "Bộ ảnh xe";
   const imageLabel = activeImage?.altText ?? title ?? `Ảnh xe ${currentIndex + 1}`;
 
   useEffect(() => {
+    actionsRef.current = { onClose, onPrev, onNext };
+  }, [onClose, onNext, onPrev]);
+
+  useEffect(() => {
     if (!gallery.length) return undefined;
 
+    const dialog = dialogRef.current;
+    const previouslyFocusedElement = document.activeElement;
+    const backgroundElements = dialog?.parentElement
+      ? Array.from(dialog.parentElement.children).filter((element) => element !== dialog)
+      : [];
+    const backgroundStates = backgroundElements.map((element) => ({
+      element,
+      inert: element.hasAttribute("inert"),
+      ariaHidden: element.getAttribute("aria-hidden")
+    }));
+
+    function getFocusableElements() {
+      if (!dialog) return [];
+
+      return Array.from(
+        dialog.querySelectorAll(
+          'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((element) => element.getClientRects().length > 0);
+    }
+
     function handleKeyDown(event) {
-      if (event.key === "Escape") onClose();
-      if (event.key === "ArrowLeft") onPrev();
-      if (event.key === "ArrowRight") onNext();
+      if (event.key === "Escape") {
+        event.preventDefault();
+        actionsRef.current.onClose();
+        return;
+      }
+
+      if (event.key === "ArrowLeft") {
+        actionsRef.current.onPrev();
+        return;
+      }
+
+      if (event.key === "ArrowRight") {
+        actionsRef.current.onNext();
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+
+      const focusableElements = getFocusableElements();
+
+      if (!focusableElements.length) {
+        event.preventDefault();
+        dialog?.focus();
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
     }
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    backgroundStates.forEach(({ element }) => {
+      element.setAttribute("inert", "");
+      element.setAttribute("aria-hidden", "true");
+    });
     window.addEventListener("keydown", handleKeyDown);
+    closeButtonRef.current?.focus();
 
     return () => {
       document.body.style.overflow = previousOverflow;
+      backgroundStates.forEach(({ element, inert, ariaHidden }) => {
+        if (!inert) {
+          element.removeAttribute("inert");
+        }
+
+        if (ariaHidden === null) {
+          element.removeAttribute("aria-hidden");
+        } else {
+          element.setAttribute("aria-hidden", ariaHidden);
+        }
+      });
       window.removeEventListener("keydown", handleKeyDown);
+      previouslyFocusedElement?.focus?.();
     };
-  }, [gallery.length, onClose, onNext, onPrev]);
+  }, [gallery.length]);
 
   if (!activeImage) return null;
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-[70] bg-slate-950/78 p-3 backdrop-blur-md sm:p-5"
       role="dialog"
       aria-modal="true"
       aria-label={galleryLabel}
+      tabIndex={-1}
       onClick={onClose}
     >
       <div
@@ -50,6 +130,7 @@ export default function VehicleGalleryLightbox({
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-[linear-gradient(180deg,transparent,rgba(6,10,18,0.38))]" />
 
         <button
+          ref={closeButtonRef}
           type="button"
           onClick={onClose}
           className="absolute right-4 top-4 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-slate-950/45 text-xl font-bold text-white backdrop-blur transition hover:bg-white/15 sm:right-5 sm:top-5"
@@ -60,7 +141,7 @@ export default function VehicleGalleryLightbox({
 
         <div className="relative z-10 flex flex-wrap items-start justify-between gap-4 px-5 pb-4 pt-5 sm:px-7 sm:pt-6">
           <div className="max-w-3xl">
-            <p className="text-[11px] font-bold uppercase tracking-[0.34em] text-brand-amber/90">
+            <p className="text-[11px] font-bold uppercase tracking-[0.34em] text-brand-gold">
               Bộ ảnh đội xe
             </p>
             <h3 className="mt-2 text-2xl font-black text-white sm:text-3xl">{title}</h3>

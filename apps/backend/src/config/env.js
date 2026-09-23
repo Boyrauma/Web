@@ -34,6 +34,13 @@ export const env = {
   nodeEnv: process.env.NODE_ENV ?? "development",
   port: Number(process.env.BACKEND_PORT ?? 8080),
   databaseUrl: process.env.DATABASE_URL ?? "",
+  publicSiteUrl: (
+    process.env.PUBLIC_SITE_URL ?? (isProduction ? "https://nhaxedinhdung.vn" : "")
+  ).trim(),
+  frontendInternalUrl: (
+    process.env.FRONTEND_INTERNAL_URL ??
+    (isProduction ? "http://frontend:80" : "http://127.0.0.1:5173")
+  ).replace(/\/$/, ""),
   jwtSecret: rawJwtSecret,
   corsOrigins: resolvedCorsOrigins.length ? resolvedCorsOrigins : defaultDevCorsOrigins,
   uploadDir: process.env.UPLOAD_DIR ?? "uploads",

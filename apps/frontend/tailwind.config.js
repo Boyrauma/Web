@@ -5,7 +5,8 @@ export default {
       colors: {
         brand: {
           navy: "#1a365d",
-          amber: "#e67e22",
+          amber: "#9a5c00",
+          gold: "#d3b277",
           slate: "#51606f",
           sky: "#d7e7f8"
         }

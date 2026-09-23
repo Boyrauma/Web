@@ -188,7 +188,7 @@ export default function BookingSection({
           ) : null}
           <button
             type="submit"
-            className="rounded-2xl bg-[#b88a3b] px-6 py-4 font-bold text-white transition hover:bg-brand-navy md:col-span-2"
+            className="rounded-2xl bg-[#9a5c00] px-6 py-4 font-bold text-white transition hover:bg-brand-navy md:col-span-2"
             disabled={isSubmitDisabled}
           >
             {submitLabel}

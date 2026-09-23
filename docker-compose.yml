@@ -29,6 +29,7 @@ services:
     environment:
       UPLOAD_DIR: /app/uploads
       RUN_SEED_ON_BOOT: ${RUN_SEED_ON_BOOT:-false}
+      FRONTEND_INTERNAL_URL: ${FRONTEND_INTERNAL_URL:-http://frontend:80}
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     volumes:

@@ -8,6 +8,7 @@ import { env } from "./config/env.js";
 import healthRoutes from "./routes/health.routes.js";
 import metaRoutes from "./routes/meta.routes.js";
 import publicRoutes from "./routes/public.routes.js";
+import seoPageRoutes from "./routes/seoPage.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
@@ -38,11 +39,12 @@ app.use((request, response, next) => {
   response.setHeader("X-Content-Type-Options", "nosniff");
   response.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   response.setHeader("X-Frame-Options", "DENY");
-  response.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+  response.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
   response.setHeader("Cross-Origin-Resource-Policy", "same-origin");
+  response.setHeader("Permissions-Policy", "camera=(), geolocation=(), microphone=()");
   response.setHeader(
     "Content-Security-Policy",
-    "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self'; connect-src 'self' ws: wss: http: https:;"
+    "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; connect-src 'self' https://challenges.cloudflare.com ws: wss:;"
   );
   next();
 });
@@ -53,6 +55,8 @@ app.use(cookieParser());
 app.use(
   "/image",
   express.static(path.resolve(__dirname, "..", env.uploadDir), {
+    maxAge: "1y",
+    immutable: true,
     setHeaders(response) {
       response.setHeader("X-Content-Type-Options", "nosniff");
       response.setHeader("Content-Disposition", "inline");
@@ -63,6 +67,8 @@ app.use(
 app.use(
   "/uploads",
   express.static(path.resolve(__dirname, "..", env.uploadDir), {
+    maxAge: "1y",
+    immutable: true,
     setHeaders(response) {
       response.setHeader("X-Content-Type-Options", "nosniff");
       response.setHeader("Content-Disposition", "inline");
@@ -80,6 +86,7 @@ app.get("/", (request, response) => {
 
 app.use("/health", healthRoutes);
 app.use("/", metaRoutes);
+app.use("/seo-pages", seoPageRoutes);
 app.use("/api", publicRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);

@@ -252,6 +252,25 @@ function getVehicleNarrative(vehicle) {
   };
 }
 
+function buildVehicleSeoDescription(vehicle, siteName) {
+  const summary = String(vehicle?.shortDescription || vehicle?.description || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/[.!?]+$/, "");
+  const opening = `Thuê ${vehicle.name} ${vehicle.seatCount} chỗ tại Thanh Hóa.`;
+  const detail = summary ? ` ${summary}.` : "";
+  const description = `${opening}${detail} Xem ảnh thực tế và liên hệ ${siteName} để kiểm tra lịch, nhận tư vấn nhanh.`;
+
+  if (description.length <= 160) {
+    return description;
+  }
+
+  const shortened = description.slice(0, 159);
+  const lastSpace = shortened.lastIndexOf(" ");
+
+  return `${shortened.slice(0, Math.max(lastSpace, 142)).trim()}…`;
+}
+
 export default function VehicleDetailPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -331,10 +350,9 @@ export default function VehicleDetailPage() {
       : settingsMap.browser_title ?? `${siteName} | Chi tiết xe`;
     const description = state.notFound
       ? "Dòng xe này không còn hiển thị. Hãy xem lại đội xe đang phục vụ của Nhà xe Định Dung."
-      :
-      vehicle?.description ||
-      vehicle?.shortDescription ||
-      `Chi tiết dòng xe ${vehicle?.name ?? ""} tại ${siteName}. Xem hình ảnh, số chỗ và liên hệ đặt xe nhanh.`;
+      : vehicle
+      ? buildVehicleSeoDescription(vehicle, siteName)
+      : `Chi tiết đội xe tại ${siteName}. Xem hình ảnh, số chỗ và liên hệ đặt xe nhanh.`;
     const canonicalPath = vehicle?.slug ? `/xe/${vehicle.slug}` : `/xe/${slug}`;
     const schema = vehicle
       ? buildVehicleSchema({
@@ -420,7 +438,7 @@ export default function VehicleDetailPage() {
             </p>
             <Link
               to="/#doi-xe"
-              className="mt-7 inline-flex rounded-full bg-[#14233c] px-6 py-3 font-bold text-white transition hover:bg-[#b88a3b]"
+              className="mt-7 inline-flex rounded-full bg-[#14233c] px-6 py-3 font-bold text-white transition hover:bg-[#9a5c00]"
             >
               Xem đội xe
             </Link>
@@ -448,7 +466,7 @@ export default function VehicleDetailPage() {
                   </div>
                   <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 bg-gradient-to-t from-slate-950/68 via-slate-950/20 to-transparent px-5 py-5 text-white">
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-[0.24em] text-brand-amber">
+                      <p className="text-xs font-bold uppercase tracking-[0.24em] text-brand-gold">
                         Bộ ảnh chi tiết
                       </p>
                       <p className="mt-2 text-sm font-semibold text-white/90">
@@ -535,7 +553,7 @@ export default function VehicleDetailPage() {
                 <div className="mt-8 flex flex-wrap gap-3">
                   <a
                     href={`tel:${settingsMap.hotline ?? "0979860498"}`}
-                    className="rounded-2xl bg-[#14233c] px-6 py-4 font-bold text-white transition hover:bg-[#b88a3b]"
+                    className="rounded-2xl bg-[#14233c] px-6 py-4 font-bold text-white transition hover:bg-[#9a5c00]"
                   >
                     Gọi tư vấn
                   </a>
@@ -565,7 +583,7 @@ export default function VehicleDetailPage() {
               </div>
 
               <aside className="rounded-[2rem] bg-[#14233c] p-8 text-white shadow-premium">
-                <p className="text-sm font-bold uppercase tracking-[0.25em] text-brand-amber">
+                <p className="text-sm font-bold uppercase tracking-[0.25em] text-brand-gold">
                   Cần chốt xe nhanh?
                 </p>
                 <h2 className="mt-3 text-3xl font-black">{narrative.asideTitle}</h2>

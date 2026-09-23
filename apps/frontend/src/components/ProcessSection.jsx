@@ -10,7 +10,7 @@ export default function ProcessSection() {
       <div className="site-shell relative mx-auto px-4 sm:px-6">
         <div>
           <div>
-            <p className="text-sm font-bold uppercase tracking-[0.3em] text-brand-amber">
+            <p className="text-sm font-bold uppercase tracking-[0.3em] text-brand-gold">
               Quy trình
             </p>
             <h2 className="display-serif mt-3 text-4xl">Đặt xe nhanh trong 3 bước</h2>
@@ -19,7 +19,7 @@ export default function ProcessSection() {
         <div className="mt-10 grid gap-5 md:grid-cols-3">
           {steps.map((step, index) => (
             <div key={step} className="glass-card rounded-[1.75rem] border border-white/10 p-6">
-              <p className="text-xs font-bold uppercase tracking-[0.3em] text-brand-amber">
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-brand-gold">
                 Bước {index + 1}
               </p>
               <p className="mt-4 text-lg font-bold leading-8">{step}</p>
