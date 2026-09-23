@@ -1,6 +1,10 @@
 export const DEFAULT_SITE_SETTINGS = [
   { key: "address", value: "555 Quang Trung 2, Phường Hạc Thành, Thanh Hóa", group: "contact" },
-  { key: "browser_title", value: "Nhà xe Định Dung | Website nhà xe", group: "branding" },
+  {
+    key: "browser_title",
+    value: "Nhà xe Định Dung | Thuê xe du lịch tại Thanh Hóa",
+    group: "branding"
+  },
   { key: "favicon_url", value: "/favicon.svg", group: "branding" },
   {
     key: "footer_text",

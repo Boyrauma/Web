@@ -10,6 +10,8 @@ function getTodayInputValue() {
 }
 
 export default function BookingSection({
+  sectionRef,
+  onBookingIntent,
   hotline,
   formData,
   submitState,
@@ -17,11 +19,16 @@ export default function BookingSection({
   turnstileState,
   handleTurnstileTokenChange,
   handleTurnstileError,
+  handleCaptchaRetry,
   handleChange,
   handleSubmit
 }) {
   const isBackgroundVerificationPreparing =
-    captchaState.loading || captchaState.proofLoading || !captchaState.token || !captchaState.proofNonce;
+    !captchaState.initialized ||
+    captchaState.loading ||
+    captchaState.proofLoading ||
+    !captchaState.token ||
+    !captchaState.proofNonce;
   const isWaitingForTurnstile = turnstileState.enabled && !turnstileState.token;
   const isSubmitDisabled =
     submitState.loading || isBackgroundVerificationPreparing || isWaitingForTurnstile;
@@ -31,12 +38,12 @@ export default function BookingSection({
 
   if (submitState.loading) {
     submitLabel = "Đang gửi...";
-  } else if (isBackgroundVerificationPreparing) {
+  } else if (captchaState.initialized && isBackgroundVerificationPreparing) {
     submitLabel = "Đang chuẩn bị...";
   }
 
   return (
-    <section id="booking" className="site-shell mx-auto px-4 py-16 sm:px-6">
+    <section ref={sectionRef} id="booking" className="site-shell mx-auto px-4 py-16 sm:px-6">
       <div className="grid gap-8 lg:grid-cols-[0.76fr_1.24fr]">
         <div className="rounded-[2rem] border border-[#e4d5bb] bg-[#fffaf2] p-6 shadow-[0_20px_60px_rgba(20,35,60,0.06)] lg:p-8">
           <p className="text-sm font-bold uppercase tracking-[0.3em] text-brand-amber">
@@ -80,6 +87,8 @@ export default function BookingSection({
 
         <form
           onSubmit={handleSubmit}
+          onFocusCapture={onBookingIntent}
+          onPointerDown={onBookingIntent}
           className="grid grid-cols-[minmax(0,1fr)] gap-4 rounded-[2rem] border border-[#e4d5bb] bg-white/95 p-6 shadow-[0_24px_70px_rgba(20,35,60,0.08)] md:grid-cols-2"
         >
           <label className="min-w-0 space-y-2">
@@ -184,6 +193,21 @@ export default function BookingSection({
                 onTokenChange={handleTurnstileTokenChange}
                 onError={handleTurnstileError}
               />
+            </div>
+          ) : null}
+          {captchaState.initialized && captchaState.proofError && !captchaState.proofLoading ? (
+            <div
+              role="alert"
+              className="flex flex-col gap-3 rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900 md:col-span-2 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <span>{captchaState.proofError}</span>
+              <button
+                type="button"
+                onClick={handleCaptchaRetry}
+                className="shrink-0 rounded-full border border-amber-700/30 bg-white px-4 py-2 font-bold text-amber-900 transition hover:border-brand-navy hover:text-brand-navy"
+              >
+                Thử xác thực lại
+              </button>
             </div>
           ) : null}
           <button

@@ -66,6 +66,17 @@ function setStructuredData(html, schema) {
   return replaceOrInsertHeadTag(html, pattern, replacement);
 }
 
+function setHeroImagePreload(html, imageUrl) {
+  if (!imageUrl) {
+    return html;
+  }
+
+  const pattern = /<link\b(?=[^>]*\bdata-home-hero-preload=["']true["'])[^>]*\/?>(?:<\/link>)?/i;
+  const replacement = `<link rel="preload" as="image" href="${escapeHtmlAttribute(imageUrl)}" fetchpriority="high" data-home-hero-preload="true" />`;
+
+  return replaceOrInsertHeadTag(html, pattern, replacement);
+}
+
 function normalizeSentence(value) {
   return String(value ?? "")
     .replace(/\s+/g, " ")
@@ -124,6 +135,63 @@ function buildVehicleDescription(vehicle, siteName) {
   const closing = ` Xem ảnh thực tế và liên hệ ${siteName} để kiểm tra lịch, nhận tư vấn nhanh.`;
 
   return truncateDescription(`${opening}${detail}${closing}`);
+}
+
+function renderHomeHtml({ template, settings, baseUrl }) {
+  const siteName = settings.site_name || "Nhà xe Định Dung";
+  const canonicalUrl = new URL("/", baseUrl).toString();
+  const title =
+    settings.browser_title ||
+    `${siteName} | Thuê xe du lịch, cưới hỏi, sân bay tại Thanh Hóa`;
+  const description = truncateDescription(
+    normalizeSentence(settings.hero_subtitle) ||
+      "Dịch vụ thuê xe du lịch, cưới hỏi, sân bay và hợp đồng tại Thanh Hóa. Đặt xe nhanh, hỗ trợ rõ ràng, đúng giờ."
+  );
+  const imageUrl = settings.hero_background_url
+    ? new URL(settings.hero_background_url, baseUrl).toString()
+    : new URL("/assets/xecountybonghoi.jpg", baseUrl).toString();
+  const logoUrl = settings.logo_url
+    ? new URL(settings.logo_url, baseUrl).toString()
+    : new URL("/favicon.svg", baseUrl).toString();
+  const sameAs = [settings.zalo, settings.group_link].filter((value) =>
+    /^https?:\/\//i.test(value ?? "")
+  );
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": ["LocalBusiness", "TransportationService"],
+    name: siteName,
+    description,
+    url: canonicalUrl,
+    image: imageUrl,
+    logo: logoUrl,
+    telephone: settings.hotline || undefined,
+    address: settings.address || undefined,
+    areaServed: {
+      "@type": "AdministrativeArea",
+      name: "Thanh Hóa, Việt Nam"
+    },
+    sameAs: sameAs.length ? sameAs : undefined
+  };
+
+  let html = setTitle(template, title);
+  html = setMeta(html, "name", "description", description);
+  html = setMeta(html, "name", "robots", "index,follow");
+  html = setMeta(html, "property", "og:type", "website");
+  html = setMeta(html, "property", "og:title", title);
+  html = setMeta(html, "property", "og:description", description);
+  html = setMeta(html, "property", "og:url", canonicalUrl);
+  html = setMeta(html, "property", "og:site_name", siteName);
+  html = setMeta(html, "property", "og:image", imageUrl);
+  html = setMeta(html, "property", "og:image:alt", `Ảnh dịch vụ của ${siteName}`);
+  html = setMeta(html, "name", "twitter:card", "summary_large_image");
+  html = setMeta(html, "name", "twitter:title", title);
+  html = setMeta(html, "name", "twitter:description", description);
+  html = setMeta(html, "name", "twitter:image", imageUrl);
+  html = setMeta(html, "name", "twitter:image:alt", `Ảnh dịch vụ của ${siteName}`);
+  html = setCanonical(html, canonicalUrl);
+  html = setHeroImagePreload(html, settings.hero_background_url ? imageUrl : "");
+
+  return setStructuredData(html, schema);
 }
 
 function renderVehicleHtml({ template, vehicle, requestedSlug, settings, baseUrl, isNotFound }) {
@@ -206,6 +274,31 @@ function renderVehicleHtml({ template, vehicle, requestedSlug, settings, baseUrl
 
   return setStructuredData(html, schema);
 }
+
+router.get("/home", async (request, response, next) => {
+  try {
+    await ensureDefaultSiteSettings(prisma);
+
+    const [template, siteSettings] = await Promise.all([
+      getFrontendTemplate(),
+      prisma.siteSetting.findMany({
+        where: { key: { in: PUBLIC_SITE_SETTING_KEYS } }
+      })
+    ]);
+    const settings = Object.fromEntries(siteSettings.map((setting) => [setting.key, setting.value]));
+    const html = renderHomeHtml({
+      template,
+      settings,
+      baseUrl: getRequestBaseUrl(request)
+    });
+
+    response.type("html");
+    response.setHeader("Cache-Control", "public, max-age=60, s-maxage=300, stale-while-revalidate=600");
+    return response.send(html);
+  } catch (error) {
+    return next(error);
+  }
+});
 
 router.get("/vehicles/:slug", async (request, response, next) => {
   try {

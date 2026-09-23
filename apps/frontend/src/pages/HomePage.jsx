@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import BookingSection from "../components/BookingSection";
 import FaqSection from "../components/FaqSection";
 import FleetSection from "../components/FleetSection";
@@ -95,6 +95,7 @@ function buildFallbackTurnstileState(resetKey) {
 }
 
 export default function HomePage() {
+  const bookingSectionRef = useRef(null);
   const [siteSettings, setSiteSettings] = useState([]);
   const [services, setServices] = useState([]);
   const [vehicleCategories, setVehicleCategories] = useState([]);
@@ -119,8 +120,10 @@ export default function HomePage() {
     website: ""
   });
   const [submitState, setSubmitState] = useState({ loading: false, message: "", error: "" });
+  const [shouldPrepareBooking, setShouldPrepareBooking] = useState(false);
   const [captchaState, setCaptchaState] = useState({
-    loading: true,
+    initialized: false,
+    loading: false,
     prompt: "",
     token: "",
     proofChallenge: "",
@@ -173,9 +176,47 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
+    const bookingSection = bookingSectionRef.current;
+
+    if (!bookingSection || shouldPrepareBooking) {
+      return undefined;
+    }
+
+    if (!("IntersectionObserver" in window)) {
+      setShouldPrepareBooking(true);
+      return undefined;
+    }
+
+    const observer = new window.IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setShouldPrepareBooking(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "600px 0px" }
+    );
+
+    observer.observe(bookingSection);
+
+    return () => observer.disconnect();
+  }, [shouldPrepareBooking]);
+
+  useEffect(() => {
+    if (!shouldPrepareBooking) {
+      return undefined;
+    }
+
     let ignore = false;
 
     async function loadCaptcha() {
+      setCaptchaState((current) => ({
+        ...current,
+        initialized: true,
+        loading: true,
+        proofError: ""
+      }));
+
       try {
         const captcha = await fetchBookingCaptcha();
 
@@ -183,6 +224,7 @@ export default function HomePage() {
           const derivedCaptchaAnswer = deriveCaptchaAnswer(captcha);
 
           setCaptchaState({
+            initialized: true,
             loading: false,
             prompt: captcha.prompt,
             token: captcha.token,
@@ -202,6 +244,7 @@ export default function HomePage() {
       } catch {
         if (!ignore) {
           setCaptchaState({
+            initialized: true,
             loading: false,
             prompt: "",
             token: "",
@@ -222,7 +265,7 @@ export default function HomePage() {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [shouldPrepareBooking]);
 
   useEffect(() => {
     let cancelled = false;
@@ -366,6 +409,7 @@ export default function HomePage() {
   async function refreshCaptcha() {
     setCaptchaState((current) => ({
       ...current,
+      initialized: true,
       loading: true,
       prompt: "",
       token: "",
@@ -383,6 +427,7 @@ export default function HomePage() {
       const derivedCaptchaAnswer = deriveCaptchaAnswer(captcha);
 
       setCaptchaState({
+        initialized: true,
         loading: false,
         prompt: captcha.prompt,
         token: captcha.token,
@@ -400,6 +445,7 @@ export default function HomePage() {
       setTurnstileState((current) => buildTurnstileState(captcha, current.resetKey));
     } catch {
       setCaptchaState({
+        initialized: true,
         loading: false,
         prompt: "",
         token: "",
@@ -420,6 +466,10 @@ export default function HomePage() {
       current.error || current.message ? { loading: false, message: "", error: "" } : current
     );
     setFormData((current) => ({ ...current, [name]: value }));
+  }
+
+  function handleBookingIntent() {
+    setShouldPrepareBooking(true);
   }
 
   function handleTurnstileTokenChange(token) {
@@ -611,6 +661,8 @@ export default function HomePage() {
         <ProcessSection />
         <FaqSection />
         <BookingSection
+          sectionRef={bookingSectionRef}
+          onBookingIntent={handleBookingIntent}
           hotline={settingsMap.hotline}
           address={settingsMap.address}
           formData={formData}
@@ -619,6 +671,7 @@ export default function HomePage() {
           turnstileState={turnstileState}
           handleTurnstileTokenChange={handleTurnstileTokenChange}
           handleTurnstileError={handleTurnstileError}
+          handleCaptchaRetry={refreshCaptcha}
           handleChange={handleChange}
           handleSubmit={handleSubmit}
         />
