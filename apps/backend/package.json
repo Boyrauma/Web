@@ -12,6 +12,7 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "node prisma/seed.js",
+    "images:verify-packaged": "node scripts/verify-packaged-uploads.js",
     "images:optimize-existing": "node scripts/optimize-existing-uploads.js",
     "uploads:cleanup-orphaned": "node scripts/cleanup-orphaned-uploads.js"
   },

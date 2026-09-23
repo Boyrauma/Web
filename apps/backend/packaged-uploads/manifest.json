@@ -1,0 +1,73 @@
+{
+  "version": "2026-09-23",
+  "fileCount": 16,
+  "totalBytes": 2611338,
+  "siteSettings": {
+    "logo_url": "/image/branding/1790133358728-logo.webp",
+    "hero_background_url": "/image/branding/1790133364863-hero.webp"
+  },
+  "vehicles": [
+    {
+      "slug": "huyndai-county",
+      "images": [
+        "/image/vehicles/1790133492850-xecountytrang.webp",
+        "/image/vehicles/1790133492850-xecountytrang2.webp",
+        "/image/vehicles/1790133492852-xecountyxanh.webp",
+        "/image/vehicles/1790133492854-xecountyxanh2.webp"
+      ]
+    },
+    {
+      "slug": "huyndai-solati",
+      "images": [
+        "/image/vehicles/1790133506877-xe16cho.webp",
+        "/image/vehicles/1790133506878-xe16cho2.webp"
+      ]
+    },
+    {
+      "slug": "huyndai-universe",
+      "images": [
+        "/image/vehicles/1790133422000-xe45cho.webp",
+        "/image/vehicles/1790133422001-xe45cho2.webp"
+      ]
+    },
+    {
+      "slug": "santafe",
+      "images": [
+        "/image/vehicles/1790133554410-xe7cho.webp",
+        "/image/vehicles/1790133520372-xe7cho2.webp"
+      ]
+    },
+    {
+      "slug": "thaco-evergreen",
+      "images": [
+        "/image/vehicles/1790133448784-xecountybonghoi.webp",
+        "/image/vehicles/1790133448784-xecountybonghoi2.webp"
+      ]
+    },
+    {
+      "slug": "vinfat-lux-a2-0",
+      "images": [
+        "/image/vehicles/1790133466252-xe4cho.webp",
+        "/image/vehicles/1790133466252-xe4cho2.webp"
+      ]
+    }
+  ],
+  "files": [
+    { "path": "branding/1790133358728-logo.webp", "bytes": 38846, "width": 1200, "height": 654, "sha256": "e18444f2f75334cc2011153069d5869fbb06677916c2ca01bcc81df20f610d1e" },
+    { "path": "branding/1790133364863-hero.webp", "bytes": 148884, "width": 1280, "height": 714, "sha256": "f479bef1535486cc42126cc206125421a6ef900e57015540b8c36e63e593a3fe" },
+    { "path": "vehicles/1790133422000-xe45cho.webp", "bytes": 99042, "width": 1280, "height": 720, "sha256": "37ff4c3dacbdcd39526483964c506c59e22353058d0933b4434d2129788547c6" },
+    { "path": "vehicles/1790133422001-xe45cho2.webp", "bytes": 176170, "width": 1280, "height": 960, "sha256": "26a53f0b6da4de3be5d408134649a7a1156bc823b2d7bf33ab35def37e9d37c4" },
+    { "path": "vehicles/1790133448784-xecountybonghoi.webp", "bytes": 198524, "width": 1195, "height": 896, "sha256": "9831172e77b200d4a3a0be42a8fe2989455d8de4ee2b4be7aeb02c489e65204c" },
+    { "path": "vehicles/1790133448784-xecountybonghoi2.webp", "bytes": 120664, "width": 896, "height": 1195, "sha256": "7cade30dc9d03dd3223d4c75fcf351f30a3026fa1ff266308fbf27e347ffa84e" },
+    { "path": "vehicles/1790133466252-xe4cho.webp", "bytes": 119842, "width": 960, "height": 1280, "sha256": "bbc4ea5f7d17476cc0558ffc94cc58c30ee2ec099dd2ee9d5580ceec141532cf" },
+    { "path": "vehicles/1790133466252-xe4cho2.webp", "bytes": 219662, "width": 1280, "height": 960, "sha256": "85be0d8ca46b61453dbabec6880aa188270bf52c7a43b825896b5e994b178ada" },
+    { "path": "vehicles/1790133492850-xecountytrang.webp", "bytes": 197810, "width": 1195, "height": 896, "sha256": "ff6b76d587760e2a804d7ba9937bb5f5e3f6cb7c1a30081ad8c66f26a7c3a93c" },
+    { "path": "vehicles/1790133492850-xecountytrang2.webp", "bytes": 176940, "width": 896, "height": 1195, "sha256": "5bd25ef2bf1cf2f2f8aabcab3b39aa9282d6783e6e4634c5fff05ca1f077f8c6" },
+    { "path": "vehicles/1790133492852-xecountyxanh.webp", "bytes": 190592, "width": 1195, "height": 896, "sha256": "4be239949eaefece34e47928b9cbbbede929ed50cef09b1e2a808935d3bd51d1" },
+    { "path": "vehicles/1790133492854-xecountyxanh2.webp", "bytes": 164116, "width": 896, "height": 1195, "sha256": "4950d03f9fb42de8e651d0d7525ccfd22429d76a713a185b80453a54d16fe6f3" },
+    { "path": "vehicles/1790133506877-xe16cho.webp", "bytes": 173754, "width": 1195, "height": 896, "sha256": "1339d2afb0cfff2737d07204e533f9358e7f0ccc547f2b1eb3cc1d80c9d496f6" },
+    { "path": "vehicles/1790133506878-xe16cho2.webp", "bytes": 179996, "width": 896, "height": 1195, "sha256": "3673246e2ed186f84d4942cee851d686acb27eb72549d9597364a907fe73a411" },
+    { "path": "vehicles/1790133520372-xe7cho2.webp", "bytes": 192308, "width": 896, "height": 1195, "sha256": "aee76ed80a94000054b13a6e4491d62ce71c293107846f85082aa740c1f2f0a9" },
+    { "path": "vehicles/1790133554410-xe7cho.webp", "bytes": 214188, "width": 1195, "height": 896, "sha256": "5bb3c18aa8b1d5156e510a062882c7e52489717068e1896c32baa39a3fd17ece" }
+  ]
+}
