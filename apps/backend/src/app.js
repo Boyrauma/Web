@@ -18,7 +18,7 @@ const __dirname = path.dirname(__filename);
 
 export const app = express();
 app.disable("x-powered-by");
-app.set("trust proxy", true);
+app.set("trust proxy", env.trustProxyHops);
 
 app.use(
   cors({

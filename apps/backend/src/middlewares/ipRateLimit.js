@@ -1,12 +1,6 @@
 const rateLimitStore = new Map();
 
 function getClientIp(request) {
-  const forwardedFor = request.headers["x-forwarded-for"];
-
-  if (typeof forwardedFor === "string" && forwardedFor.trim()) {
-    return forwardedFor.split(",")[0].trim();
-  }
-
   return request.ip ?? request.socket?.remoteAddress ?? "unknown";
 }
 

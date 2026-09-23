@@ -94,6 +94,33 @@ function buildFallbackTurnstileState(resetKey) {
   };
 }
 
+const SHOWCASE_PRIORITY_SLUGS = ["vinfat-lux-a2-0", "santafe"];
+
+export function orderShowcaseVehicles(vehicles) {
+  const prioritizedVehicles = SHOWCASE_PRIORITY_SLUGS.flatMap((slug) => {
+    const vehicle = vehicles.find((item) => item.slug === slug);
+    return vehicle ? [vehicle] : [];
+  });
+  const remainingVehicles = vehicles.filter(
+    (vehicle) => !SHOWCASE_PRIORITY_SLUGS.includes(vehicle.slug)
+  );
+  const universeIndex = remainingVehicles.findIndex(
+    (vehicle) => vehicle.slug === "huyndai-universe"
+  );
+  const evergreenIndex = remainingVehicles.findIndex(
+    (vehicle) => vehicle.slug === "thaco-evergreen"
+  );
+
+  if (universeIndex !== -1 && evergreenIndex > universeIndex) {
+    [remainingVehicles[universeIndex], remainingVehicles[evergreenIndex]] = [
+      remainingVehicles[evergreenIndex],
+      remainingVehicles[universeIndex]
+    ];
+  }
+
+  return [...prioritizedVehicles, ...remainingVehicles];
+}
+
 export default function HomePage() {
   const bookingSectionRef = useRef(null);
   const [siteSettings, setSiteSettings] = useState([]);
@@ -156,7 +183,9 @@ export default function HomePage() {
           setSiteSettings(settingsData);
           setServices(servicesData);
           setVehicleCategories(categoriesData);
-          const firstVehicle = categoriesData.flatMap((category) => category.vehicles ?? [])[0];
+          const firstVehicle = orderShowcaseVehicles(
+            categoriesData.flatMap((category) => category.vehicles ?? [])
+          )[0];
           setSelectedVehicleSlug(firstVehicle?.slug ?? "");
           setSelectedImageUrl(firstVehicle?.images?.[0]?.imageUrl ?? "");
           setPageState({ loading: false, error: "" });
@@ -385,6 +414,11 @@ export default function HomePage() {
         }))
       ),
     [vehicleCategories]
+  );
+
+  const showcaseVehicles = useMemo(
+    () => orderShowcaseVehicles(flattenedVehicles),
+    [flattenedVehicles]
   );
 
   const selectedVehicle = useMemo(
@@ -643,7 +677,7 @@ export default function HomePage() {
           onOpenGallery={handleOpenFleetGallery}
         />
         <VehicleShowcaseSection
-          flattenedVehicles={flattenedVehicles}
+          flattenedVehicles={showcaseVehicles}
           selectedVehicleSlug={selectedVehicleSlug}
           setSelectedVehicleSlug={setSelectedVehicleSlug}
           selectedVehicle={selectedVehicle}

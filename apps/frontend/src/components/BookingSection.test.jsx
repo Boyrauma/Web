@@ -53,4 +53,15 @@ describe("BookingSection", () => {
 
     expect(onBookingIntent).toHaveBeenCalledTimes(1);
   });
+
+  it("limits public booking fields before they reach the API", () => {
+    renderBookingSection(vi.fn());
+
+    expect(screen.getByRole("textbox", { name: "Họ và tên" }).maxLength).toBe(100);
+    expect(screen.getByRole("textbox", { name: "Số điện thoại" }).maxLength).toBe(20);
+    expect(screen.getByRole("spinbutton", { name: "Số người" }).max).toBe("200");
+    expect(screen.getByRole("textbox", { name: "Điểm đón" }).maxLength).toBe(200);
+    expect(screen.getByRole("textbox", { name: "Điểm đến" }).maxLength).toBe(200);
+    expect(screen.getByRole("textbox", { name: "Nhu cầu chi tiết" }).maxLength).toBe(2000);
+  });
 });

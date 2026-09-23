@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../config/prisma.js";
 import { requireAdminAuth } from "../middlewares/authMiddleware.js";
+import { createIpRateLimit } from "../middlewares/ipRateLimit.js";
 import { resolveAdminPermissions } from "../utils/adminPermissions.js";
 import {
   ADMIN_AUTH_COOKIE,
@@ -16,17 +17,22 @@ const loginAttempts = new Map();
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const LOGIN_MAX_ATTEMPTS = 5;
 const LOGIN_BLOCK_MS = 15 * 60 * 1000;
+const loginIpRateLimit = createIpRateLimit({
+  windowMs: LOGIN_WINDOW_MS,
+  maxRequests: 20,
+  message: "Too many login attempts. Please try again later."
+});
 
 const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6)
+  email: z.string().trim().email().max(254),
+  password: z.string().min(6).max(128)
 });
 
 const changePasswordSchema = z
   .object({
-    currentPassword: z.string().min(6),
-    newPassword: z.string().min(8),
-    confirmPassword: z.string().min(8)
+    currentPassword: z.string().min(6).max(128),
+    newPassword: z.string().min(8).max(128),
+    confirmPassword: z.string().min(8).max(128)
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: "Password confirmation does not match",
@@ -34,12 +40,7 @@ const changePasswordSchema = z
   });
 
 function getLoginAttemptKey(request, email) {
-  const forwardedFor = request.headers["x-forwarded-for"];
-  const ip = Array.isArray(forwardedFor)
-    ? forwardedFor[0]
-    : typeof forwardedFor === "string"
-      ? forwardedFor.split(",")[0].trim()
-      : request.ip;
+  const ip = request.ip ?? request.socket?.remoteAddress ?? "unknown";
 
   return `${ip}:${email.toLowerCase()}`;
 }
@@ -89,7 +90,20 @@ function clearFailedLogins(key) {
   loginAttempts.delete(key);
 }
 
-router.post("/login", async (request, response) => {
+function pruneExpiredLoginAttempts(now = Date.now()) {
+  for (const [key, attempt] of loginAttempts.entries()) {
+    const expiresAt = Math.max(
+      attempt.windowStartedAt + LOGIN_WINDOW_MS,
+      attempt.blockedUntil ?? 0
+    );
+
+    if (expiresAt <= now) {
+      loginAttempts.delete(key);
+    }
+  }
+}
+
+router.post("/login", loginIpRateLimit, async (request, response) => {
   const parsed = loginSchema.safeParse(request.body);
 
   if (!parsed.success) {
@@ -99,6 +113,7 @@ router.post("/login", async (request, response) => {
     });
   }
 
+  pruneExpiredLoginAttempts();
   const attemptKey = getLoginAttemptKey(request, parsed.data.email);
   const attemptState = readLoginAttemptState(attemptKey);
 

@@ -68,32 +68,26 @@ function parseTripDate(value) {
 }
 
 const bookingSchema = z.object({
-  customerName: z.string().trim().min(2),
-  phoneNumber: z.string().trim().min(8),
-  pickupLocation: z.string().trim().min(2),
-  dropoffLocation: z.string().trim().min(2),
-  tripDate: z.string().trim().min(1),
+  customerName: z.string().trim().min(2).max(100),
+  phoneNumber: z.string().trim().min(8).max(20),
+  pickupLocation: z.string().trim().min(2).max(200),
+  dropoffLocation: z.string().trim().min(2).max(200),
+  tripDate: z.string().trim().length(10),
   passengerCount: z
     .union([z.string(), z.number()])
     .transform((value) => {
       return Number(value);
     })
-    .refine((value) => Number.isInteger(value) && value > 0),
-  note: z.string().optional().nullable(),
-  bookingCaptchaToken: z.string().min(1),
-  bookingCaptchaAnswer: z.union([z.string(), z.number()]),
-  bookingProofNonce: z.string().min(1),
-  turnstileToken: z.string().optional().nullable(),
-  website: z.string().optional().nullable()
+    .refine((value) => Number.isInteger(value) && value > 0 && value <= 200),
+  note: z.string().trim().max(2000).optional().nullable(),
+  bookingCaptchaToken: z.string().min(1).max(512),
+  bookingCaptchaAnswer: z.union([z.string().max(16), z.number()]),
+  bookingProofNonce: z.string().regex(/^\d+$/).max(32),
+  turnstileToken: z.string().max(4096).optional().nullable(),
+  website: z.string().max(200).optional().nullable()
 });
 
 function getRequestIp(request) {
-  const forwardedFor = request.headers["x-forwarded-for"];
-
-  if (typeof forwardedFor === "string" && forwardedFor.trim()) {
-    return forwardedFor.split(",")[0].trim();
-  }
-
   return request.ip ?? request.socket?.remoteAddress ?? "";
 }
 

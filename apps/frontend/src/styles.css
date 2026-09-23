@@ -269,6 +269,7 @@ input.field.field-date {
 }
 
 .vehicle-stage {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -302,6 +303,31 @@ input.field.field-date {
 
 .vehicle-stage-image-showcase {
   object-position: center 62%;
+}
+
+.vehicle-stage-image-backdrop {
+  position: absolute;
+  inset: -8%;
+  height: 116%;
+  width: 116%;
+  object-fit: cover;
+  object-position: center center;
+  filter: blur(26px) saturate(0.78);
+  opacity: 0.3;
+  transform: scale(1.08);
+}
+
+.vehicle-stage-image-portrait {
+  position: relative;
+  z-index: 1;
+  object-fit: contain;
+  object-position: center center;
+  padding: clamp(0.5rem, 1.2vw, 0.9rem);
+  transform: none;
+}
+
+.vehicle-stage-detail:hover .vehicle-stage-image-portrait {
+  transform: none;
 }
 
 .vehicle-stage-image-lightbox {

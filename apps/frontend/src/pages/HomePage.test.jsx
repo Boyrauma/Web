@@ -1,7 +1,7 @@
 import { act, cleanup, render, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
-import HomePage from "./HomePage";
+import HomePage, { orderShowcaseVehicles } from "./HomePage";
 import {
   fetchBookingCaptcha,
   fetchServices,
@@ -61,5 +61,27 @@ describe("HomePage booking verification", () => {
     });
 
     await waitFor(() => expect(fetchBookingCaptcha).toHaveBeenCalledTimes(1));
+  });
+});
+
+describe("HomePage vehicle showcase", () => {
+  it("shows VinFast first, Santa Fe second, and preserves the remaining order", () => {
+    const vehicles = [
+      { slug: "huyndai-county" },
+      { slug: "santafe" },
+      { slug: "huyndai-solati" },
+      { slug: "vinfat-lux-a2-0" },
+      { slug: "huyndai-universe" },
+      { slug: "thaco-evergreen" }
+    ];
+
+    expect(orderShowcaseVehicles(vehicles).map((vehicle) => vehicle.slug)).toEqual([
+      "vinfat-lux-a2-0",
+      "santafe",
+      "huyndai-county",
+      "huyndai-solati",
+      "thaco-evergreen",
+      "huyndai-universe"
+    ]);
   });
 });

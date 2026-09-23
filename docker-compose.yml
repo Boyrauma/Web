@@ -30,8 +30,6 @@ services:
       UPLOAD_DIR: /app/uploads
       RUN_SEED_ON_BOOT: ${RUN_SEED_ON_BOOT:-false}
       FRONTEND_INTERNAL_URL: ${FRONTEND_INTERNAL_URL:-http://frontend:80}
-    ports:
-      - "${BACKEND_PORT:-8080}:8080"
     volumes:
       - backend_uploads:/app/uploads
     healthcheck:
@@ -51,8 +49,6 @@ services:
         condition: service_healthy
     env_file:
       - .env
-    ports:
-      - "${FRONTEND_PORT:-5173}:80"
 
   admin:
     build:
@@ -65,8 +61,6 @@ services:
         condition: service_healthy
     env_file:
       - .env
-    ports:
-      - "${ADMIN_PORT:-5174}:80"
 
 volumes:
   postgres_data:

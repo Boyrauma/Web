@@ -100,6 +100,7 @@ export default function BookingSection({
               placeholder="Nguyễn Văn A"
               value={formData.customerName}
               onChange={handleChange}
+              maxLength={100}
               required
             />
           </label>
@@ -114,6 +115,7 @@ export default function BookingSection({
               placeholder="09xx xxx xxx"
               value={formData.phoneNumber}
               onChange={handleChange}
+              maxLength={20}
               required
             />
           </label>
@@ -137,6 +139,7 @@ export default function BookingSection({
               type="number"
               inputMode="numeric"
               min="1"
+              max="200"
               placeholder="Ví dụ: 12"
               value={formData.passengerCount}
               onChange={handleChange}
@@ -151,6 +154,7 @@ export default function BookingSection({
               placeholder="Thanh Hóa, Sầm Sơn..."
               value={formData.pickupLocation}
               onChange={handleChange}
+              maxLength={200}
               required
             />
           </label>
@@ -162,6 +166,7 @@ export default function BookingSection({
               placeholder="Ninh Bình, Hà Nội..."
               value={formData.dropoffLocation}
               onChange={handleChange}
+              maxLength={200}
               required
             />
           </label>
@@ -173,6 +178,7 @@ export default function BookingSection({
               placeholder="Loại xe mong muốn, thời gian đón, lịch trình..."
               value={formData.note}
               onChange={handleChange}
+              maxLength={2000}
             />
           </label>
           <input
@@ -183,6 +189,7 @@ export default function BookingSection({
             className="hidden"
             tabIndex="-1"
             autoComplete="off"
+            maxLength={200}
             aria-hidden="true"
           />
           {turnstileState.enabled ? (

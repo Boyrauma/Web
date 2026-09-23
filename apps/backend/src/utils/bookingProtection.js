@@ -7,12 +7,6 @@ const MIN_CAPTCHA_AGE_MS = 4000;
 const STORE_TTL_MS = Math.max(IP_COOLDOWN_MS, PHONE_COOLDOWN_MS) * 2;
 
 function getClientIp(request) {
-  const forwardedFor = request.headers["x-forwarded-for"];
-
-  if (typeof forwardedFor === "string" && forwardedFor.trim()) {
-    return forwardedFor.split(",")[0].trim();
-  }
-
   return request.ip ?? request.socket?.remoteAddress ?? "unknown";
 }
 

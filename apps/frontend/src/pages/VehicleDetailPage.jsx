@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
 import StickyContactBar from "../components/StickyContactBar";
+import AdaptiveVehicleImage from "../components/AdaptiveVehicleImage";
 import VehicleGalleryLightbox from "../components/VehicleGalleryLightbox";
 import { fetchSiteSettings, fetchVehicleBySlug, resolveAssetUrl } from "../services/api";
 import { applyDocumentBranding } from "../utils/branding";
@@ -456,12 +457,13 @@ export default function VehicleDetailPage() {
                   aria-label={`Xem bộ ảnh ${vehicle.name}`}
                 >
                   <div className="vehicle-stage vehicle-stage-detail h-[420px] w-full">
-                    <img
+                    <AdaptiveVehicleImage
+                      key={currentImage}
                       src={currentImage}
                       alt={vehicle.name}
                       loading="lazy"
                       decoding="async"
-                      className="vehicle-stage-image transition duration-300 group-hover:scale-[1.03]"
+                      className="transition duration-300 group-hover:scale-[1.03]"
                     />
                   </div>
                   <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 bg-gradient-to-t from-slate-950/68 via-slate-950/20 to-transparent px-5 py-5 text-white">

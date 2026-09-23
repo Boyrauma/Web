@@ -1,5 +1,7 @@
 ﻿import { Link } from "react-router-dom";
 
+import AdaptiveVehicleImage from "./AdaptiveVehicleImage";
+
 export default function VehicleShowcaseSection({
   flattenedVehicles,
   selectedVehicleSlug,
@@ -57,12 +59,13 @@ export default function VehicleShowcaseSection({
 
         <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
           <div className="vehicle-stage vehicle-stage-showcase h-[400px] w-full rounded-[1.5rem]">
-            <img
+            <AdaptiveVehicleImage
+              key={currentSelectedImage}
               src={currentSelectedImage}
               alt={selectedVehicle?.name ?? "Xe dịch vụ"}
               loading="lazy"
               decoding="async"
-              className="vehicle-stage-image vehicle-stage-image-showcase"
+              className="vehicle-stage-image-showcase"
             />
           </div>
 

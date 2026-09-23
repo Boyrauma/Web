@@ -7,6 +7,8 @@ const rawJwtSecret = process.env.JWT_SECRET ?? "";
 const rawCorsOrigins = process.env.CORS_ORIGINS ?? "";
 const rawTurnstileSiteKey = (process.env.TURNSTILE_SITE_KEY ?? "").trim();
 const rawTurnstileSecretKey = (process.env.TURNSTILE_SECRET_KEY ?? "").trim();
+const rawTrustProxyHops = process.env.TRUST_PROXY_HOPS ?? (isProduction ? "2" : "1");
+const trustProxyHops = Number(rawTrustProxyHops);
 const defaultDevCorsOrigins = ["http://localhost:5173", "http://localhost:5174"];
 
 if (!rawJwtSecret || rawJwtSecret === "change-this-secret" || rawJwtSecret.length < 32) {
@@ -28,6 +30,10 @@ if ((rawTurnstileSiteKey && !rawTurnstileSecretKey) || (!rawTurnstileSiteKey && 
   throw new Error("TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY must be configured together.");
 }
 
+if (!Number.isInteger(trustProxyHops) || trustProxyHops < 0 || trustProxyHops > 5) {
+  throw new Error("TRUST_PROXY_HOPS must be an integer between 0 and 5.");
+}
+
 const turnstileEnabled = isProduction && Boolean(rawTurnstileSiteKey && rawTurnstileSecretKey);
 
 export const env = {
@@ -43,6 +49,7 @@ export const env = {
   ).replace(/\/$/, ""),
   jwtSecret: rawJwtSecret,
   corsOrigins: resolvedCorsOrigins.length ? resolvedCorsOrigins : defaultDevCorsOrigins,
+  trustProxyHops,
   uploadDir: process.env.UPLOAD_DIR ?? "uploads",
   turnstileEnabled,
   turnstileSiteKey: rawTurnstileSiteKey,

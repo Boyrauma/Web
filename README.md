@@ -27,6 +27,8 @@ Monorepo full-stack cho website nhà xe Định Dung, gồm:
 Lưu ý dữ liệu:
 
 - `docker compose up --build` sẽ giữ nguyên dữ liệu cũ vì `PostgreSQL` và `uploads` đang dùng Docker volumes
+- `docker-compose.override.yml` tự mở các cổng `5173`, `5174`, `8080` khi chạy local
+- production chỉ dùng hai file được chỉ định rõ nên các cổng ứng dụng chỉ bind vào `127.0.0.1`
 - chỉ khi chạy `docker compose down -v` thì dữ liệu volume mới bị xóa
 - `seed` không còn chạy tự động khi boot để tránh ghi đè dữ liệu vận hành cũ
 - nếu cần seed thủ công cho máy mới, chạy `docker compose exec backend node prisma/seed.js`
@@ -88,6 +90,7 @@ Lưu ý khi public:
 ## Migration
 
 - Migration khởi tạo đã được đặt tại `apps/backend/prisma/migrations/20260401000000_init/migration.sql`
+
 - Migration mới cho log thông báo đã được đặt tại `apps/backend/prisma/migrations/20260401123000_add_notification_log/migration.sql`
 - Khi có thay đổi schema tiếp theo, tạo migration mới thay vì sửa migration cũ
 - Trong môi trường deploy, dùng `prisma migrate deploy`
