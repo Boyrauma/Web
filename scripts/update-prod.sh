@@ -15,8 +15,7 @@ echo "[1/7] Pulling the latest code..."
 git pull --ff-only origin main
 
 echo "[2/7] Backing up database, uploads and .env..."
-chmod +x "$APP_DIR/scripts/backup-prod.sh"
-"$APP_DIR/scripts/backup-prod.sh"
+bash "$APP_DIR/scripts/backup-prod.sh"
 
 echo "[3/7] Building and starting production containers..."
 "${COMPOSE[@]}" up -d --build
