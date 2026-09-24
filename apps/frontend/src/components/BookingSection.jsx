@@ -49,7 +49,7 @@ export default function BookingSection({
           <p className="text-sm font-bold uppercase tracking-[0.3em] text-brand-amber">
             Đặt lịch xe
           </p>
-          <h2 className="mt-3 text-3xl font-black uppercase leading-tight text-brand-navy">
+          <h2 className="display-serif mt-3 text-4xl leading-tight text-brand-navy">
             Gửi thông tin chuyến đi, nhà xe gọi lại để chốt lịch
           </h2>
           <p className="mt-4 text-base leading-7 text-slate-600">

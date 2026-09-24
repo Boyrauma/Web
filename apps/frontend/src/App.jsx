@@ -4,6 +4,30 @@ import HomePage from "./pages/HomePage";
 
 const VehicleDetailPage = lazy(() => import("./pages/VehicleDetailPage"));
 
+export function getHashTargetScrollTop({
+  scrollY,
+  elementTop,
+  elementHeight,
+  viewportHeight,
+  headerHeight,
+  viewportPadding = 16
+}) {
+  const absoluteElementTop = scrollY + elementTop;
+  const availableHeight = Math.max(
+    0,
+    viewportHeight - headerHeight - viewportPadding * 2
+  );
+
+  if (elementHeight > availableHeight) {
+    return Math.max(0, absoluteElementTop - headerHeight - viewportPadding);
+  }
+
+  const centeredOffset =
+    headerHeight + viewportPadding + (availableHeight - elementHeight) / 2;
+
+  return Math.max(0, absoluteElementTop - centeredOffset);
+}
+
 function ScrollToTop() {
   const location = useLocation();
 
@@ -13,7 +37,21 @@ function ScrollToTop() {
       const scrollToHashTarget = () => {
         const element = document.getElementById(elementId);
         if (element) {
-          element.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+          const headerHeight = document.querySelector("header")?.getBoundingClientRect().height ?? 0;
+          const elementRect = element.getBoundingClientRect();
+          const targetTop = getHashTargetScrollTop({
+            scrollY: window.scrollY,
+            elementTop: elementRect.top,
+            elementHeight: elementRect.height,
+            viewportHeight: window.innerHeight,
+            headerHeight
+          });
+
+          window.scrollTo({
+            top: targetTop,
+            left: 0,
+            behavior: "auto"
+          });
         }
       };
 

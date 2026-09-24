@@ -23,7 +23,7 @@ export default function VehicleShowcaseSection({
           <p className="text-sm font-bold uppercase tracking-[0.3em] text-brand-amber">
             Chi tiết xe
           </p>
-          <h2 className="text-3xl font-black uppercase text-brand-navy">
+          <h2 className="display-serif text-4xl leading-tight text-brand-navy">
             Chọn xe phù hợp cho hành trình của bạn
           </h2>
           <div className="space-y-3">

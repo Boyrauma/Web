@@ -4,7 +4,7 @@
 
 :root {
   color-scheme: light;
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
 }
 
 html {
@@ -162,7 +162,7 @@ input.field.field-date {
 }
 
 .display-serif {
-  font-family: "Prata", Georgia, serif;
+  font-family: "Lora", Georgia, serif;
   letter-spacing: -0.025em;
 }
 
@@ -215,8 +215,7 @@ input.field.field-date {
 #dich-vu,
 #doi-xe,
 #showcase-xe,
-#phan-hoi,
-#faq,
+#quy-trinh,
 #booking {
   scroll-margin-top: 6.5rem;
 }

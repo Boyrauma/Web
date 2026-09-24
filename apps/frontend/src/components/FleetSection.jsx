@@ -66,7 +66,7 @@ export default function FleetSection({ vehicleCategories, resolveAssetUrl, onOpe
       <div className="site-shell mx-auto px-4 sm:px-6">
         <div className="max-w-3xl">
           <p className="text-sm font-bold uppercase tracking-[0.3em] text-brand-amber">Đội xe</p>
-          <h2 className="mt-2 text-3xl font-black uppercase text-brand-navy">
+          <h2 className="display-serif mt-3 text-4xl leading-tight text-brand-navy">
             Chọn đúng nhóm xe cho đúng kiểu chuyến đi
           </h2>
         </div>
