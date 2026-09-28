@@ -28,5 +28,6 @@ dinhdung_transport.sql
 backup-uploads/
 uploads.zip
 nhaxedinhdung-backup-*.tar.gz
+Image/
 UBUNTU_DEPLOY_NOTE.md
 DEPLOY_UBUNTU.md
