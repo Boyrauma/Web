@@ -5,21 +5,29 @@
   backgroundImageUrl,
   hotline
 }) {
-  const legacyTitle = "Vạn dặm bình an, trọn vẹn niềm tin";
-  const legacySubtitle =
-    "Chuyên xe 4-7 chỗ, 16 chỗ, 29-35-45 chỗ cho du lịch, cưới hỏi, sự kiện và đưa đón sân bay tại Thanh Hóa.";
+  const legacyTitles = new Set([
+    "Vạn dặm bình an, trọn vẹn niềm tin",
+    "Đi đúng giờ, về đúng hẹn."
+  ]);
+  const legacySubtitles = new Set([
+    "Chuyên xe 4-7 chỗ, 16 chỗ, 29-35-45 chỗ cho du lịch, cưới hỏi, sự kiện và đưa đón sân bay tại Thanh Hóa.",
+    "Chuyên xe 7 chỗ, 16 chỗ, 29-35 chỗ cho du lịch, cưới hỏi, sự kiện và đưa đón sân bay tại Thanh Hóa.",
+    "Nhận lịch gia đình, sân bay, cưới hỏi và đoàn công tác tại Thanh Hóa."
+  ]);
   const resolvedSiteName = siteName ?? "Nhà xe Định Dung";
-  const isCustomTitle = heroTitle?.trim() && heroTitle.trim() !== legacyTitle;
+  const isCustomTitle = heroTitle?.trim() && !legacyTitles.has(heroTitle.trim());
   const hasBackgroundImage = backgroundImageUrl?.trim();
 
-  const resolvedTitle = isCustomTitle ? heroTitle.trim() : "Đi đúng giờ, về đúng hẹn.";
+  const resolvedTitle = isCustomTitle
+    ? heroTitle.trim()
+    : "Đúng xe, đúng lịch, an tâm trọn hành trình.";
 
   const resolvedSubtitle =
-    heroSubtitle?.trim() && heroSubtitle.trim() !== legacySubtitle
+    heroSubtitle?.trim() && !legacySubtitles.has(heroSubtitle.trim())
       ? heroSubtitle.trim()
-      : "Nhận lịch gia đình, sân bay, cưới hỏi và đoàn công tác tại Thanh Hóa.";
+      : "Cho thuê xe hợp đồng từ 4 đến 45 chỗ cho du lịch, cưới hỏi, công tác, sự kiện và đưa đón sân bay.";
   const trustLine =
-    "Đội xe từ 4 đến 45 chỗ, đáp ứng từ nhu cầu đi riêng đến các chuyến đi theo đoàn.";
+    "Nhận xe riêng theo chuyến · Lịch trình theo nhu cầu · Phục vụ gia đình, doanh nghiệp và đoàn khách.";
 
   return (
     <section className="hero-surface relative min-h-[680px] w-full overflow-hidden border-b border-[#c8ab74]/35">
@@ -45,17 +53,17 @@
           <h1 className="display-serif hero-fade-delay hero-text-strong text-[2.15rem] leading-[1.02] tracking-[-0.035em] text-white sm:text-[3.8rem] lg:text-[4.9rem]">
             {resolvedSiteName}
           </h1>
-          <p className="display-serif hero-fade-delay hero-text-strong mt-5 mx-auto max-w-[880px] text-4xl leading-[1.04] text-[#f6efe3] sm:text-5xl lg:whitespace-nowrap lg:text-[4.5rem]">
+          <p className="display-serif hero-fade-delay hero-text-strong mx-auto mt-5 max-w-[920px] text-[2.45rem] leading-[1.08] text-[#f6efe3] sm:text-[3.3rem] lg:text-[4rem]">
             {resolvedTitle}
           </p>
           <div className="hero-fade-delay hero-text-soft mx-auto mt-7 max-w-[860px] space-y-4">
-            <p className="mx-auto max-w-[860px] text-base font-semibold leading-8 text-slate-100 sm:text-lg lg:whitespace-nowrap">
-              Dịch vụ vận chuyển chuyên nghiệp cho những chuyến đi cần sự an tâm và đúng hẹn.
+            <p className="mx-auto max-w-[860px] text-base font-semibold leading-8 text-slate-100 sm:text-lg">
+              Dịch vụ xe hợp đồng riêng, phục vụ tận nơi theo lịch trình của khách hàng.
             </p>
             <p className="mx-auto max-w-[640px] text-base font-semibold leading-8 text-slate-100 sm:text-lg">
               {resolvedSubtitle}
             </p>
-            <p className="mx-auto max-w-[860px] text-base font-semibold leading-8 text-slate-100 sm:text-lg lg:whitespace-nowrap">
+            <p className="mx-auto max-w-[860px] text-base font-semibold leading-8 text-slate-100 sm:text-lg">
               {trustLine}
             </p>
           </div>

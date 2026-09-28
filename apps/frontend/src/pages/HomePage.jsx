@@ -361,11 +361,20 @@ export default function HomePage() {
 
   useEffect(() => {
     const siteName = settingsMap.site_name ?? "Nhà xe Định Dung";
+    const configuredTitle = settingsMap.browser_title?.trim();
+    const legacyBrowserTitles = new Set([
+      "Nhà xe Định Dung | Website nhà xe",
+      "Nhà xe Định Dung | Thuê xe du lịch tại Thanh Hóa"
+    ]);
     const title =
-      settingsMap.browser_title ?? `${siteName} | Thuê xe du lịch, cưới hỏi, sân bay tại Thanh Hóa`;
+      configuredTitle && !legacyBrowserTitles.has(configuredTitle)
+        ? configuredTitle
+        : `${siteName} | Thuê xe hợp đồng tại Thanh Hóa`;
+    const configuredDescription = settingsMap.hero_subtitle?.trim();
     const description =
-      settingsMap.hero_subtitle ??
-      "Dịch vụ thuê xe du lịch, cưới hỏi, sân bay và hợp đồng tại Thanh Hóa. Đặt xe nhanh, hỗ trợ rõ ràng, đúng giờ.";
+      configuredDescription && !configuredDescription.startsWith("Chuyên xe ")
+        ? configuredDescription
+        : "Cho thuê xe hợp đồng từ 4 đến 45 chỗ cho du lịch, cưới hỏi, công tác, sự kiện và đưa đón sân bay tại Thanh Hóa.";
     const servicesForSchema = services.map((item) => item.title).filter(Boolean);
 
     applySeo({
@@ -376,7 +385,7 @@ export default function HomePage() {
       type: "website",
       siteName,
       keywords:
-        "nhà xe Thanh Hóa, thuê xe du lịch Thanh Hóa, xe cưới Thanh Hóa, xe sân bay, đặt xe hợp đồng",
+        "thuê xe hợp đồng Thanh Hóa, nhà xe Thanh Hóa, thuê xe du lịch Thanh Hóa, xe cưới Thanh Hóa, xe sân bay",
       schema: buildLocalBusinessSchema({
         siteName,
         description,

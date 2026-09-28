@@ -2,7 +2,7 @@ export const DEFAULT_SITE_SETTINGS = [
   { key: "address", value: "555 Quang Trung 2, Phường Hạc Thành, Thanh Hóa", group: "contact" },
   {
     key: "browser_title",
-    value: "Nhà xe Định Dung | Thuê xe du lịch tại Thanh Hóa",
+    value: "Nhà xe Định Dung | Thuê xe hợp đồng tại Thanh Hóa",
     group: "branding"
   },
   { key: "favicon_url", value: "/favicon.svg", group: "branding" },
@@ -13,12 +13,20 @@ export const DEFAULT_SITE_SETTINGS = [
   },
   { key: "group_link", value: "", group: "contact" },
   { key: "hero_background_url", value: "", group: "homepage" },
-  { key: "hero_subtitle", value: "", group: "homepage" },
-  { key: "hero_title", value: "", group: "homepage" },
+  {
+    key: "hero_subtitle",
+    value: "Cho thuê xe hợp đồng từ 4 đến 45 chỗ cho du lịch, cưới hỏi, công tác, sự kiện và đưa đón sân bay.",
+    group: "homepage"
+  },
+  {
+    key: "hero_title",
+    value: "Đúng xe, đúng lịch, an tâm trọn hành trình.",
+    group: "homepage"
+  },
   { key: "hotline", value: "0979860498", group: "contact" },
   { key: "logo_url", value: "", group: "branding" },
   { key: "site_name", value: "Nhà xe Định Dung", group: "branding" },
-  { key: "site_tagline", value: "Dịch vụ vận tải Thanh Hóa", group: "branding" },
+  { key: "site_tagline", value: "Xe hợp đồng 4–45 chỗ tại Thanh Hóa", group: "branding" },
   { key: "zalo", value: "https://zalo.me/0979860498", group: "contact" }
 ];
 

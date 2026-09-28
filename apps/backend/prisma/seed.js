@@ -139,18 +139,18 @@ async function main() {
 
   const settings = [
     { key: "site_name", value: "Nhà xe Định Dung", group: "branding" },
-    { key: "site_tagline", value: "Dịch vụ vận tải Thanh Hóa", group: "branding" },
-    { key: "browser_title", value: "Nhà xe Định Dung | Website nhà xe", group: "branding" },
+    { key: "site_tagline", value: "Xe hợp đồng 4–45 chỗ tại Thanh Hóa", group: "branding" },
+    { key: "browser_title", value: "Nhà xe Định Dung | Thuê xe hợp đồng tại Thanh Hóa", group: "branding" },
     { key: "logo_url", value: "", group: "branding" },
     { key: "favicon_url", value: "/favicon.svg", group: "branding" },
     { key: "hotline", value: "0979860498", group: "contact" },
     { key: "zalo", value: "https://zalo.me/0979860498", group: "contact" },
     { key: "group_link", value: "", group: "contact" },
     { key: "address", value: "555 Quang Trung 2, Phường Hạc Thành, Thanh Hóa", group: "contact" },
-    { key: "hero_title", value: "Vạn dặm bình an, trọn vẹn niềm tin", group: "homepage" },
+    { key: "hero_title", value: "Đúng xe, đúng lịch, an tâm trọn hành trình.", group: "homepage" },
     {
       key: "hero_subtitle",
-      value: "Chuyên xe 7 chỗ, 16 chỗ, 29-35 chỗ cho du lịch, cưới hỏi, sự kiện và đưa đón sân bay tại Thanh Hóa.",
+      value: "Cho thuê xe hợp đồng từ 4 đến 45 chỗ cho du lịch, cưới hỏi, công tác, sự kiện và đưa đón sân bay.",
       group: "homepage"
     },
     {

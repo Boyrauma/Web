@@ -13,6 +13,10 @@ const navItems = [
 export default function SiteHeader({ siteName, siteTagline, hotline, logoUrl }) {
   const location = useLocation();
   const displayName = siteName ?? "Nhà xe Định Dung";
+  const resolvedTagline =
+    siteTagline?.trim() && siteTagline.trim() !== "Dịch vụ vận tải Thanh Hóa"
+      ? siteTagline.trim()
+      : "Xe hợp đồng 4–45 chỗ tại Thanh Hóa";
   const [activeHash, setActiveHash] = useState(location.hash);
   const resolveHref = (item) => {
     if (item.external) return item.href;
@@ -103,7 +107,7 @@ export default function SiteHeader({ siteName, siteTagline, hotline, logoUrl }) 
             )}
             <Link to="/" className="min-w-0" aria-label={displayName}>
               <p className="hidden truncate text-[11px] font-bold uppercase tracking-[0.3em] text-[#9a5c00] sm:block">
-                {siteTagline ?? "Dịch vụ vận tải Thanh Hóa"}
+                {resolvedTagline}
               </p>
               <p className="truncate text-lg font-black uppercase text-[#14233c] sm:text-2xl">
                 {displayName}
