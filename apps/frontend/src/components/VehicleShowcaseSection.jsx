@@ -1,6 +1,7 @@
 ﻿import { Link } from "react-router-dom";
 
 import AdaptiveVehicleImage from "./AdaptiveVehicleImage";
+import { countVehicleImageTypes, isInteriorVehicleImage } from "../utils/vehicleImages";
 
 export default function VehicleShowcaseSection({
   flattenedVehicles,
@@ -11,10 +12,13 @@ export default function VehicleShowcaseSection({
   selectedImageUrl,
   setSelectedImageUrl
 }) {
+  const currentSelectedImageItem =
+    selectedVehicleGallery.find((image) => image.imageUrl === selectedImageUrl) ??
+    selectedVehicleGallery[0] ??
+    null;
   const currentSelectedImage =
-    selectedVehicleGallery.find((image) => image.imageUrl === selectedImageUrl)?.fullUrl ??
-    selectedVehicleGallery[0]?.fullUrl ??
-    "/assets/xecountybonghoi.jpg";
+    currentSelectedImageItem?.fullUrl ?? "/assets/xecountybonghoi.jpg";
+  const imageTypeCounts = countVehicleImageTypes(selectedVehicleGallery);
 
   return (
     <section id="showcase-xe" className="site-shell mx-auto px-4 py-16 sm:px-6">
@@ -58,7 +62,7 @@ export default function VehicleShowcaseSection({
         </div>
 
         <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="vehicle-stage vehicle-stage-showcase h-[400px] w-full rounded-[1.5rem]">
+          <div className="vehicle-stage vehicle-stage-showcase relative h-[400px] w-full rounded-[1.5rem]">
             <AdaptiveVehicleImage
               key={currentSelectedImage}
               src={currentSelectedImage}
@@ -67,7 +71,25 @@ export default function VehicleShowcaseSection({
               decoding="async"
               className="vehicle-stage-image-showcase"
             />
+            {currentSelectedImageItem ? (
+              <span className="pointer-events-none absolute left-4 top-4 z-10 rounded-full border border-white/30 bg-slate-950/70 px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.16em] text-white backdrop-blur">
+                {isInteriorVehicleImage(currentSelectedImageItem) ? "Nội thất" : "Ngoại thất"}
+              </span>
+            ) : null}
           </div>
+
+          {selectedVehicleGallery.length ? (
+            <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
+              <span className="rounded-full bg-slate-100 px-3 py-1.5">
+                {imageTypeCounts.exterior} ảnh ngoại thất
+              </span>
+              {imageTypeCounts.interior ? (
+                <span className="rounded-full bg-amber-50 px-3 py-1.5 text-brand-amber">
+                  {imageTypeCounts.interior} ảnh nội thất
+                </span>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="mt-4 flex flex-wrap gap-3">
             {selectedVehicleGallery.map((image) => (

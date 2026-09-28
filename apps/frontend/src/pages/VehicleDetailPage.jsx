@@ -8,6 +8,7 @@ import VehicleGalleryLightbox from "../components/VehicleGalleryLightbox";
 import { fetchSiteSettings, fetchVehicleBySlug, resolveAssetUrl } from "../services/api";
 import { applyDocumentBranding } from "../utils/branding";
 import { applySeo, buildVehicleSchema } from "../utils/seo";
+import { countVehicleImageTypes, isInteriorVehicleImage } from "../utils/vehicleImages";
 
 function getVehicleNarrative(vehicle) {
   const slug = vehicle?.slug ?? "";
@@ -330,6 +331,8 @@ export default function VehicleDetailPage() {
     gallery.findIndex((image) => image.imageUrl === selectedImageUrl)
   );
   const currentImage = gallery[selectedImageIndex]?.fullUrl ?? "/assets/xecountybonghoi.jpg";
+  const currentImageItem = gallery[selectedImageIndex] ?? null;
+  const imageTypeCounts = countVehicleImageTypes(gallery);
   const narrative = getVehicleNarrative(vehicle);
 
   useEffect(() => {
@@ -472,7 +475,9 @@ export default function VehicleDetailPage() {
                         Bộ ảnh chi tiết
                       </p>
                       <p className="mt-2 text-sm font-semibold text-white/90">
-                        Nhấn để xem ảnh ở kích thước lớn
+                        {currentImageItem && isInteriorVehicleImage(currentImageItem)
+                          ? "Ảnh nội thất · Nhấn để xem kích thước lớn"
+                          : "Ảnh ngoại thất · Nhấn để xem kích thước lớn"}
                       </p>
                     </div>
                     <span className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold backdrop-blur">
@@ -482,9 +487,19 @@ export default function VehicleDetailPage() {
                 </button>
 
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-slate-500">
-                    Chọn ảnh để xem nhanh hoặc mở bộ ảnh toàn màn hình.
-                  </p>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-500">
+                      Chọn ảnh để xem nhanh hoặc mở bộ ảnh toàn màn hình.
+                    </p>
+                    {gallery.length ? (
+                      <p className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
+                        {imageTypeCounts.exterior} ngoại thất
+                        {imageTypeCounts.interior
+                          ? ` · ${imageTypeCounts.interior} nội thất`
+                          : ""}
+                      </p>
+                    ) : null}
+                  </div>
                   <button
                     type="button"
                     onClick={() => setIsLightboxOpen(true)}
