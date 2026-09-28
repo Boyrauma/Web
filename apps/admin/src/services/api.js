@@ -1249,8 +1249,10 @@ export async function deleteVehicle(token, id) {
   }
 }
 
-export async function uploadVehicleImages(token, vehicleId, files) {
+export async function uploadVehicleImages(token, vehicleId, files, imageType = "exterior") {
   const formData = new FormData();
+
+  formData.append("imageType", imageType);
 
   for (const file of files) {
     formData.append("images", file);

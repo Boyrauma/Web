@@ -2301,8 +2301,13 @@ const siteSettingSchema = z.object({
 
 const vehicleImageSchema = z.object({
   altText: z.string().optional().nullable(),
+  imageType: z.enum(["exterior", "interior"]).optional(),
   sortOrder: z.number().int().min(0).optional(),
   isPrimary: z.boolean().optional()
+});
+
+const vehicleImageUploadSchema = z.object({
+  imageType: z.enum(["exterior", "interior"]).default("exterior")
 });
 
 const scheduleNoteSchema = z.object({
@@ -2526,9 +2531,17 @@ router.post(
   uploadVehicleImages.array("images", 10),
   async (request, response) => {
     const files = request.files ?? [];
+    const uploadPayload = vehicleImageUploadSchema.safeParse({
+      imageType: request.body?.imageType || "exterior"
+    });
 
     if (!files.length) {
       return response.status(400).json({ message: "No files uploaded" });
+    }
+
+    if (!uploadPayload.success) {
+      await removeUploadedFiles(Array.isArray(files) ? files : []);
+      return response.status(400).json({ message: "Loại ảnh xe không hợp lệ." });
     }
 
     const fileList = Array.isArray(files) ? files : [];
@@ -2570,9 +2583,14 @@ router.post(
       });
     }
 
-    const existingCount = await prisma.vehicleImage.count({
-      where: { vehicleId: request.params.id }
-    });
+    const [existingCount, existingPrimaryCount] = await Promise.all([
+      prisma.vehicleImage.count({
+        where: { vehicleId: request.params.id }
+      }),
+      prisma.vehicleImage.count({
+        where: { vehicleId: request.params.id, isPrimary: true }
+      })
+    ]);
 
     const createdImages = await prisma.$transaction(
       optimizedFiles.map((file, index) =>
@@ -2581,7 +2599,11 @@ router.post(
             vehicleId: request.params.id,
             imageUrl: `/image/vehicles/${file.filename}`,
             altText: file.originalname,
-            isPrimary: existingCount === 0 && index === 0,
+            imageType: uploadPayload.data.imageType,
+            isPrimary:
+              uploadPayload.data.imageType === "exterior" &&
+              existingPrimaryCount === 0 &&
+              index === 0,
             sortOrder: existingCount + index
           }
         })
@@ -2618,6 +2640,14 @@ router.patch("/vehicle-images/:id", requireAdminPermission("vehicles.manage"), a
     return response.status(404).json({ message: "Vehicle image not found" });
   }
 
+  const nextImageType = parsed.data.imageType ?? currentImage.imageType;
+
+  if (parsed.data.isPrimary && nextImageType !== "exterior") {
+    return response.status(400).json({
+      message: "Chỉ ảnh ngoại thất mới có thể đặt làm ảnh đại diện."
+    });
+  }
+
   const updatedImage = await prisma.$transaction(async (tx) => {
     if (parsed.data.isPrimary) {
       await tx.vehicleImage.updateMany({
@@ -2626,12 +2656,34 @@ router.patch("/vehicle-images/:id", requireAdminPermission("vehicles.manage"), a
       });
     }
 
+    if (nextImageType === "interior" && currentImage.isPrimary) {
+      const replacementImage = await tx.vehicleImage.findFirst({
+        where: {
+          vehicleId: currentImage.vehicleId,
+          id: { not: currentImage.id },
+          imageType: "exterior"
+        },
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }]
+      });
+
+      if (replacementImage) {
+        await tx.vehicleImage.update({
+          where: { id: replacementImage.id },
+          data: { isPrimary: true }
+        });
+      }
+    }
+
     return tx.vehicleImage.update({
       where: { id: request.params.id },
       data: {
         altText: parsed.data.altText ?? currentImage.altText,
+        imageType: nextImageType,
         sortOrder: parsed.data.sortOrder ?? currentImage.sortOrder,
-        isPrimary: parsed.data.isPrimary ?? currentImage.isPrimary
+        isPrimary:
+          nextImageType === "interior"
+            ? false
+            : (parsed.data.isPrimary ?? currentImage.isPrimary)
       }
     });
   });

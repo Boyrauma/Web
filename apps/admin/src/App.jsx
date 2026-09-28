@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import BookingsTab from "./components/BookingsTab";
+import ConfirmDialog from "./components/ConfirmDialog";
 import CustomersTab from "./components/CustomersTab";
 import DataArchiveTab from "./components/DataArchiveTab";
 import DispatchCalendarTab from "./components/DispatchCalendarTab";
@@ -412,6 +413,8 @@ export default function App() {
   const [vehicleFilterCategoryId, setVehicleFilterCategoryId] = useState("all");
   const [vehicleSearch, setVehicleSearch] = useState("");
   const [selectedVehicleId, setSelectedVehicleId] = useState("");
+  const [vehicleImageUploadType, setVehicleImageUploadType] = useState("exterior");
+  const [vehicleImageFilter, setVehicleImageFilter] = useState("all");
   const [settingForm, setSettingForm] = useState(settingFormInitial);
   const [scheduleNoteForm, setScheduleNoteForm] = useState(scheduleNoteFormInitial);
   const [editingScheduleNoteId, setEditingScheduleNoteId] = useState("");
@@ -471,6 +474,8 @@ export default function App() {
   });
   const [toasts, setToasts] = useState([]);
   const [highlightedBookingIds, setHighlightedBookingIds] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [confirmation, setConfirmation] = useState(null);
 
   useEffect(() => {
     let ignore = false;
@@ -960,6 +965,28 @@ export default function App() {
     setToasts((current) => current.filter((toast) => toast.id !== id));
   }
 
+  function requestConfirmation({
+    title,
+    message,
+    confirmLabel = "Xác nhận",
+    variant = "danger"
+  }) {
+    return new Promise((resolve) => {
+      setConfirmation({ title, message, confirmLabel, variant, resolve });
+    });
+  }
+
+  function resolveConfirmation(confirmed) {
+    const pendingConfirmation = confirmation;
+    setConfirmation(null);
+    pendingConfirmation?.resolve(confirmed);
+  }
+
+  function handleAdminTabSelect(tabId) {
+    setActiveTab(tabId);
+    setSidebarOpen(false);
+  }
+
   function notifyError(error, fallbackTitle = "Không thể hoàn tất thao tác.") {
     const message = error?.message ?? "Đã xảy ra lỗi không xác định.";
     setPageError(message);
@@ -1382,7 +1409,12 @@ export default function App() {
   }
 
   async function handleDeleteBooking(id) {
-    if (!window.confirm("Xóa yêu cầu booking này?")) return;
+    const confirmed = await requestConfirmation({
+      title: "Xóa yêu cầu booking?",
+      message: "Booking sẽ bị xóa khỏi hệ thống và không thể khôi phục từ trang quản trị.",
+      confirmLabel: "Xóa booking"
+    });
+    if (!confirmed) return;
     try {
       await deleteBooking(token, id);
       await reloadData();
@@ -1488,7 +1520,12 @@ export default function App() {
   }
 
   async function handleDeleteAdminUser(id) {
-    if (!window.confirm("Xóa tài khoản admin này?")) return;
+    const confirmed = await requestConfirmation({
+      title: "Xóa tài khoản quản trị?",
+      message: "Tài khoản này sẽ mất quyền đăng nhập. Nhật ký thao tác đã ghi vẫn được giữ lại.",
+      confirmLabel: "Xóa tài khoản"
+    });
+    if (!confirmed) return;
 
     try {
       if (editingAdminUserId === id) {
@@ -1507,9 +1544,13 @@ export default function App() {
     const nextIsActive = !adminUser.isActive;
     const actionLabel = nextIsActive ? "mở khóa" : "khóa";
 
-    if (!window.confirm(`Bạn có chắc muốn ${actionLabel} tài khoản "${adminUser.fullName}"?`)) {
-      return;
-    }
+    const confirmed = await requestConfirmation({
+      title: `${nextIsActive ? "Mở khóa" : "Khóa"} tài khoản?`,
+      message: `Xác nhận ${actionLabel} tài khoản "${adminUser.fullName}".`,
+      confirmLabel: nextIsActive ? "Mở khóa" : "Khóa tài khoản",
+      variant: "warning"
+    });
+    if (!confirmed) return;
 
     try {
       await updateAdminUser(token, adminUser.id, {
@@ -1621,7 +1662,12 @@ export default function App() {
   }
 
   async function handleDeleteDriver(id) {
-    if (!window.confirm("Xóa tài xế này?")) return;
+    const confirmed = await requestConfirmation({
+      title: "Xóa tài xế?",
+      message: "Hồ sơ tài xế sẽ bị xóa. Hãy kiểm tra các chuyến đang được phân công trước khi tiếp tục.",
+      confirmLabel: "Xóa tài xế"
+    });
+    if (!confirmed) return;
     try {
       if (editingDriverId === id) resetDriverForm();
       await deleteDriver(token, id);
@@ -1687,7 +1733,12 @@ export default function App() {
 
   async function handleDeleteCustomer(customer) {
     if (!customer.profileId) return;
-    if (!window.confirm(`Xóa hồ sơ khách hàng "${customer.fullName}"? Lịch sử booking vẫn được giữ.`)) return;
+    const confirmed = await requestConfirmation({
+      title: "Xóa hồ sơ khách hàng?",
+      message: `Hồ sơ "${customer.fullName}" sẽ bị xóa, nhưng lịch sử booking vẫn được giữ.`,
+      confirmLabel: "Xóa hồ sơ"
+    });
+    if (!confirmed) return;
 
     try {
       if (editingCustomerId === customer.profileId) resetCustomerForm();
@@ -1772,7 +1823,12 @@ export default function App() {
   }
 
   async function handleDeleteTrip(id) {
-    if (!window.confirm("Xóa chuyến đi này?")) return;
+    const confirmed = await requestConfirmation({
+      title: "Xóa chuyến đi?",
+      message: "Chuyến đi và thông tin phân công liên quan sẽ bị xóa khỏi danh sách.",
+      confirmLabel: "Xóa chuyến"
+    });
+    if (!confirmed) return;
     try {
       if (editingTripId === id) resetTripForm();
       await deleteTrip(token, id);
@@ -2037,7 +2093,13 @@ export default function App() {
   }
 
   async function handleDeleteScheduleNote(id) {
-    if (!window.confirm("Xóa lịch xe này khỏi danh sách hiện tại? Dữ liệu vẫn được giữ trong mục Dữ liệu.")) return;
+    const confirmed = await requestConfirmation({
+      title: "Chuyển lịch xe khỏi danh sách?",
+      message: "Lịch xe sẽ không còn ở danh sách hiện tại nhưng dữ liệu vẫn được giữ trong mục Dữ liệu.",
+      confirmLabel: "Chuyển khỏi danh sách",
+      variant: "warning"
+    });
+    if (!confirmed) return;
 
     try {
       await deleteScheduleNote(token, id);
@@ -2267,7 +2329,13 @@ export default function App() {
   }
 
   async function handleDeleteTripPayment(id) {
-    if (!window.confirm("Xóa phiếu tiền xe này khỏi danh sách hiện tại? Dữ liệu vẫn được giữ trong mục Dữ liệu.")) return;
+    const confirmed = await requestConfirmation({
+      title: "Chuyển phiếu tiền xe khỏi danh sách?",
+      message: "Phiếu sẽ không còn ở danh sách hiện tại nhưng dữ liệu vẫn được giữ trong mục Dữ liệu.",
+      confirmLabel: "Chuyển khỏi danh sách",
+      variant: "warning"
+    });
+    if (!confirmed) return;
 
     try {
       await deleteVehicleTripPayment(token, id);
@@ -2366,7 +2434,12 @@ export default function App() {
   }
 
   async function handleDeleteExpense(id) {
-    if (!window.confirm("Xóa chi phí này?")) return;
+    const confirmed = await requestConfirmation({
+      title: "Xóa khoản chi phí?",
+      message: "Khoản chi phí sẽ bị xóa và số liệu lợi nhuận có thể thay đổi.",
+      confirmLabel: "Xóa chi phí"
+    });
+    if (!confirmed) return;
 
     try {
       if (editingTripExpenseId === id) resetTripExpenseForm();
@@ -2535,7 +2608,12 @@ export default function App() {
   }
 
   async function handleDeleteReminder(id) {
-    if (!window.confirm("Xóa nhắc việc này?")) return;
+    const confirmed = await requestConfirmation({
+      title: "Xóa nhắc việc?",
+      message: "Nhắc việc này sẽ bị xóa và không còn được xử lý tự động.",
+      confirmLabel: "Xóa nhắc việc"
+    });
+    if (!confirmed) return;
 
     try {
       if (editingReminderId === id) resetReminderForm();
@@ -2613,7 +2691,12 @@ export default function App() {
   }
 
   async function handleDeleteMaintenance(id) {
-    if (!window.confirm("Xóa lịch bảo dưỡng này?")) return;
+    const confirmed = await requestConfirmation({
+      title: "Xóa lịch bảo dưỡng?",
+      message: "Thông tin bảo dưỡng này sẽ bị xóa khỏi lịch sử quản lý xe.",
+      confirmLabel: "Xóa bảo dưỡng"
+    });
+    if (!confirmed) return;
 
     try {
       await deleteVehicleMaintenance(token, id);
@@ -2697,9 +2780,12 @@ export default function App() {
   }
 
   async function handleDeleteCategory(id) {
-    if (!window.confirm("Xóa nhóm xe này? Nếu nhóm đang có xe, dữ liệu liên quan có thể bị xóa theo.")) {
-      return;
-    }
+    const confirmed = await requestConfirmation({
+      title: "Xóa nhóm xe?",
+      message: "Nếu nhóm đang có xe, các xe và dữ liệu liên quan có thể bị xóa theo.",
+      confirmLabel: "Xóa nhóm xe"
+    });
+    if (!confirmed) return;
     try {
       await deleteVehicleCategory(token, id);
       if (editingCategoryId === id) resetCategoryForm();
@@ -2755,7 +2841,12 @@ export default function App() {
   }
 
   async function handleDeleteService(id) {
-    if (!window.confirm("Xóa dịch vụ này?")) return;
+    const confirmed = await requestConfirmation({
+      title: "Xóa dịch vụ?",
+      message: "Dịch vụ này sẽ không còn xuất hiện trên website.",
+      confirmLabel: "Xóa dịch vụ"
+    });
+    if (!confirmed) return;
     try {
       await deleteService(token, id);
       await reloadData();
@@ -2820,7 +2911,12 @@ export default function App() {
   }
 
   async function handleDeleteVehicle(id) {
-    if (!window.confirm("Xóa xe này và toàn bộ ảnh của xe?")) return;
+    const confirmed = await requestConfirmation({
+      title: "Xóa xe và toàn bộ ảnh?",
+      message: "Xe, bộ ảnh và các dữ liệu phụ thuộc có thể bị xóa. Thao tác này không thể hoàn tác trong admin.",
+      confirmLabel: "Xóa xe"
+    });
+    if (!confirmed) return;
     try {
       await deleteVehicle(token, id);
       setSelectedVehicleId((current) => (current === id ? "" : current));
@@ -2882,14 +2978,15 @@ export default function App() {
 
   function handleSelectVehicle(vehicleId) {
     setSelectedVehicleId(vehicleId);
+    setVehicleImageFilter("all");
   }
 
-  async function handleVehicleImageUpload(vehicleId, files) {
+  async function handleVehicleImageUpload(vehicleId, files, imageType = "exterior") {
     if (!files?.length) return;
     setUploadingVehicleId(vehicleId);
     setPageError("");
     try {
-      await uploadVehicleImages(token, vehicleId, files);
+      await uploadVehicleImages(token, vehicleId, files, imageType);
       await reloadData();
       notifySuccess("Tải ảnh lên thành công.");
     } catch (error) {
@@ -2900,7 +2997,12 @@ export default function App() {
   }
 
   async function handleDeleteVehicleImage(id) {
-    if (!window.confirm("Xóa ảnh này?")) return;
+    const confirmed = await requestConfirmation({
+      title: "Xóa ảnh xe?",
+      message: "Ảnh sẽ bị gỡ khỏi thư viện của xe.",
+      confirmLabel: "Xóa ảnh"
+    });
+    if (!confirmed) return;
     try {
       await deleteVehicleImage(token, id);
       await reloadData();
@@ -2919,6 +3021,19 @@ export default function App() {
       notifyError(error, "Không thể cập nhật ảnh.");
     }
   }
+
+  async function handleImageTypeChange(id, imageType) {
+    try {
+      await updateVehicleImage(token, id, { imageType });
+      await reloadData();
+      notifySuccess(
+        imageType === "interior" ? "Đã chuyển sang ảnh nội thất." : "Đã chuyển sang ảnh ngoại thất."
+      );
+    } catch (error) {
+      notifyError(error, "Không thể cập nhật loại ảnh.");
+    }
+  }
+
   async function handleImageSortOrderChange(id, sortOrder) {
     try {
       await updateVehicleImage(token, id, { sortOrder: Number(sortOrder) });
@@ -2983,7 +3098,12 @@ export default function App() {
   }
 
   async function handleDeleteSetting(setting) {
-    if (!window.confirm(`Xóa cấu hình "${setting.key}"?`)) return;
+    const confirmed = await requestConfirmation({
+      title: "Xóa cấu hình website?",
+      message: `Cấu hình "${setting.key}" sẽ bị xóa và có thể làm thay đổi nội dung hiển thị.`,
+      confirmLabel: "Xóa cấu hình"
+    });
+    if (!confirmed) return;
     try {
       await deleteSiteSetting(token, setting.id);
       await reloadData();
@@ -3174,7 +3294,17 @@ export default function App() {
 
   return (
     <div className="admin-shell bg-admin-sand text-admin-ink">
-      <div className="pointer-events-none fixed right-4 top-4 z-[90] flex w-full max-w-sm flex-col gap-3">
+      <ConfirmDialog
+        open={Boolean(confirmation)}
+        title={confirmation?.title}
+        message={confirmation?.message}
+        confirmLabel={confirmation?.confirmLabel}
+        variant={confirmation?.variant}
+        onConfirm={() => resolveConfirmation(true)}
+        onCancel={() => resolveConfirmation(false)}
+      />
+
+      <div className="pointer-events-none fixed left-4 right-4 top-4 z-[90] flex flex-col gap-3 sm:left-auto sm:w-full sm:max-w-sm">
         {toasts.map((toast) => (
           <div
             key={toast.id}
@@ -3199,9 +3329,33 @@ export default function App() {
         ))}
       </div>
 
+      {sidebarOpen ? (
+        <button
+          type="button"
+          aria-label="Đóng menu quản trị"
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-[1px] lg:hidden"
+        />
+      ) : null}
+
       <div className="grid h-screen w-full lg:grid-cols-[280px_minmax(0,1fr)]">
-        <aside className="admin-sidebar admin-scrollbar flex h-full flex-col overflow-y-auto px-4 py-5 text-white">
-            <div className="mt-4 pl-1 text-left">
+        <aside
+          id="admin-navigation"
+          className={`admin-sidebar admin-scrollbar fixed inset-y-0 left-0 z-50 flex h-full w-[min(20rem,86vw)] flex-col overflow-y-auto px-4 py-5 text-white transition-transform duration-200 lg:static lg:z-auto lg:w-auto lg:translate-x-0 ${
+            sidebarOpen ? "visible translate-x-0" : "invisible -translate-x-full lg:visible"
+          }`}
+        >
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(false)}
+            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/10 text-white transition hover:bg-white/20 lg:hidden"
+            aria-label="Đóng menu"
+          >
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" d="m6 6 12 12M18 6 6 18" />
+            </svg>
+          </button>
+          <div className="mt-4 pl-1 text-left">
               {adminBrandLine !== adminSiteName ? (
                 <p className="text-xs font-bold uppercase tracking-[0.28em] text-slate-300">
                   Nhà xe
@@ -3213,7 +3367,7 @@ export default function App() {
               <p className="mt-3 inline-flex rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-slate-200">
                 {ROLE_LABELS[currentRole] ?? currentRole}
               </p>
-            </div>
+          </div>
 
           <nav className="mt-8 space-y-5">
             {visibleTabSections.map((section) => (
@@ -3226,7 +3380,7 @@ export default function App() {
                     <button
                       key={tab.id}
                       type="button"
-                      onClick={() => setActiveTab(tab.id)}
+                      onClick={() => handleAdminTabSelect(tab.id)}
                       className={`block w-full rounded-[1rem] px-4 py-3 text-left transition ${
                         activeTab === tab.id
                           ? "bg-white text-slate-950 shadow-[0_14px_40px_rgba(15,23,42,0.18)]"
@@ -3328,18 +3482,32 @@ export default function App() {
           </div>
         </aside>
 
-        <main className="flex h-full min-h-0 flex-col gap-4 overflow-hidden p-4 lg:p-6">
+        <main className="flex h-full min-h-0 flex-col gap-3 overflow-hidden p-3 sm:gap-4 sm:p-4 lg:p-6">
           <header className="admin-panel shrink-0 rounded-[1.25rem] p-5">
             <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <h2 className="admin-title text-4xl font-extrabold text-admin-ink">
-                  {activeTabMeta.label}
-                </h2>
-                {getTabDescription(activeTab) ? (
-                  <p className="mt-2 text-sm font-medium text-admin-steel">
-                    {getTabDescription(activeTab)}
-                  </p>
-                ) : null}
+              <div className="flex min-w-0 items-start gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSidebarOpen(true)}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[0.9rem] border border-slate-200 bg-slate-50 text-slate-700 transition hover:border-teal-400 hover:bg-teal-50 hover:text-teal-800 lg:hidden"
+                  aria-label="Mở menu quản trị"
+                  aria-controls="admin-navigation"
+                  aria-expanded={sidebarOpen}
+                >
+                  <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" d="M4 7h16M4 12h16M4 17h16" />
+                  </svg>
+                </button>
+                <div className="min-w-0">
+                  <h2 className="admin-title text-2xl font-extrabold text-admin-ink sm:text-3xl lg:text-4xl">
+                    {activeTabMeta.label}
+                  </h2>
+                  {getTabDescription(activeTab) ? (
+                    <p className="mt-2 text-sm font-medium text-admin-steel">
+                      {getTabDescription(activeTab)}
+                    </p>
+                  ) : null}
+                </div>
               </div>
             </div>
           </header>
@@ -3451,6 +3619,10 @@ export default function App() {
                 savingVehicle={savingVehicle}
                 vehicles={vehicles}
                 uploadingVehicleId={uploadingVehicleId}
+                vehicleImageUploadType={vehicleImageUploadType}
+                vehicleImageFilter={vehicleImageFilter}
+                setVehicleImageUploadType={setVehicleImageUploadType}
+                setVehicleImageFilter={setVehicleImageFilter}
                 handleVehicleFormChange={handleVehicleFormChange}
                 handleCreateVehicle={handleCreateVehicle}
                 resetVehicleForm={resetVehicleForm}
@@ -3459,6 +3631,7 @@ export default function App() {
                 handleDeleteVehicle={handleDeleteVehicle}
                 handleDeleteVehicleImage={handleDeleteVehicleImage}
                 handleSetPrimaryImage={handleSetPrimaryImage}
+                handleImageTypeChange={handleImageTypeChange}
                 handleImageAltTextBlur={handleImageAltTextBlur}
                 handleImageSortOrderChange={handleImageSortOrderChange}
                 handleVehicleImageUpload={handleVehicleImageUpload}

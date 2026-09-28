@@ -6,6 +6,10 @@
   savingVehicle,
   vehicles,
   uploadingVehicleId,
+  vehicleImageUploadType,
+  vehicleImageFilter,
+  setVehicleImageUploadType,
+  setVehicleImageFilter,
   handleVehicleFormChange,
   handleCreateVehicle,
   resetVehicleForm,
@@ -14,6 +18,7 @@
   handleDeleteVehicle,
   handleDeleteVehicleImage,
   handleSetPrimaryImage,
+  handleImageTypeChange,
   handleImageAltTextBlur,
   handleImageSortOrderChange,
   handleVehicleImageUpload,
@@ -21,6 +26,20 @@
   resolveAdminAssetUrl
 }) {
   const selectedVehicle = vehicles.find((vehicle) => vehicle.id === selectedVehicleId) ?? null;
+  const selectedVehicleImages = selectedVehicle?.images ?? [];
+  const exteriorImageCount = selectedVehicleImages.filter(
+    (image) => (image.imageType ?? "exterior") === "exterior"
+  ).length;
+  const interiorImageCount = selectedVehicleImages.length - exteriorImageCount;
+  const visibleVehicleImages = selectedVehicleImages.filter(
+    (image) =>
+      vehicleImageFilter === "all" ||
+      (image.imageType ?? "exterior") === vehicleImageFilter
+  );
+  const previewImage =
+    selectedVehicleImages.find((image) => image.isPrimary) ??
+    selectedVehicleImages.find((image) => (image.imageType ?? "exterior") === "exterior") ??
+    selectedVehicleImages[0];
 
   return (
     <section className="mt-8 space-y-6">
@@ -243,6 +262,17 @@
                 <p className="mt-1 text-sm text-admin-steel">
                   {selectedVehicle.category?.name} - {selectedVehicle.seatCount} chỗ
                 </p>
+                <label className="mt-4 block space-y-2">
+                  <span className="text-sm font-semibold text-admin-steel">Loại ảnh tải lên</span>
+                  <select
+                    className="admin-select"
+                    value={vehicleImageUploadType}
+                    onChange={(event) => setVehicleImageUploadType(event.target.value)}
+                  >
+                    <option value="exterior">Ngoại thất</option>
+                    <option value="interior">Nội thất</option>
+                  </select>
+                </label>
                 <label className="mt-4 block">
                   <span className="mb-2 block text-sm font-semibold text-admin-steel">
                     {uploadingVehicleId === selectedVehicle.id
@@ -253,16 +283,24 @@
                     type="file"
                     multiple
                     accept="image/*"
-                    onChange={(event) =>
-                      handleVehicleImageUpload(selectedVehicle.id, Array.from(event.target.files ?? []))
-                    }
+                    onChange={(event) => {
+                      handleVehicleImageUpload(
+                        selectedVehicle.id,
+                        Array.from(event.target.files ?? []),
+                        vehicleImageUploadType
+                      );
+                      event.target.value = "";
+                    }}
                   />
                 </label>
+                <p className="mt-3 text-xs font-medium leading-5 text-slate-500">
+                  Ảnh đại diện chỉ chọn được từ nhóm ngoại thất.
+                </p>
               </div>
-              {(selectedVehicle.images ?? [])[0] ? (
+              {previewImage ? (
                 <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4">
                   <img
-                    src={resolveAdminAssetUrl((selectedVehicle.images ?? [])[0].imageUrl)}
+                    src={resolveAdminAssetUrl(previewImage.imageUrl)}
                     alt={selectedVehicle.name}
                     className="h-64 w-full rounded-[1rem] object-cover"
                   />
@@ -270,18 +308,66 @@
               ) : null}
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
-              {(selectedVehicle.images ?? []).map((image) => (
-                <div
-                  key={image.id}
-                  className="rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4"
-                >
+            <div>
+              <div className="mb-4 flex flex-wrap gap-2" aria-label="Lọc ảnh theo loại">
+                {[
+                  ["all", `Tất cả (${selectedVehicleImages.length})`],
+                  ["exterior", `Ngoại thất (${exteriorImageCount})`],
+                  ["interior", `Nội thất (${interiorImageCount})`]
+                ].map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setVehicleImageFilter(value)}
+                    className={`rounded-full border px-3.5 py-2 text-xs font-extrabold transition-colors ${
+                      vehicleImageFilter === value
+                        ? "border-teal-700 bg-teal-700 text-white"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-teal-500 hover:text-teal-800"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
+                {visibleVehicleImages.map((image) => (
+                  <div
+                    key={image.id}
+                    className="rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4"
+                  >
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-[0.68rem] font-extrabold uppercase tracking-[0.12em] ${
+                        (image.imageType ?? "exterior") === "interior"
+                          ? "bg-amber-100 text-amber-800"
+                          : "bg-teal-100 text-teal-800"
+                      }`}
+                    >
+                      {(image.imageType ?? "exterior") === "interior" ? "Nội thất" : "Ngoại thất"}
+                    </span>
+                    {image.isPrimary ? (
+                      <span className="text-xs font-extrabold text-teal-800">Ảnh đại diện</span>
+                    ) : null}
+                  </div>
                   <img
                     src={resolveAdminAssetUrl(image.imageUrl)}
                     alt={image.altText ?? selectedVehicle.name}
                     className="h-36 w-full rounded-[1.2rem] object-cover"
                   />
                   <div className="mt-4 space-y-3">
+                    <label className="block space-y-2">
+                      <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+                        Phân loại
+                      </span>
+                      <select
+                        className="admin-select"
+                        value={image.imageType ?? "exterior"}
+                        onChange={(event) => handleImageTypeChange(image.id, event.target.value)}
+                      >
+                        <option value="exterior">Ngoại thất</option>
+                        <option value="interior">Nội thất</option>
+                      </select>
+                    </label>
                     <label className="block space-y-2">
                       <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
                         Alt text
@@ -309,9 +395,14 @@
                       <button
                         type="button"
                         onClick={() => handleSetPrimaryImage(image.id)}
-                        className="admin-button-secondary"
+                        disabled={(image.imageType ?? "exterior") === "interior"}
+                        className="admin-button-secondary disabled:cursor-not-allowed disabled:opacity-45"
                       >
-                        {image.isPrimary ? "Ảnh đại diện" : "Đặt đại diện"}
+                        {(image.imageType ?? "exterior") === "interior"
+                          ? "Không dùng đại diện"
+                          : image.isPrimary
+                            ? "Ảnh đại diện"
+                            : "Đặt đại diện"}
                       </button>
                       <button
                         type="button"
@@ -322,13 +413,19 @@
                       </button>
                     </div>
                   </div>
-                </div>
-              ))}
-              {!(selectedVehicle.images ?? []).length ? (
-                <div className="col-span-full rounded-[1.5rem] border border-dashed border-slate-300 px-5 py-12 text-center text-sm text-admin-steel">
-                  Xe này chưa có ảnh nào.
-                </div>
-              ) : null}
+                  </div>
+                ))}
+                {!selectedVehicleImages.length ? (
+                  <div className="col-span-full rounded-[1.5rem] border border-dashed border-slate-300 px-5 py-12 text-center text-sm text-admin-steel">
+                    Xe này chưa có ảnh nào.
+                  </div>
+                ) : null}
+                {selectedVehicleImages.length && !visibleVehicleImages.length ? (
+                  <div className="col-span-full rounded-[1.5rem] border border-dashed border-slate-300 px-5 py-12 text-center text-sm text-admin-steel">
+                    Chưa có ảnh thuộc nhóm này.
+                  </div>
+                ) : null}
+              </div>
             </div>
           </div>
         )}

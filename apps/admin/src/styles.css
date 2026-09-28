@@ -208,6 +208,22 @@ body {
   border-left: 4px solid #e11d48;
 }
 
+.admin-confirm-dialog {
+  animation: admin-dialog-enter 180ms ease-out;
+}
+
+@keyframes admin-dialog-enter {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .admin-booking-highlight {
   animation: admin-booking-pulse 5s ease;
 }
@@ -223,5 +239,16 @@ body {
 
   100% {
     background: rgba(255, 251, 235, 0.82);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-confirm-dialog,
+  .admin-booking-highlight {
+    animation: none;
+  }
+
+  .admin-sidebar {
+    transition: none;
   }
 }

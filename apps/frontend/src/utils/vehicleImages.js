@@ -10,8 +10,10 @@ const INTERIOR_IMAGE_PATTERN =
   /(^|[^a-z0-9])(noi[\s_-]*that|interior|cabin|khoang[\s_-]*(xe|khach)|ghe[\s_-]*xe)([^a-z0-9]|$)/i;
 
 export function isInteriorVehicleImage(image) {
-  if ([image?.imageType, image?.type, image?.category].includes("interior")) {
-    return true;
+  const explicitType = image?.imageType ?? image?.type ?? image?.category;
+
+  if (["interior", "exterior"].includes(explicitType)) {
+    return explicitType === "interior";
   }
 
   const searchableText = normalizeImageText(

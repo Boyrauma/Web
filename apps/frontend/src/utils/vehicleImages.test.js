@@ -30,6 +30,12 @@ describe("vehicle image classification", () => {
     expect(isInteriorVehicleImage(images[1])).toBe(true);
     expect(isInteriorVehicleImage(images[2])).toBe(true);
     expect(isInteriorVehicleImage({ imageType: "interior" })).toBe(true);
+    expect(
+      isInteriorVehicleImage({
+        imageType: "exterior",
+        imageUrl: "/image/vehicles/noi-that-cu.webp"
+      })
+    ).toBe(false);
   });
 
   it("keeps only exterior images for the fleet section", () => {
