@@ -42,10 +42,10 @@ describe("FleetSection", () => {
       />
     );
 
-    expect(screen.getByText("1 ảnh ngoại thất")).toBeTruthy();
+    expect(screen.getByText("1 ảnh")).toBeTruthy();
     expect(screen.queryByAltText("Nội thất Hyundai Solati")).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Mở bộ ảnh ngoại thất Xe 16 chỗ" }));
+    fireEvent.click(screen.getByRole("button", { name: "Mở bộ ảnh Xe 16 chỗ" }));
 
     expect(handleOpenGallery).toHaveBeenCalledWith(
       "Xe 16 chỗ",

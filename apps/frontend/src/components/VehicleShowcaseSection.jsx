@@ -1,7 +1,7 @@
 ﻿import { Link } from "react-router-dom";
 
 import AdaptiveVehicleImage from "./AdaptiveVehicleImage";
-import { countVehicleImageTypes, isInteriorVehicleImage } from "../utils/vehicleImages";
+import { isInteriorVehicleImage } from "../utils/vehicleImages";
 
 export default function VehicleShowcaseSection({
   flattenedVehicles,
@@ -18,7 +18,6 @@ export default function VehicleShowcaseSection({
     null;
   const currentSelectedImage =
     currentSelectedImageItem?.fullUrl ?? "/assets/xecountybonghoi.jpg";
-  const imageTypeCounts = countVehicleImageTypes(selectedVehicleGallery);
 
   return (
     <section id="showcase-xe" className="site-shell mx-auto px-4 py-16 sm:px-6">
@@ -77,19 +76,6 @@ export default function VehicleShowcaseSection({
               </span>
             ) : null}
           </div>
-
-          {selectedVehicleGallery.length ? (
-            <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
-              <span className="rounded-full bg-slate-100 px-3 py-1.5">
-                {imageTypeCounts.exterior} ảnh ngoại thất
-              </span>
-              {imageTypeCounts.interior ? (
-                <span className="rounded-full bg-amber-50 px-3 py-1.5 text-brand-amber">
-                  {imageTypeCounts.interior} ảnh nội thất
-                </span>
-              ) : null}
-            </div>
-          ) : null}
 
           <div className="mt-4 flex flex-wrap gap-3">
             {selectedVehicleGallery.map((image) => (

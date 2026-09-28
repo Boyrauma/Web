@@ -8,7 +8,7 @@ import VehicleGalleryLightbox from "../components/VehicleGalleryLightbox";
 import { fetchSiteSettings, fetchVehicleBySlug, resolveAssetUrl } from "../services/api";
 import { applyDocumentBranding } from "../utils/branding";
 import { applySeo, buildVehicleSchema } from "../utils/seo";
-import { countVehicleImageTypes, isInteriorVehicleImage } from "../utils/vehicleImages";
+import { isInteriorVehicleImage } from "../utils/vehicleImages";
 
 function getVehicleNarrative(vehicle) {
   const slug = vehicle?.slug ?? "";
@@ -332,7 +332,6 @@ export default function VehicleDetailPage() {
   );
   const currentImage = gallery[selectedImageIndex]?.fullUrl ?? "/assets/xecountybonghoi.jpg";
   const currentImageItem = gallery[selectedImageIndex] ?? null;
-  const imageTypeCounts = countVehicleImageTypes(gallery);
   const narrative = getVehicleNarrative(vehicle);
 
   useEffect(() => {
@@ -491,14 +490,6 @@ export default function VehicleDetailPage() {
                     <p className="text-sm font-semibold text-slate-500">
                       Chọn ảnh để xem nhanh hoặc mở bộ ảnh toàn màn hình.
                     </p>
-                    {gallery.length ? (
-                      <p className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
-                        {imageTypeCounts.exterior} ngoại thất
-                        {imageTypeCounts.interior
-                          ? ` · ${imageTypeCounts.interior} nội thất`
-                          : ""}
-                      </p>
-                    ) : null}
                   </div>
                   <button
                     type="button"
