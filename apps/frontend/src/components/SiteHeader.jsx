@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { SECTION_NAVIGATION_EVENT } from "../utils/sectionNavigation";
 
 const navItems = [
   { href: "#doi-xe", label: "Đội xe" },
@@ -16,6 +17,28 @@ export default function SiteHeader({ siteName, siteTagline, hotline, logoUrl }) 
   const resolveHref = (item) => {
     if (item.external) return item.href;
     return location.pathname === "/" ? item.href : `/${item.href}`;
+  };
+  const handleShortcutClick = (event, item) => {
+    if (
+      item.external ||
+      location.pathname !== "/" ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    const nextUrl = `${window.location.pathname}${window.location.search}${item.href}`;
+
+    window.history.replaceState(window.history.state, "", nextUrl);
+    setActiveHash(item.href);
+    window.dispatchEvent(
+      new window.CustomEvent(SECTION_NAVIGATION_EVENT, { detail: { hash: item.href } })
+    );
   };
 
   useEffect(() => {
@@ -94,20 +117,21 @@ export default function SiteHeader({ siteName, siteTagline, hotline, logoUrl }) 
                 const isActive = location.pathname === "/" && activeHash === item.href;
 
                 return (
-                  <a
+                  <Link
                     key={item.href}
-                    href={resolveHref(item)}
-                    target={item.external ? "_blank" : undefined}
-                    rel={item.external ? "noreferrer" : undefined}
+                    to={resolveHref(item)}
+                    replace={location.pathname === "/" && location.hash === item.href}
+                    preventScrollReset
+                    onClick={(event) => handleShortcutClick(event, item)}
                     aria-current={isActive ? "location" : undefined}
-                    className={`nav-pill rounded-full px-4 py-2 text-sm font-bold transition-colors duration-200 ${
+                    className={`nav-pill rounded-full px-4 py-2 text-sm font-bold transition-all duration-300 ease-out ${
                       isActive
                         ? "bg-[#f5ead8] text-[#14233c] shadow-[inset_0_0_0_1px_rgba(154,92,0,0.18)]"
-                        : "text-[#46556d] hover:bg-[#f5ead8] hover:text-[#14233c]"
+                        : "text-[#46556d] hover:bg-[#f5ead8] hover:text-[#14233c] active:bg-[#ead8ba]"
                     }`}
                   >
                     {item.label}
-                  </a>
+                  </Link>
                 );
               })}
             </nav>
