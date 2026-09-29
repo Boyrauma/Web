@@ -264,7 +264,8 @@ function exportItemsToExcel(items) {
       const note = item.scheduleNote;
       const booking = item.booking;
 
-      const vehicleName = payment?.vehicle?.name ?? note?.vehicle?.name ?? "Chưa gán xe";
+      const vehicleName =
+        payment?.vehicle?.name ?? note?.vehicle?.name ?? booking?.assignedVehicle?.name ?? "Chưa gán xe";
       const title =
         payment?.title ??
         note?.title ??
@@ -474,7 +475,11 @@ export default function VehicleTripPaymentsTab({
   const filteredItems = useMemo(
     () =>
       paymentItems.filter((item) => {
-        const vehicleId = item.payment?.vehicleId ?? item.scheduleNote?.vehicleId ?? "";
+        const vehicleId =
+          item.payment?.vehicleId ??
+          item.scheduleNote?.vehicleId ??
+          item.booking?.assignedVehicleId ??
+          "";
 
         const matchVehicle =
           vehicleFilterId === "all"
@@ -823,7 +828,11 @@ export default function VehicleTripPaymentsTab({
               (isInlineEditing ? inlineDraft.title : payment?.title) ??
               note?.title ??
               (booking?.customerName ? `Tiền xe - ${booking.customerName}` : "Tiền xe");
-            const vehicleName = payment?.vehicle?.name ?? note?.vehicle?.name ?? "Chưa gán xe";
+            const vehicleName =
+              payment?.vehicle?.name ??
+              note?.vehicle?.name ??
+              booking?.assignedVehicle?.name ??
+              "Chưa gán xe";
             const customerName =
               (isInlineEditing ? inlineDraft.customerName : payment?.customerName) ??
               note?.customerName ??

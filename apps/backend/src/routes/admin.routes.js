@@ -954,7 +954,7 @@ router.delete("/admin-users/:id", requireAdminPermission("admin_users.manage"), 
 
 router.get("/dashboard", requireAdminPermission("dashboard.view"), async (request, response) => {
   const [bookingCount, vehicleCount, serviceCount, driverCount, pendingBookingCount, tripCount] = await Promise.all([
-    prisma.bookingRequest.count(),
+    prisma.bookingRequest.count({ where: { status: "new" } }),
     prisma.vehicle.count(),
     prisma.service.count(),
     prisma.driver.count({
@@ -991,6 +991,120 @@ router.get("/booking-requests", requireAdminPermission("bookings.manage"), async
   return response.json(bookings);
 });
 
+router.get("/booking-requests/dashboard-highlights", requireAdminPermission("bookings.manage"), async (request, response) => {
+  const dateStart = new Date(String(request.query.dateStart ?? ""));
+  const dateEnd = new Date(String(request.query.dateEnd ?? ""));
+  if (Number.isNaN(dateStart.getTime()) || Number.isNaN(dateEnd.getTime()) || dateEnd <= dateStart || dateEnd - dateStart > 60 * 24 * 60 * 60 * 1000) {
+    return response.status(400).json({ message: "Khoảng ngày Dashboard không hợp lệ." });
+  }
+
+  const select = {
+    id: true,
+    customerName: true,
+    phoneNumber: true,
+    pickupLocation: true,
+    dropoffLocation: true,
+    tripDate: true,
+    status: true,
+    note: true,
+    assignedVehicleId: true,
+    assignedDriverId: true,
+    createdAt: true,
+    updatedAt: true
+  };
+  const [recentBookings, calendarBookings] = await Promise.all([
+    prisma.bookingRequest.findMany({ select, orderBy: { updatedAt: "desc" }, take: 5 }),
+    prisma.bookingRequest.findMany({
+      where: { tripDate: { gte: dateStart, lt: dateEnd } },
+      select,
+      orderBy: { tripDate: "asc" }
+    })
+  ]);
+  const byId = new Map([...recentBookings, ...calendarBookings].map((booking) => [booking.id, booking]));
+  return response.json([...byId.values()]);
+});
+
+router.get("/booking-requests/page", requireAdminPermission("bookings.manage"), async (request, response) => {
+  const page = Math.max(1, Number.parseInt(request.query.page, 10) || 1);
+  const pageSize = Math.min(50, Math.max(10, Number.parseInt(request.query.pageSize, 10) || 10));
+  const status = typeof request.query.status === "string" ? request.query.status : "all";
+  const assignment = typeof request.query.assignment === "string" ? request.query.assignment : "all";
+  const search = typeof request.query.search === "string" ? request.query.search.trim().slice(0, 120) : "";
+  const dateStart = typeof request.query.dateStart === "string" ? new Date(request.query.dateStart) : null;
+  const dateEnd = typeof request.query.dateEnd === "string" ? new Date(request.query.dateEnd) : null;
+  const where = {
+    AND: [
+      { status: { notIn: ["confirmed", "assigned", "scheduled", "completed", "canceled", "cancelled"] } },
+      { scheduleNotes: { none: {} } },
+      { tripPayments: { none: {} } },
+      ...(status === "called_back"
+        ? [{ status: { in: ["called_back", "contacted"] } }]
+        : status !== "all"
+          ? [{ status }]
+          : []),
+      ...(assignment === "unassigned" ? [{ assignedVehicleId: null, assignedDriverId: null }] : []),
+      ...(assignment === "partial" ? [{ OR: [
+        { AND: [{ assignedVehicleId: { not: null } }, { assignedDriverId: null }] },
+        { AND: [{ assignedVehicleId: null }, { assignedDriverId: { not: null } }] }
+      ] }] : []),
+      ...(assignment === "assigned" ? [{ assignedVehicleId: { not: null }, assignedDriverId: { not: null } }] : []),
+      ...(dateStart && !Number.isNaN(dateStart.getTime()) ? [{ tripDate: { gte: dateStart } }] : []),
+      ...(dateEnd && !Number.isNaN(dateEnd.getTime()) ? [{ tripDate: { lt: dateEnd } }] : []),
+      ...(search ? [{ OR: [
+        { customerName: { contains: search, mode: "insensitive" } },
+        { phoneNumber: { contains: search } },
+        { pickupLocation: { contains: search, mode: "insensitive" } },
+        { dropoffLocation: { contains: search, mode: "insensitive" } },
+        { note: { contains: search, mode: "insensitive" } },
+        { internalNote: { contains: search, mode: "insensitive" } },
+        { assignedVehicle: { is: { name: { contains: search, mode: "insensitive" } } } },
+        { assignedDriver: { is: { fullName: { contains: search, mode: "insensitive" } } } }
+      ] }] : [])
+    ]
+  };
+  const sortOrder = request.query.sort === "oldest" ? "asc" : "desc";
+  const pendingWhere = {
+    OR: [
+      { assignedVehicleId: null },
+      { assignedDriverId: null },
+      { status: { in: ["new", "contacted", "called_back", "confirmed"] } }
+    ]
+  };
+  const [items, total, allTotal, assignedCount, pendingCount] = await Promise.all([
+    prisma.bookingRequest.findMany({
+      where,
+      include: bookingInclude,
+      orderBy: [{ tripDate: { sort: sortOrder, nulls: "last" } }, { createdAt: sortOrder }],
+      skip: (page - 1) * pageSize,
+      take: pageSize
+    }),
+    prisma.bookingRequest.count({ where }),
+    prisma.bookingRequest.count(),
+    prisma.bookingRequest.count({ where: { assignedVehicleId: { not: null }, assignedDriverId: { not: null } } }),
+    prisma.bookingRequest.count({ where: pendingWhere })
+  ]);
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const effectivePage = Math.min(page, totalPages);
+  const pageItems = effectivePage === page ? items : await prisma.bookingRequest.findMany({
+    where,
+    include: bookingInclude,
+    orderBy: [{ tripDate: { sort: sortOrder, nulls: "last" } }, { createdAt: sortOrder }],
+    skip: (effectivePage - 1) * pageSize,
+    take: pageSize
+  });
+
+  return response.json({
+    items: pageItems,
+    total,
+    allTotal,
+    assignedCount,
+    pendingCount,
+    page: effectivePage,
+    pageSize,
+    totalPages
+  });
+});
+
 router.delete("/booking-requests/:id", requireAdminPermission("bookings.manage"), async (request, response) => {
   const booking = await prisma.$transaction(async (tx) => {
     const deletedBooking = await tx.bookingRequest.delete({
@@ -1025,6 +1139,42 @@ router.delete("/booking-requests/:id", requireAdminPermission("bookings.manage")
 router.get("/customers", requireAdminPermission("customers.manage"), async (request, response) => {
   const customers = await buildCustomerSummaries();
   return response.json(customers);
+});
+
+router.get("/customers/page", requireAdminPermission("customers.manage"), async (request, response) => {
+  const page = Math.max(1, Number.parseInt(request.query.page, 10) || 1);
+  const pageSize = Math.min(50, Math.max(10, Number.parseInt(request.query.pageSize, 10) || 10));
+  const status = typeof request.query.status === "string" ? request.query.status : "all";
+  const search = typeof request.query.search === "string" ? request.query.search.trim().slice(0, 120).toLowerCase() : "";
+  const customers = await buildCustomerSummaries();
+  const filtered = customers.filter((customer) => {
+    if (status !== "all" && customer.status !== status) return false;
+    if (!search) return true;
+    const haystack = [
+      customer.fullName,
+      customer.phoneNumber,
+      customer.note,
+      customer.latestRoute,
+      customer.latestBooking?.pickupLocation,
+      customer.latestBooking?.dropoffLocation
+    ].filter(Boolean).join(" ").toLowerCase();
+    return haystack.includes(search);
+  });
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const effectivePage = Math.min(page, totalPages);
+
+  return response.json({
+    items: filtered.slice((effectivePage - 1) * pageSize, effectivePage * pageSize),
+    total,
+    allTotal: customers.length,
+    vipCount: customers.filter((customer) => customer.status === "vip").length,
+    repeatCount: customers.filter((customer) => customer.bookingCount >= 2).length,
+    watchCount: customers.filter((customer) => customer.status === "watchlist").length,
+    page: effectivePage,
+    pageSize,
+    totalPages
+  });
 });
 
 router.post("/customers", requireAdminPermission("customers.manage"), async (request, response) => {
@@ -1992,6 +2142,71 @@ router.get("/trips", requireAdminPermission("trips.manage"), async (request, res
   });
 
   return response.json(trips);
+});
+
+router.get("/trips/dashboard-highlights", requireAdminPermission("trips.manage"), async (request, response) => {
+  const dateStart = new Date(String(request.query.dateStart ?? ""));
+  const dateEnd = new Date(String(request.query.dateEnd ?? ""));
+  if (Number.isNaN(dateStart.getTime()) || Number.isNaN(dateEnd.getTime()) || dateEnd <= dateStart || dateEnd - dateStart > 60 * 24 * 60 * 60 * 1000) {
+    return response.status(400).json({ message: "Khoảng ngày Dashboard không hợp lệ." });
+  }
+  const trips = await prisma.trip.findMany({
+    where: { tripDate: { gte: dateStart, lt: dateEnd } },
+    include: tripInclude,
+    orderBy: [{ tripDate: "asc" }, { createdAt: "desc" }]
+  });
+  return response.json(trips);
+});
+
+router.get("/trips/page", requireAdminPermission("trips.manage"), async (request, response) => {
+  const page = Math.max(1, Number.parseInt(request.query.page, 10) || 1);
+  const pageSize = Math.min(50, Math.max(10, Number.parseInt(request.query.pageSize, 10) || 10));
+  const status = typeof request.query.status === "string" ? request.query.status : "all";
+  const search = typeof request.query.search === "string" ? request.query.search.trim().slice(0, 120) : "";
+  const dateStart = typeof request.query.dateStart === "string" ? new Date(request.query.dateStart) : null;
+  const dateEnd = typeof request.query.dateEnd === "string" ? new Date(request.query.dateEnd) : null;
+  const where = {
+    AND: [
+      ...(status !== "all" ? [{ status }] : []),
+      ...(dateStart && !Number.isNaN(dateStart.getTime()) ? [{ tripDate: { gte: dateStart } }] : []),
+      ...(dateEnd && !Number.isNaN(dateEnd.getTime()) ? [{ tripDate: { lt: dateEnd } }] : []),
+      ...(search ? [{ OR: [
+        { title: { contains: search, mode: "insensitive" } },
+        { pickupLocation: { contains: search, mode: "insensitive" } },
+        { dropoffLocation: { contains: search, mode: "insensitive" } },
+        { vehicle: { is: { name: { contains: search, mode: "insensitive" } } } },
+        { driver: { is: { fullName: { contains: search, mode: "insensitive" } } } },
+        { bookings: { some: { OR: [
+          { customerName: { contains: search, mode: "insensitive" } },
+          { phoneNumber: { contains: search } },
+          { pickupLocation: { contains: search, mode: "insensitive" } },
+          { dropoffLocation: { contains: search, mode: "insensitive" } }
+        ] } } }
+      ] }] : [])
+    ]
+  };
+  const [total, allTotal] = await Promise.all([
+    prisma.trip.count({ where }),
+    prisma.trip.count()
+  ]);
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const effectivePage = Math.min(page, totalPages);
+  const items = await prisma.trip.findMany({
+    where,
+    include: tripInclude,
+    orderBy: [{ tripDate: "asc" }, { createdAt: "desc" }],
+    skip: (effectivePage - 1) * pageSize,
+    take: pageSize
+  });
+
+  return response.json({
+    items,
+    total,
+    allTotal,
+    page: effectivePage,
+    pageSize,
+    totalPages
+  });
 });
 
 router.post("/trips", requireAdminPermission("trips.manage"), async (request, response) => {

@@ -1,16 +1,16 @@
 export const BOOKING_STATUS_OPTIONS = [
   { value: "new", label: "Mới" },
-  { value: "contacted", label: "Liên hệ" },
-  { value: "called_back", label: "Đã gọi lại" },
+  { value: "called_back", label: "Đã liên hệ" },
   { value: "confirmed", label: "Đã xác nhận" },
-  { value: "assigned", label: "Đã gán xe" },
-  { value: "scheduled", label: "Lên lịch" },
-  { value: "canceled", label: "Hủy" },
-  { value: "cancelled", label: "Hủy" },
+  { value: "assigned", label: "Đã phân công" },
+  { value: "scheduled", label: "Đã lên lịch" },
+  { value: "canceled", label: "Đã hủy" },
   { value: "completed", label: "Hoàn thành" }
 ];
 
 export function getBookingStatusLabel(status) {
+  if (status === "contacted") return "Đã liên hệ";
+  if (status === "cancelled") return "Đã hủy";
   return BOOKING_STATUS_OPTIONS.find((item) => item.value === status)?.label ?? status;
 }
 

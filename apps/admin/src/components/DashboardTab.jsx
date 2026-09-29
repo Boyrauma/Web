@@ -71,7 +71,7 @@ function buildCalendarMap(scheduleNotes = [], bookings = []) {
         id: `booking-${booking.id}`,
         kind: "booking",
         tripDate: booking.tripDate,
-        title: booking.customerName || "Booking mới",
+        title: booking.customerName || "Đơn mới",
         subtitle: booking.phoneNumber || "Chưa có số điện thoại",
         detail: `${booking.pickupLocation || "Chưa có điểm đón"} - ${booking.dropoffLocation || "Chưa có điểm trả"}`,
         status: booking.status
@@ -96,7 +96,7 @@ function renderCalendarItem(item) {
         className="rounded-[0.85rem] border border-sky-100 bg-sky-50 px-2.5 py-2 text-xs text-sky-900"
       >
         <p className="font-bold">{item.title}</p>
-        <p className="mt-1 line-clamp-1 text-[11px] font-semibold text-sky-700">Booking từ web</p>
+        <p className="mt-1 line-clamp-1 text-[11px] font-semibold text-sky-700">Đơn từ website</p>
         <p className="mt-1 line-clamp-1 text-[11px]">{item.detail}</p>
         <p className="mt-1 text-[11px]">{formatDateTime(item.tripDate)}</p>
       </div>
@@ -124,7 +124,7 @@ function buildRecentRequests(bookings = []) {
   return bookings
     .map((booking) => ({
       id: `booking-${booking.id}`,
-      title: booking.customerName || "Booking mới",
+      title: booking.customerName || "Đơn mới",
       time: booking.tripDate || booking.createdAt,
       updatedAt: booking.updatedAt || booking.createdAt,
       status: getBookingStatusLabel(booking.status),
@@ -156,24 +156,22 @@ function isActiveScheduleStatus(status) {
   return !["completed", "canceled", "cancelled"].includes(status);
 }
 
-function countTodayScheduleItems(scheduleNotes = [], trips = [], bookings = [], today = new Date()) {
+function countTodayScheduleItems(scheduleNotes = [], bookings = [], today = new Date()) {
   const scheduledBookingIds = new Set(
     scheduleNotes.map((note) => note.bookingRequestId).filter(Boolean)
   );
   const scheduleCount = scheduleNotes.filter(
     (note) => isSameDay(note.tripDate, today) && isActiveScheduleStatus(note.status)
   ).length;
-  const tripCount = trips.filter(
-    (trip) => isSameDay(trip.tripDate, today) && isActiveScheduleStatus(trip.status)
-  ).length;
   const bookingCount = bookings.filter(
     (booking) =>
       isSameDay(booking.tripDate, today) &&
       BOOKING_SCHEDULE_STEP_STATUSES.has(booking.status) &&
+      !booking.tripId &&
       !scheduledBookingIds.has(booking.id)
   ).length;
 
-  return scheduleCount + tripCount + bookingCount;
+  return scheduleCount + bookingCount;
 }
 
 function countDueReminders(reminders = [], today = new Date()) {
@@ -205,8 +203,8 @@ export default function DashboardTab({
   reminders = [],
   handleOpenBookings,
   handleOpenScheduleNotes,
+  handleOpenTrips,
   handleOpenVehicleTripPayments,
-  handleOpenReminders
 }) {
   const today = new Date();
   const monthLabel = today.toLocaleDateString("vi-VN", {
@@ -217,41 +215,44 @@ export default function DashboardTab({
   const currentMonth = today.getMonth();
   const calendarMap = buildCalendarMap(scheduleNotes, bookings);
   const recentRequests = buildRecentRequests(bookings);
-  const todayScheduleItemCount = countTodayScheduleItems(scheduleNotes, trips, bookings, today);
+  const todayScheduleItemCount = countTodayScheduleItems(scheduleNotes, bookings, today);
+  const todayTripCount = trips.filter(
+    (trip) => isSameDay(trip.tripDate, today) && isActiveScheduleStatus(trip.status)
+  ).length;
   const unpaidPaymentCount = countUnpaidPayments(payments);
   const dueReminderCount = countDueReminders(reminders, today);
   const todayWorkCards = [
     {
-      label: "Booking cần xử lý",
+      label: "Đơn đặt xe cần xử lý",
       value: pendingBookings.length,
       description: "Gọi khách, chốt lịch, gán xe hoặc tài xế.",
-      action: "Mở Booking",
+      action: "Mở đơn đặt xe",
       onClick: handleOpenBookings,
       className: "border-amber-200 bg-amber-50"
     },
     {
-      label: "Lịch chạy hôm nay",
+      label: "Lịch xe hôm nay",
       value: todayScheduleItemCount,
       description: "Theo dõi xe và tài xế đã được điều phối.",
-      action: "Mở Lịch xe",
+      action: "Mở lịch xe",
       onClick: handleOpenScheduleNotes,
       className: "border-sky-200 bg-sky-50"
     },
     {
-      label: "Chưa thu tiền",
-      value: unpaidPaymentCount,
-      description: "Hoàn tất phiếu tiền xe sau chuyến.",
-      action: "Mở Tiền xe",
-      onClick: handleOpenVehicleTripPayments,
-      className: "border-emerald-200 bg-emerald-50"
+      label: "Chuyến đi hôm nay",
+      value: todayTripCount,
+      description: "Theo dõi chuyến đã xác nhận, đang chạy hoặc cần hoàn tất.",
+      action: "Mở chuyến đi",
+      onClick: handleOpenTrips,
+      className: "border-indigo-200 bg-indigo-50"
     },
     {
-      label: "Nhắc việc đến hạn",
-      value: dueReminderCount,
-      description: "Các việc cần gọi lại hoặc kiểm tra trong ngày.",
-      action: "Mở Nhắc việc",
-      onClick: handleOpenReminders,
-      className: "border-rose-200 bg-rose-50"
+      label: "Chưa thu tiền",
+      value: unpaidPaymentCount,
+      description: "Ghi nhận các khoản thu sau chuyến.",
+      action: "Mở thu tiền chuyến",
+      onClick: handleOpenVehicleTripPayments,
+      className: "border-emerald-200 bg-emerald-50"
     }
   ];
 
@@ -307,14 +308,14 @@ export default function DashboardTab({
                 onClick={handleOpenBookings}
                 className="admin-button-ghost"
               >
-                Mở booking
+              Mở đơn đặt xe
               </button>
             </div>
 
-            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <div className="rounded-[1rem] bg-slate-50 px-4 py-4">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-                  1. Booking
+                  1. Đơn đặt xe
                 </p>
                 <p className="mt-3 text-2xl font-extrabold text-admin-ink">
                   {pendingBookings.length}
@@ -334,7 +335,17 @@ export default function DashboardTab({
 
               <div className="rounded-[1rem] bg-slate-50 px-4 py-4">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-                  3. Tiền xe
+                  3. Chuyến đi
+                </p>
+                <p className="mt-3 text-2xl font-extrabold text-admin-ink">
+                  {todayTripCount}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-admin-steel">Cần theo dõi trong hôm nay</p>
+              </div>
+
+              <div className="rounded-[1rem] bg-slate-50 px-4 py-4">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                  4. Thu tiền chuyến
                 </p>
                 <p className="mt-3 text-2xl font-extrabold text-admin-ink">
                   {unpaidPaymentCount}
@@ -342,10 +353,11 @@ export default function DashboardTab({
                 <p className="mt-1 text-sm font-semibold text-admin-steel">Chưa thu hoặc chưa chốt</p>
               </div>
 
+            </div>
+            <h4 className="mt-6 text-sm font-extrabold uppercase tracking-[0.16em] text-admin-steel">Nguồn lực & nhắc việc hôm nay</h4>
+            <div className="mt-3 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               <div className="rounded-[1rem] bg-slate-50 px-4 py-4">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-                  4. Tài xế
-                </p>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Tài xế đang có lịch</p>
                 <p className="mt-3 text-2xl font-extrabold text-admin-ink">
                   {assignedDrivers.length}/{drivers.length}
                 </p>
@@ -353,9 +365,7 @@ export default function DashboardTab({
               </div>
 
               <div className="rounded-[1rem] bg-slate-50 px-4 py-4">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-                  5. Xe
-                </p>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Xe đang sử dụng</p>
                 <p className="mt-3 text-2xl font-extrabold text-admin-ink">
                   {busyVehicles.length}
                 </p>
@@ -363,9 +373,7 @@ export default function DashboardTab({
               </div>
 
               <div className="rounded-[1rem] bg-slate-50 px-4 py-4">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-                  6. Nhắc việc
-                </p>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Nhắc việc đến hạn</p>
                 <p className="mt-3 text-2xl font-extrabold text-admin-ink">
                   {dueReminderCount}
                 </p>
@@ -379,7 +387,7 @@ export default function DashboardTab({
               <div>
                 <h3 className="admin-title text-2xl font-extrabold text-admin-ink">Lịch xe tháng này</h3>
                 <p className="mt-2 text-sm text-admin-steel">
-                  Hiển thị cả lịch xe đã tạo và booking từ website có ngày đi để điều phối nhanh hơn.
+                  Hiển thị lịch xe đã tạo và đơn đặt xe có ngày đi để điều phối nhanh hơn.
                 </p>
               </div>
               <div className="text-right">

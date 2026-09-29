@@ -1,4 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from "react";
+import { useRef } from "react";
 import BookingsTab from "./components/BookingsTab";
 import ConfirmDialog from "./components/ConfirmDialog";
 import CustomersTab from "./components/CustomersTab";
@@ -54,14 +55,19 @@ import {
   deleteVehicle,
   deleteVehicleImage,
   fetchAdminBookings,
+  fetchAdminBookingPage,
+  fetchDashboardBookingHighlights,
+  fetchDashboardTripHighlights,
   fetchAdminDashboard,
   fetchActivityLogs,
   fetchAdminUsers,
   fetchCurrentAdminSession,
   fetchCustomers,
+  fetchCustomersPage,
   fetchDrivers,
   fetchReminders,
   fetchTrips,
+  fetchTripsPage,
   fetchTripExpenses,
   fetchScheduleNotes,
   fetchVehicleTripPayments,
@@ -111,53 +117,58 @@ import { slugify } from "./utils/slugify";
 import ActivityLogsTab from "./components/ActivityLogsTab";
 
 const tabs = [
-  { id: "dashboard", label: "Dashboard" },
-  { id: "admin-users", label: "Tài khoản admin" },
-  { id: "activity-logs", label: "Nhật ký thao tác" },
+  { id: "dashboard", label: "Tổng quan" },
+  { id: "bookings", label: "Đơn đặt xe" },
+  { id: "dispatch-today", label: "Điều phối hôm nay" },
+  { id: "schedule-notes", label: "Lịch xe" },
+  { id: "dispatch-calendar", label: "Lịch điều phối" },
+  { id: "trips", label: "Chuyến đi" },
+  { id: "vehicle-trip-payments", label: "Thu tiền chuyến" },
+  { id: "finance", label: "Chi phí & lợi nhuận" },
   { id: "monthly-reports", label: "Báo cáo tháng" },
-  { id: "vehicle-categories", label: "Nhóm xe" },
+  { id: "customers", label: "Khách hàng" },
   { id: "vehicles", label: "Xe" },
   { id: "drivers", label: "Tài xế" },
-  { id: "customers", label: "Khách hàng" },
-  { id: "trips", label: "Chuyến đi" },
-  { id: "dispatch-today", label: "Điều phối hôm nay" },
-  { id: "dispatch-calendar", label: "Lịch điều phối" },
-  { id: "finance", label: "Chi phí & lợi nhuận" },
-  { id: "reminders", label: "Nhắc việc" },
-  { id: "schedule-notes", label: "Lịch xe" },
-  { id: "vehicle-trip-payments", label: "Tiền xe" },
-  { id: "data-archive", label: "Dữ liệu" },
+  { id: "vehicle-categories", label: "Nhóm xe" },
   { id: "vehicle-maintenances", label: "Bảo dưỡng xe" },
-  { id: "bookings", label: "Booking" },
   { id: "services", label: "Dịch vụ" },
-  { id: "settings", label: "Nội dung web" }
+  { id: "settings", label: "Nội dung web" },
+  { id: "reminders", label: "Nhắc việc" },
+  { id: "data-archive", label: "Lưu trữ" },
+  { id: "admin-users", label: "Tài khoản admin" },
+  { id: "activity-logs", label: "Nhật ký thao tác" }
 ];
 
 const tabSections = [
   {
-    label: "Vận hành",
+    label: "Tổng quan",
+    tabIds: ["dashboard"]
+  },
+  {
+    label: "Đơn & điều hành",
     tabIds: [
-      "dashboard",
       "bookings",
       "dispatch-today",
       "schedule-notes",
-      "vehicle-trip-payments",
       "dispatch-calendar",
-      "trips",
-      "data-archive"
+      "trips"
     ]
   },
   {
-    label: "Nhân sự & xe",
-    tabIds: ["customers", "drivers", "vehicles", "vehicle-categories", "vehicle-maintenances"]
+    label: "Tài chính",
+    tabIds: ["vehicle-trip-payments", "finance", "monthly-reports"]
   },
   {
-    label: "Tài chính & nhắc việc",
-    tabIds: ["finance", "monthly-reports", "reminders"]
+    label: "Khách & đội xe",
+    tabIds: ["customers", "vehicles", "drivers", "vehicle-categories", "vehicle-maintenances"]
   },
   {
-    label: "Quản trị",
-    tabIds: ["services", "settings", "admin-users", "activity-logs"]
+    label: "Website",
+    tabIds: ["services", "settings"]
+  },
+  {
+    label: "Hệ thống",
+    tabIds: ["reminders", "data-archive", "admin-users", "activity-logs"]
   }
 ];
 
@@ -297,13 +308,6 @@ const tripPaymentFormInitial = {
 };
 const SESSION_TOKEN = "__session__";
 const BOOKING_SCHEDULE_STEP_STATUSES = new Set(["confirmed", "assigned", "scheduled"]);
-const BOOKING_WORKFLOW_EXIT_STATUSES = new Set([
-  ...BOOKING_SCHEDULE_STEP_STATUSES,
-  "completed",
-  "canceled",
-  "cancelled"
-]);
-
 function isBookingInScheduleStep(status) {
   return BOOKING_SCHEDULE_STEP_STATUSES.has(status);
 }
@@ -313,7 +317,7 @@ function isFinishedTripPayment(payment) {
 }
 
 function getTabDescription(tabId) {
-  if (tabId === "dashboard") return "Tổng quan nhanh.";
+  if (tabId === "dashboard") return "Việc cần xử lý và tình hình vận hành hôm nay.";
   if (tabId === "admin-users") return "Tạo tài khoản, gán vai trò và khóa quyền truy cập.";
   if (tabId === "activity-logs") return "Theo dõi tạo, sửa, xóa và đổi trạng thái trong admin.";
   if (tabId === "monthly-reports") return "Biểu đồ tổng hợp công việc theo tháng.";
@@ -326,11 +330,11 @@ function getTabDescription(tabId) {
   if (tabId === "dispatch-calendar") return "Xem lịch xe, tài xế và chuyến theo ngày hoặc tuần.";
   if (tabId === "finance") return "Theo dõi doanh thu, chi phí và lợi nhuận tạm tính.";
   if (tabId === "reminders") return "Tạo và theo dõi nhắc việc tự động qua Telegram.";
-  if (tabId === "schedule-notes") return "Booking đã xác nhận và lịch tự tạo tay sẽ nằm ở đây. Hoàn thành chuyến sẽ chuyển sang Tiền xe.";
-  if (tabId === "vehicle-trip-payments") return "Chỉ hiển thị chuyến cần thu tiền. Thu xong sẽ chuyển sang Dữ liệu.";
+  if (tabId === "schedule-notes") return "Booking đã xác nhận chờ xếp lịch; từ đây có thể tạo chuyến mà không nhập lại thông tin.";
+  if (tabId === "vehicle-trip-payments") return "Ghi nhận khoản thu của chuyến và theo dõi tình trạng thanh toán.";
   if (tabId === "data-archive") return "Lưu trữ chuyến đã hoàn tất để tra cứu theo ngày, xe hoặc khách.";
   if (tabId === "vehicle-maintenances") return "Nhật ký thay dầu, bảo dưỡng.";
-  if (tabId === "bookings") return "Chỉ xử lý yêu cầu đầu vào. Xác nhận xong sẽ tự chuyển sang Lịch xe.";
+  if (tabId === "bookings") return "Tiếp nhận yêu cầu, liên hệ khách và xác nhận trước khi xếp lịch.";
   if (tabId === "services") return "Nội dung dịch vụ public.";
   if (tabId === "settings") return "Branding và nội dung web.";
   return "";
@@ -356,6 +360,13 @@ function toDateTimeLocalValue(value) {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
+function toIsoDateTimeLocalValue(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString();
+}
+
 function toDateInputValue(value) {
   if (!value) return "";
 
@@ -379,6 +390,26 @@ function getDayKey(value) {
   return `${year}-${month}-${day}`;
 }
 
+function getLocalDayRange(dayKey) {
+  if (!dayKey) return {};
+  const start = new Date(`${dayKey}T00:00:00`);
+  if (Number.isNaN(start.getTime())) return {};
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return { dateStart: start.toISOString(), dateEnd: end.toISOString() };
+}
+
+function getDashboardBookingRange() {
+  const today = new Date();
+  const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const calendarStart = new Date(firstOfMonth);
+  calendarStart.setDate(firstOfMonth.getDate() - ((firstOfMonth.getDay() + 6) % 7));
+  calendarStart.setHours(0, 0, 0, 0);
+  const calendarEnd = new Date(calendarStart);
+  calendarEnd.setDate(calendarStart.getDate() + 42);
+  return { dateStart: calendarStart.toISOString(), dateEnd: calendarEnd.toISOString() };
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [token, setToken] = useState(() => getStoredToken());
@@ -390,11 +421,24 @@ export default function App() {
   });
   const [authState, setAuthState] = useState({ loading: false, error: "" });
   const [pageError, setPageError] = useState("");
+  const [loadingTab, setLoadingTab] = useState("");
+  const loadedTabIdsRef = useRef(new Set());
+  const tabLoadRequestRef = useRef(0);
   const [dashboard, setDashboard] = useState(null);
   const [adminUsers, setAdminUsers] = useState([]);
   const [activityLogs, setActivityLogs] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [bookingStatusFilter, setBookingStatusFilter] = useState("all");
+  const [bookingQuery, setBookingQuery] = useState({
+    search: "",
+    sort: "newest",
+    assignment: "all",
+    tripDate: "",
+    page: 1
+  });
+  const [bookingPageData, setBookingPageData] = useState({ items: [], total: 0, allTotal: 0, assignedCount: 0, pendingCount: 0, page: 1, pageSize: 10, totalPages: 1 });
+  const [bookingPageLoading, setBookingPageLoading] = useState(false);
+  const [bookingPageRevision, setBookingPageRevision] = useState(0);
   const [scheduleNotes, setScheduleNotes] = useState([]);
   const [archivedScheduleNotes, setArchivedScheduleNotes] = useState([]);
   const [vehicleTripPayments, setVehicleTripPayments] = useState([]);
@@ -407,7 +451,15 @@ export default function App() {
   const [vehicles, setVehicles] = useState([]);
   const [drivers, setDrivers] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [customerQuery, setCustomerQuery] = useState({ search: "", status: "all", page: 1 });
+  const [customerPageData, setCustomerPageData] = useState({ items: [], total: 0, allTotal: 0, vipCount: 0, repeatCount: 0, watchCount: 0, page: 1, pageSize: 10, totalPages: 1 });
+  const [customerPageLoading, setCustomerPageLoading] = useState(false);
+  const [customerPageRevision, setCustomerPageRevision] = useState(0);
   const [trips, setTrips] = useState([]);
+  const [tripQuery, setTripQuery] = useState({ search: "", status: "all", tripDate: "", page: 1 });
+  const [tripPageData, setTripPageData] = useState({ items: [], total: 0, allTotal: 0, page: 1, pageSize: 10, totalPages: 1 });
+  const [tripPageLoading, setTripPageLoading] = useState(false);
+  const [tripPageRevision, setTripPageRevision] = useState(0);
   const [siteSettings, setSiteSettings] = useState([]);
   const [notificationLogs, setNotificationLogs] = useState([]);
   const [vehicleFilterCategoryId, setVehicleFilterCategoryId] = useState("all");
@@ -477,6 +529,244 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [confirmation, setConfirmation] = useState(null);
 
+  async function loadAdminTabData(tabId, { force = false } = {}) {
+    if (!token || (!force && loadedTabIdsRef.current.has(tabId))) return;
+
+    const requestId = ++tabLoadRequestRef.current;
+    setLoadingTab(tabId);
+    setPageError("");
+    const allowed = (permission) => adminHasPermission(currentAdmin, permission);
+
+    try {
+      switch (tabId) {
+        case "dashboard": {
+          const [dashboardData, bookingData, noteData, paymentData, reminderData, tripData, driverData, vehicleData] = await Promise.all([
+            allowed("dashboard.view") ? fetchAdminDashboard(token) : null,
+            allowed("bookings.manage") ? fetchDashboardBookingHighlights(token, getDashboardBookingRange()) : [],
+            allowed("schedule_notes.manage") ? fetchScheduleNotes(token, "active") : [],
+            allowed("payments.manage") ? fetchVehicleTripPayments(token, "active") : [],
+            allowed("reminders.manage") ? fetchReminders(token, "all") : [],
+            allowed("trips.manage") ? fetchDashboardTripHighlights(token, getDashboardBookingRange()) : [],
+            allowed("drivers.manage") ? fetchDrivers(token) : [],
+            allowed("vehicles.manage") ? fetchVehicles(token) : []
+          ]);
+          setDashboard(dashboardData);
+          setBookings(bookingData);
+          setScheduleNotes(noteData);
+          setVehicleTripPayments(paymentData);
+          setReminders(reminderData);
+          setTrips(tripData);
+          setDrivers(driverData);
+          setVehicles(vehicleData);
+          break;
+        }
+        case "bookings": {
+          const [vehicleData, driverData] = await Promise.all([
+            allowed("vehicles.manage") ? fetchVehicles(token) : [],
+            allowed("drivers.manage") ? fetchDrivers(token) : []
+          ]);
+          setVehicles(vehicleData);
+          setDrivers(driverData);
+          break;
+        }
+        case "dispatch-today":
+        case "dispatch-calendar": {
+          const [bookingData, noteData, archivedNoteData, tripData, vehicleData, driverData, paymentData, reminderData] = await Promise.all([
+            allowed("bookings.manage") ? fetchAdminBookings(token) : [],
+            allowed("schedule_notes.manage") ? fetchScheduleNotes(token, "active") : [],
+            tabId === "dispatch-calendar" && allowed("schedule_notes.manage") ? fetchScheduleNotes(token, "archived") : [],
+            allowed("trips.manage") ? fetchTrips(token) : [],
+            allowed("vehicles.manage") ? fetchVehicles(token) : [],
+            allowed("drivers.manage") ? fetchDrivers(token) : [],
+            allowed("payments.manage") ? fetchVehicleTripPayments(token, "active") : [],
+            allowed("reminders.manage") ? fetchReminders(token, "all") : []
+          ]);
+          setBookings(bookingData);
+          setScheduleNotes(noteData);
+          if (tabId === "dispatch-calendar") setArchivedScheduleNotes(archivedNoteData);
+          setTrips(tripData);
+          setVehicles(vehicleData);
+          setDrivers(driverData);
+          setVehicleTripPayments(paymentData);
+          setReminders(reminderData);
+          break;
+        }
+        case "monthly-reports": {
+          const [bookingData, noteData, archivedNoteData, paymentData, archivedPaymentData, expenseData, maintenanceData, tripData] = await Promise.all([
+            allowed("bookings.manage") ? fetchAdminBookings(token) : [],
+            allowed("schedule_notes.manage") ? fetchScheduleNotes(token, "active") : [],
+            allowed("schedule_notes.manage") ? fetchScheduleNotes(token, "archived") : [],
+            allowed("payments.manage") ? fetchVehicleTripPayments(token, "active") : [],
+            allowed("payments.manage") ? fetchVehicleTripPayments(token, "archived") : [],
+            allowed("finance.manage") ? fetchTripExpenses(token) : [],
+            allowed("maintenances.manage") ? fetchVehicleMaintenances(token) : [],
+            allowed("trips.manage") ? fetchTrips(token) : []
+          ]);
+          setBookings(bookingData);
+          setScheduleNotes(noteData);
+          setArchivedScheduleNotes(archivedNoteData);
+          setVehicleTripPayments(paymentData);
+          setArchivedVehicleTripPayments(archivedPaymentData);
+          setTripExpenses(expenseData);
+          setVehicleMaintenances(maintenanceData);
+          setTrips(tripData);
+          break;
+        }
+        case "admin-users":
+          setAdminUsers(allowed("admin_users.manage") ? await fetchAdminUsers(token) : []);
+          break;
+        case "activity-logs":
+          setActivityLogs(allowed("activity_logs.view") ? await fetchActivityLogs(token) : []);
+          break;
+        case "vehicle-categories":
+          setVehicleCategories(allowed("vehicle_categories.manage") ? await fetchVehicleCategories(token) : []);
+          break;
+        case "vehicles": {
+          const [categoryData, vehicleData] = await Promise.all([
+            allowed("vehicle_categories.manage") ? fetchVehicleCategories(token) : [],
+            allowed("vehicles.manage") ? fetchVehicles(token) : []
+          ]);
+          setVehicleCategories(categoryData);
+          setVehicles(vehicleData);
+          setSelectedVehicleId((current) => current || vehicleData[0]?.id || "");
+          setVehicleForm((current) => ({ ...current, categoryId: current.categoryId || categoryData[0]?.id || "" }));
+          break;
+        }
+        case "drivers":
+          setDrivers(allowed("drivers.manage") ? await fetchDrivers(token) : []);
+          break;
+        case "customers":
+          break;
+        case "trips": {
+          const [vehicleData, driverData, bookingData] = await Promise.all([
+            allowed("vehicles.manage") ? fetchVehicles(token) : [],
+            allowed("drivers.manage") ? fetchDrivers(token) : [],
+            allowed("bookings.manage") ? fetchAdminBookings(token) : []
+          ]);
+          setVehicles(vehicleData);
+          setDrivers(driverData);
+          setBookings(bookingData);
+          break;
+        }
+        case "finance": {
+          const [expenseData, tripData, bookingData, paymentData, archivedPaymentData, maintenanceData, vehicleData] = await Promise.all([
+            allowed("finance.manage") ? fetchTripExpenses(token) : [],
+            allowed("trips.manage") ? fetchTrips(token) : [],
+            allowed("bookings.manage") ? fetchAdminBookings(token) : [],
+            allowed("payments.manage") ? fetchVehicleTripPayments(token, "active") : [],
+            allowed("payments.manage") ? fetchVehicleTripPayments(token, "archived") : [],
+            allowed("maintenances.manage") ? fetchVehicleMaintenances(token) : [],
+            allowed("vehicles.manage") ? fetchVehicles(token) : []
+          ]);
+          setTripExpenses(expenseData);
+          setTrips(tripData);
+          setBookings(bookingData);
+          setVehicleTripPayments(paymentData);
+          setArchivedVehicleTripPayments(archivedPaymentData);
+          setVehicleMaintenances(maintenanceData);
+          setVehicles(vehicleData);
+          break;
+        }
+        case "reminders": {
+          const [reminderData, bookingData, noteData, tripData, vehicleData, driverData] = await Promise.all([
+            allowed("reminders.manage") ? fetchReminders(token, "all") : [],
+            allowed("bookings.manage") ? fetchAdminBookings(token) : [],
+            allowed("schedule_notes.manage") ? fetchScheduleNotes(token, "active") : [],
+            allowed("trips.manage") ? fetchTrips(token) : [],
+            allowed("vehicles.manage") ? fetchVehicles(token) : [],
+            allowed("drivers.manage") ? fetchDrivers(token) : []
+          ]);
+          setReminders(reminderData);
+          setBookings(bookingData);
+          setScheduleNotes(noteData);
+          setTrips(tripData);
+          setVehicles(vehicleData);
+          setDrivers(driverData);
+          break;
+        }
+        case "schedule-notes": {
+          const [noteData, archivedNoteData, bookingData, vehicleData, driverData, paymentData, tripData] = await Promise.all([
+            allowed("schedule_notes.manage") ? fetchScheduleNotes(token, "active") : [],
+            allowed("schedule_notes.manage") ? fetchScheduleNotes(token, "archived") : [],
+            allowed("bookings.manage") ? fetchAdminBookings(token) : [],
+            allowed("vehicles.manage") ? fetchVehicles(token) : [],
+            allowed("drivers.manage") ? fetchDrivers(token) : [],
+            allowed("payments.manage") ? fetchVehicleTripPayments(token, "active") : [],
+            allowed("trips.manage") ? fetchTrips(token) : []
+          ]);
+          setScheduleNotes(noteData);
+          setArchivedScheduleNotes(archivedNoteData);
+          setBookings(bookingData);
+          setVehicles(vehicleData);
+          setDrivers(driverData);
+          setVehicleTripPayments(paymentData);
+          setTrips(tripData);
+          setScheduleNoteForm((current) => ({ ...current, vehicleId: current.vehicleId || vehicleData[0]?.id || "" }));
+          break;
+        }
+        case "vehicle-trip-payments": {
+          const [paymentData, archivedPaymentData, bookingData, noteData, vehicleData] = await Promise.all([
+            allowed("payments.manage") ? fetchVehicleTripPayments(token, "active") : [],
+            allowed("payments.manage") ? fetchVehicleTripPayments(token, "archived") : [],
+            allowed("bookings.manage") ? fetchAdminBookings(token) : [],
+            allowed("schedule_notes.manage") ? fetchScheduleNotes(token, "active") : [],
+            allowed("vehicles.manage") ? fetchVehicles(token) : []
+          ]);
+          setVehicleTripPayments(paymentData);
+          setArchivedVehicleTripPayments(archivedPaymentData);
+          setBookings(bookingData);
+          setScheduleNotes(noteData);
+          setVehicles(vehicleData);
+          setTripPaymentForm((current) => ({ ...current, vehicleId: current.vehicleId || vehicleData[0]?.id || "" }));
+          break;
+        }
+        case "data-archive": {
+          const [archivedNoteData, archivedPaymentData, bookingData] = await Promise.all([
+            allowed("schedule_notes.manage") ? fetchScheduleNotes(token, "archived") : [],
+            allowed("payments.manage") ? fetchVehicleTripPayments(token, "archived") : [],
+            allowed("bookings.manage") ? fetchAdminBookings(token) : []
+          ]);
+          setArchivedScheduleNotes(archivedNoteData);
+          setArchivedVehicleTripPayments(archivedPaymentData);
+          setBookings(bookingData);
+          break;
+        }
+        case "vehicle-maintenances": {
+          const [maintenanceData, vehicleData] = await Promise.all([
+            allowed("maintenances.manage") ? fetchVehicleMaintenances(token) : [],
+            allowed("vehicles.manage") ? fetchVehicles(token) : []
+          ]);
+          setVehicleMaintenances(maintenanceData);
+          setVehicles(vehicleData);
+          setMaintenanceForm((current) => ({ ...current, vehicleId: current.vehicleId || vehicleData[0]?.id || "" }));
+          break;
+        }
+        case "services":
+          setServices(allowed("services.manage") ? await fetchAdminServices(token) : []);
+          break;
+        case "settings": {
+          const [settingData, serviceData, notificationLogData] = await Promise.all([
+            allowed("settings.manage") ? fetchSiteSettings(token) : [],
+            allowed("services.manage") ? fetchAdminServices(token) : [],
+            allowed("notifications.manage") ? fetchNotificationLogs(token) : []
+          ]);
+          setSiteSettings(settingData);
+          setServices(serviceData);
+          setNotificationLogs(notificationLogData);
+          break;
+        }
+        default:
+          break;
+      }
+
+      loadedTabIdsRef.current.add(tabId);
+    } catch (error) {
+      setPageError(error.message ?? "Không thể tải dữ liệu.");
+    } finally {
+      if (requestId === tabLoadRequestRef.current) setLoadingTab("");
+    }
+  }
+
   useEffect(() => {
     let ignore = false;
 
@@ -534,149 +824,102 @@ export default function App() {
   }, [authReady, token]);
 
   useEffect(() => {
-    if (!token) return;
-
-    let ignore = false;
-
-    async function loadAdminData() {
-      try {
-        const [
-          dashboardData,
-          adminUserData,
-          activityLogData,
-          bookingData,
-          scheduleNoteData,
-          archivedScheduleNoteData,
-          tripPaymentData,
-          archivedTripPaymentData,
-          tripExpenseData,
-          reminderData,
-          maintenanceData,
-          serviceData,
-          categoryData,
-          vehicleData,
-          driverData,
-          customerData,
-          tripData,
-          settingData,
-          notificationLogData
-        ] = await Promise.all([
-          adminHasPermission(currentAdmin, "dashboard.view")
-            ? fetchAdminDashboard(token)
-            : Promise.resolve(null),
-          adminHasPermission(currentAdmin, "admin_users.manage")
-            ? fetchAdminUsers(token)
-            : Promise.resolve([]),
-          adminHasPermission(currentAdmin, "activity_logs.view")
-            ? fetchActivityLogs(token)
-            : Promise.resolve([]),
-          adminHasPermission(currentAdmin, "bookings.manage")
-            ? fetchAdminBookings(token)
-            : Promise.resolve([]),
-          adminHasPermission(currentAdmin, "schedule_notes.manage")
-            ? fetchScheduleNotes(token, "active")
-            : Promise.resolve([]),
-          adminHasPermission(currentAdmin, "schedule_notes.manage")
-            ? fetchScheduleNotes(token, "archived")
-            : Promise.resolve([]),
-          adminHasPermission(currentAdmin, "payments.manage")
-            ? fetchVehicleTripPayments(token, "active")
-            : Promise.resolve([]),
-          adminHasPermission(currentAdmin, "payments.manage")
-            ? fetchVehicleTripPayments(token, "archived")
-            : Promise.resolve([]),
-          adminHasPermission(currentAdmin, "finance.manage")
-            ? fetchTripExpenses(token)
-            : Promise.resolve([]),
-          adminHasPermission(currentAdmin, "reminders.manage")
-            ? fetchReminders(token, "all")
-            : Promise.resolve([]),
-          adminHasPermission(currentAdmin, "maintenances.manage")
-            ? fetchVehicleMaintenances(token)
-            : Promise.resolve([]),
-          adminHasPermission(currentAdmin, "services.manage")
-            ? fetchAdminServices(token)
-            : Promise.resolve([]),
-          adminHasPermission(currentAdmin, "vehicle_categories.manage")
-            ? fetchVehicleCategories(token)
-            : Promise.resolve([]),
-          adminHasPermission(currentAdmin, "vehicles.manage")
-            ? fetchVehicles(token)
-            : Promise.resolve([]),
-          adminHasPermission(currentAdmin, "drivers.manage")
-            ? fetchDrivers(token)
-            : Promise.resolve([]),
-          adminHasPermission(currentAdmin, "customers.manage")
-            ? fetchCustomers(token)
-            : Promise.resolve([]),
-          adminHasPermission(currentAdmin, "trips.manage")
-            ? fetchTrips(token)
-            : Promise.resolve([]),
-          adminHasPermission(currentAdmin, "settings.manage")
-            ? fetchSiteSettings(token)
-            : Promise.resolve([]),
-          adminHasPermission(currentAdmin, "notifications.manage")
-            ? fetchNotificationLogs(token)
-            : Promise.resolve([])
-        ]);
-
-        if (!ignore) {
-          setDashboard(dashboardData);
-          setAdminUsers(adminUserData);
-          setActivityLogs(activityLogData);
-          setBookings(bookingData);
-          setScheduleNotes(scheduleNoteData);
-          setArchivedScheduleNotes(archivedScheduleNoteData);
-          setVehicleTripPayments(tripPaymentData);
-          setArchivedVehicleTripPayments(archivedTripPaymentData);
-          setTripExpenses(tripExpenseData);
-          setReminders(reminderData);
-          setVehicleMaintenances(maintenanceData);
-          setServices(serviceData);
-          setVehicleCategories(categoryData);
-          setVehicles(vehicleData);
-          setDrivers(driverData);
-          setCustomers(customerData);
-          setTrips(tripData);
-          if (adminHasPermission(currentAdmin, "settings.manage")) {
-            setSiteSettings(settingData);
-          }
-          setNotificationLogs(notificationLogData);
-          setSelectedVehicleId((current) => current || vehicleData[0]?.id || "");
-          setPageError("");
-          setVehicleForm((current) => ({
-            ...current,
-            categoryId: current.categoryId || categoryData[0]?.id || ""
-          }));
-          setScheduleNoteForm((current) => ({
-            ...current,
-            vehicleId: current.vehicleId || vehicleData[0]?.id || ""
-          }));
-          setTripPaymentForm((current) => ({
-            ...current,
-            vehicleId: current.vehicleId || vehicleData[0]?.id || ""
-          }));
-          setMaintenanceForm((current) => ({
-            ...current,
-            vehicleId: current.vehicleId || vehicleData[0]?.id || ""
-          }));
-        }
-      } catch (error) {
-        if (!ignore) {
-          clearToken();
-          setToken(null);
-          setCurrentAdmin(null);
-          setPageError(error.message);
-        }
-      }
+    if (!token) {
+      loadedTabIdsRef.current = new Set();
+      setLoadingTab("");
+      return;
     }
 
-    loadAdminData();
+    void loadAdminTabData(activeTab);
+  }, [token, activeTab, currentAdmin]);
+
+  useEffect(() => {
+    if (!token || activeTab !== "bookings" || !adminHasPermission(currentAdmin, "bookings.manage")) return undefined;
+
+    let ignore = false;
+    const timer = window.setTimeout(async () => {
+      setBookingPageLoading(true);
+      try {
+        const dateRange = getLocalDayRange(bookingQuery.tripDate);
+        const result = await fetchAdminBookingPage(token, {
+          page: bookingQuery.page,
+          pageSize: 10,
+          status: bookingStatusFilter,
+          assignment: bookingQuery.assignment,
+          search: bookingQuery.search,
+          sort: bookingQuery.sort,
+          ...dateRange
+        });
+        if (!ignore) {
+          setBookingPageData(result);
+          setPageError("");
+        }
+      } catch (error) {
+        if (!ignore) setPageError(error.message ?? "Không thể tải trang booking.");
+      } finally {
+        if (!ignore) setBookingPageLoading(false);
+      }
+    }, bookingQuery.search ? 250 : 0);
 
     return () => {
       ignore = true;
+      window.clearTimeout(timer);
     };
-  }, [token]);
+  }, [token, activeTab, currentAdmin, bookingStatusFilter, bookingQuery, bookingPageRevision]);
+
+  useEffect(() => {
+    if (!token || activeTab !== "customers" || !adminHasPermission(currentAdmin, "customers.manage")) return undefined;
+    let ignore = false;
+    const timer = window.setTimeout(async () => {
+      setCustomerPageLoading(true);
+      try {
+        const result = await fetchCustomersPage(token, customerQuery);
+        if (!ignore) {
+          setCustomerPageData(result);
+          setCustomers(result.items);
+          setPageError("");
+        }
+      } catch (error) {
+        if (!ignore) setPageError(error.message ?? "Không thể tải danh sách khách hàng.");
+      } finally {
+        if (!ignore) setCustomerPageLoading(false);
+      }
+    }, customerQuery.search ? 250 : 0);
+    return () => {
+      ignore = true;
+      window.clearTimeout(timer);
+    };
+  }, [token, activeTab, currentAdmin, customerQuery, customerPageRevision]);
+
+  useEffect(() => {
+    if (!token || activeTab !== "trips" || !adminHasPermission(currentAdmin, "trips.manage")) return undefined;
+    let ignore = false;
+    const timer = window.setTimeout(async () => {
+      setTripPageLoading(true);
+      try {
+        const dateRange = getLocalDayRange(tripQuery.tripDate);
+        const result = await fetchTripsPage(token, {
+          page: tripQuery.page,
+          pageSize: 10,
+          status: tripQuery.status,
+          search: tripQuery.search,
+          ...dateRange
+        });
+        if (!ignore) {
+          setTripPageData(result);
+          setPageError("");
+        }
+      } catch (error) {
+        if (!ignore) setPageError(error.message ?? "Không thể tải danh sách chuyến đi.");
+      } finally {
+        if (!ignore) setTripPageLoading(false);
+      }
+    }, tripQuery.search ? 250 : 0);
+    return () => {
+      ignore = true;
+      window.clearTimeout(timer);
+    };
+  }, [token, activeTab, currentAdmin, tripQuery, tripPageRevision]);
 
   useEffect(() => {
     if (!token) return undefined;
@@ -698,10 +941,10 @@ export default function App() {
   }, [token]);
   const stats = useMemo(
     () => [
-      { label: "Booking mới", value: dashboard?.bookingCount ?? "-" },
+      { label: "Đơn mới", value: dashboard?.bookingCount ?? "-" },
       { label: "Xe hiện có", value: dashboard?.vehicleCount ?? "-" },
       { label: "Tài xế", value: dashboard?.driverCount ?? drivers.length },
-      { label: "Booking chờ xử lý", value: dashboard?.pendingBookingCount ?? bookings.length },
+      { label: "Đơn chờ xử lý", value: dashboard?.pendingBookingCount ?? bookings.length },
       { label: "Chuyến đi", value: dashboard?.tripCount ?? trips.length }
     ],
     [dashboard, drivers.length, bookings.length, trips.length]
@@ -768,22 +1011,12 @@ export default function App() {
       ),
     [bookings, scheduleNoteByBookingId]
   );
-  const bookingTabItems = useMemo(
-    () =>
-      bookings.filter((booking) => {
-        if (BOOKING_WORKFLOW_EXIT_STATUSES.has(booking.status)) return false;
-        if (scheduleNoteByBookingId.has(booking.id)) return false;
-        if (tripPaymentByBookingId.has(booking.id)) return false;
-
-        return true;
-      }),
-    [bookings, scheduleNoteByBookingId, tripPaymentByBookingId]
-  );
   const scheduleQueueBookings = useMemo(
     () =>
       bookings.filter(
         (booking) =>
           isBookingInScheduleStep(booking.status) &&
+          !booking.tripId &&
           !scheduleNoteByBookingId.has(booking.id) &&
           !tripPaymentByBookingId.has(booking.id)
       ),
@@ -1012,6 +1245,7 @@ export default function App() {
 
   function applyBookingRealtimeEvent(event) {
     if (!event?.type || !event.booking?.id) return;
+    setBookingPageRevision((revision) => revision + 1);
 
     if (event.type === "booking.created") {
       setBookings((current) =>
@@ -1068,121 +1302,11 @@ export default function App() {
 
   async function reloadData() {
     if (!token) return;
-    const [
-      dashboardData,
-      adminUserData,
-      activityLogData,
-      bookingData,
-      scheduleNoteData,
-      archivedScheduleNoteData,
-      tripPaymentData,
-      archivedTripPaymentData,
-      tripExpenseData,
-      reminderData,
-      maintenanceData,
-      serviceData,
-      categoryData,
-      vehicleData,
-      driverData,
-      customerData,
-      tripData,
-      settingData,
-      notificationLogData
-    ] =
-      await Promise.all([
-        adminHasPermission(currentAdmin, "dashboard.view")
-          ? fetchAdminDashboard(token)
-          : Promise.resolve(null),
-        adminHasPermission(currentAdmin, "admin_users.manage")
-          ? fetchAdminUsers(token)
-          : Promise.resolve([]),
-        adminHasPermission(currentAdmin, "activity_logs.view")
-          ? fetchActivityLogs(token)
-          : Promise.resolve([]),
-        adminHasPermission(currentAdmin, "bookings.manage")
-          ? fetchAdminBookings(token)
-          : Promise.resolve([]),
-        adminHasPermission(currentAdmin, "schedule_notes.manage")
-          ? fetchScheduleNotes(token, "active")
-          : Promise.resolve([]),
-        adminHasPermission(currentAdmin, "schedule_notes.manage")
-          ? fetchScheduleNotes(token, "archived")
-          : Promise.resolve([]),
-        adminHasPermission(currentAdmin, "payments.manage")
-          ? fetchVehicleTripPayments(token, "active")
-          : Promise.resolve([]),
-        adminHasPermission(currentAdmin, "payments.manage")
-          ? fetchVehicleTripPayments(token, "archived")
-          : Promise.resolve([]),
-        adminHasPermission(currentAdmin, "finance.manage")
-          ? fetchTripExpenses(token)
-          : Promise.resolve([]),
-        adminHasPermission(currentAdmin, "reminders.manage")
-          ? fetchReminders(token, "all")
-          : Promise.resolve([]),
-        adminHasPermission(currentAdmin, "maintenances.manage")
-          ? fetchVehicleMaintenances(token)
-          : Promise.resolve([]),
-        adminHasPermission(currentAdmin, "services.manage")
-          ? fetchAdminServices(token)
-          : Promise.resolve([]),
-        adminHasPermission(currentAdmin, "vehicle_categories.manage")
-          ? fetchVehicleCategories(token)
-          : Promise.resolve([]),
-        adminHasPermission(currentAdmin, "vehicles.manage")
-          ? fetchVehicles(token)
-          : Promise.resolve([]),
-        adminHasPermission(currentAdmin, "drivers.manage")
-          ? fetchDrivers(token)
-          : Promise.resolve([]),
-        adminHasPermission(currentAdmin, "customers.manage")
-          ? fetchCustomers(token)
-          : Promise.resolve([]),
-        adminHasPermission(currentAdmin, "trips.manage")
-          ? fetchTrips(token)
-          : Promise.resolve([]),
-        adminHasPermission(currentAdmin, "settings.manage")
-          ? fetchSiteSettings(token)
-          : Promise.resolve([]),
-        adminHasPermission(currentAdmin, "notifications.manage")
-          ? fetchNotificationLogs(token)
-          : Promise.resolve([])
-      ]);
-
-    setDashboard(dashboardData);
-    setAdminUsers(adminUserData);
-    setActivityLogs(activityLogData);
-    setBookings(bookingData);
-    setScheduleNotes(scheduleNoteData);
-    setArchivedScheduleNotes(archivedScheduleNoteData);
-    setVehicleTripPayments(tripPaymentData);
-    setArchivedVehicleTripPayments(archivedTripPaymentData);
-    setTripExpenses(tripExpenseData);
-    setReminders(reminderData);
-    setVehicleMaintenances(maintenanceData);
-    setServices(serviceData);
-    setVehicleCategories(categoryData);
-    setVehicles(vehicleData);
-    setDrivers(driverData);
-    setCustomers(customerData);
-    setTrips(tripData);
-    if (adminHasPermission(currentAdmin, "settings.manage")) {
-      setSiteSettings(settingData);
-    }
-    setNotificationLogs(notificationLogData);
-    setSelectedVehicleId((current) => current || vehicleData[0]?.id || "");
-    setScheduleNoteForm((current) => ({
-      ...current,
-      vehicleId: current.vehicleId || vehicleData[0]?.id || ""
-    }));
-    setTripPaymentForm((current) => ({
-      ...current,
-      vehicleId: current.vehicleId || vehicleData[0]?.id || ""
-    }));
-    setMaintenanceForm((current) => ({
-      ...current,
-      vehicleId: current.vehicleId || vehicleData[0]?.id || ""
-    }));
+    loadedTabIdsRef.current = new Set();
+    if (activeTab === "bookings") setBookingPageRevision((revision) => revision + 1);
+    if (activeTab === "customers") setCustomerPageRevision((revision) => revision + 1);
+    if (activeTab === "trips") setTripPageRevision((revision) => revision + 1);
+    await loadAdminTabData(activeTab, { force: true });
   }
 
   async function reloadBookingRealtimeData() {
@@ -1230,9 +1354,9 @@ export default function App() {
     if (!token || !adminHasPermission(currentAdmin, "customers.manage")) return;
 
     window.setTimeout(() => {
-      void fetchCustomers(token)
-        .then((customerData) => setCustomers(customerData))
-        .catch(() => {});
+      if (loadedTabIdsRef.current.has("customers")) {
+        setCustomerPageRevision((revision) => revision + 1);
+      }
     }, delay);
   }
 
@@ -1265,12 +1389,18 @@ export default function App() {
     } catch {}
 
     clearToken();
+    loadedTabIdsRef.current = new Set();
+    setLoadingTab("");
+    setBookingPageLoading(false);
+    setCustomerPageLoading(false);
+    setTripPageLoading(false);
     setToken(null);
     setCurrentAdmin(null);
     setDashboard(null);
     setAdminUsers([]);
     setActivityLogs([]);
     setBookings([]);
+    setBookingPageData({ items: [], total: 0, allTotal: 0, assignedCount: 0, pendingCount: 0, page: 1, pageSize: 10, totalPages: 1 });
     setScheduleNotes([]);
     setArchivedScheduleNotes([]);
     setVehicleTripPayments([]);
@@ -1282,7 +1412,12 @@ export default function App() {
     setVehicles([]);
     setDrivers([]);
     setCustomers([]);
+    setCustomerPageData({ items: [], total: 0, allTotal: 0, vipCount: 0, repeatCount: 0, watchCount: 0, page: 1, pageSize: 10, totalPages: 1 });
     setTrips([]);
+    setTripPageData({ items: [], total: 0, allTotal: 0, page: 1, pageSize: 10, totalPages: 1 });
+    setBookingQuery({ search: "", sort: "newest", assignment: "all", tripDate: "", page: 1 });
+    setCustomerQuery({ search: "", status: "all", page: 1 });
+    setTripQuery({ search: "", status: "all", tripDate: "", page: 1 });
     setSiteSettings([]);
     setNotificationLogs([]);
     setAdminUserForm(adminUserFormInitial);
@@ -1427,6 +1562,102 @@ export default function App() {
 
   function handleBookingStatusFilterChange(value) {
     setBookingStatusFilter(value);
+    setBookingQuery((current) => ({ ...current, page: 1 }));
+  }
+
+  function handleBookingQueryChange(field, value) {
+    if (field === "reset") {
+      setBookingStatusFilter("all");
+      setBookingQuery({ search: "", sort: "newest", assignment: "all", tripDate: "", page: 1 });
+      return;
+    }
+
+    setBookingQuery((current) => ({
+      ...current,
+      [field]: value,
+      page: field === "page" ? value : 1
+    }));
+  }
+
+  function handleCustomerQueryChange(field, value) {
+    setCustomerQuery((current) => field === "reset"
+      ? { search: "", status: "all", page: 1 }
+      : { ...current, [field]: value, page: field === "page" ? value : 1 });
+  }
+
+  function handleTripQueryChange(field, value) {
+    setTripQuery((current) => field === "reset"
+      ? { search: "", status: "all", tripDate: "", page: 1 }
+      : { ...current, [field]: value, page: field === "page" ? value : 1 });
+  }
+
+  function retryActiveTabLoad() {
+    setPageError("");
+    if (activeTab === "bookings") {
+      setBookingPageRevision((revision) => revision + 1);
+    } else if (activeTab === "customers") {
+      setCustomerPageRevision((revision) => revision + 1);
+    } else if (activeTab === "trips") {
+      setTripPageRevision((revision) => revision + 1);
+    } else {
+      void loadAdminTabData(activeTab, { force: true });
+    }
+  }
+
+  async function fetchAllFilteredTripRecords() {
+    if (!token) return [];
+    const dateRange = getLocalDayRange(tripQuery.tripDate);
+    const records = [];
+    let page = 1;
+    let totalPages = 1;
+    try {
+      do {
+        const result = await fetchTripsPage(token, {
+          page,
+          pageSize: 50,
+          status: tripQuery.status,
+          search: tripQuery.search,
+          ...dateRange
+        });
+        records.push(...result.items);
+        totalPages = result.totalPages;
+        page += 1;
+      } while (page <= totalPages);
+      return records;
+    } catch (error) {
+      notifyError(error, "Không thể xuất danh sách chuyến đi.");
+      return [];
+    }
+  }
+
+  async function fetchAllFilteredBookingRecords() {
+    if (!token) return [];
+    const dateRange = getLocalDayRange(bookingQuery.tripDate);
+    const records = [];
+    let page = 1;
+    let totalPages = 1;
+
+    try {
+      do {
+        const result = await fetchAdminBookingPage(token, {
+          page,
+          pageSize: 50,
+          status: bookingStatusFilter,
+          assignment: bookingQuery.assignment,
+          search: bookingQuery.search,
+          sort: bookingQuery.sort,
+          ...dateRange
+        });
+        records.push(...result.items);
+        totalPages = result.totalPages;
+        page += 1;
+      } while (page <= totalPages);
+    } catch (error) {
+      notifyError(error, "Không thể xuất danh sách booking.");
+      return [];
+    }
+
+    return records;
   }
 
   function handleAdminUserFormChange(event) {
@@ -1796,7 +2027,7 @@ export default function App() {
     try {
       const payload = {
         title: tripForm.title.trim(),
-        tripDate: tripForm.tripDate || "",
+        tripDate: toIsoDateTimeLocalValue(tripForm.tripDate),
         pickupLocation: tripForm.pickupLocation.trim(),
         dropoffLocation: tripForm.dropoffLocation.trim(),
         vehicleId: tripForm.vehicleId || "",
@@ -1819,6 +2050,57 @@ export default function App() {
       notifyError(error, "Không thể lưu chuyến đi.");
     } finally {
       setSavingTrip(false);
+    }
+  }
+
+  async function handleTripNextStep(trip) {
+    if (trip.status === "completed") {
+      if ((trip.bookings ?? []).length <= 1) {
+        handleCreateTripPaymentFromTrip(trip);
+      } else {
+        setActiveTab("vehicle-trip-payments");
+        resetTripPaymentForm();
+        notifySuccess("Đã mở danh sách thu tiền cho các booking trong chuyến.");
+      }
+      return;
+    }
+    if (trip.status === "canceled") return;
+
+    const nextStatus = {
+      draft: "confirmed",
+      confirmed: "in_progress",
+      in_progress: "completed"
+    }[trip.status];
+    if (!nextStatus) return;
+    if (trip.status === "draft" && (!trip.vehicleId || !trip.driverId)) {
+      handleEditTrip(trip);
+      showToast("error", "Chưa thể xác nhận chuyến", "Hãy chọn đủ xe và tài xế trước.");
+      return;
+    }
+
+    try {
+      await updateTrip(token, trip.id, {
+        title: trip.title,
+        tripDate: trip.tripDate || "",
+        pickupLocation: trip.pickupLocation || "",
+        dropoffLocation: trip.dropoffLocation || "",
+        vehicleId: trip.vehicleId || "",
+        driverId: trip.driverId || "",
+        status: nextStatus,
+        note: trip.note || "",
+        bookingIds: (trip.bookings ?? []).map((booking) => booking.id)
+      });
+      await reloadData();
+      if (nextStatus === "completed") setActiveTab("vehicle-trip-payments");
+      notifySuccess(
+        nextStatus === "completed"
+          ? "Đã hoàn tất chuyến. Tiếp tục ghi nhận tiền xe."
+          : nextStatus === "in_progress"
+            ? "Chuyến đã bắt đầu."
+            : "Chuyến đã xác nhận."
+      );
+    } catch (error) {
+      notifyError(error, "Không thể chuyển chuyến sang bước tiếp theo.");
     }
   }
 
@@ -1882,6 +2164,21 @@ export default function App() {
     setDispatchVoucher({ type: "booking", item: booking });
   }
 
+  function handleCreateTripFromBooking(booking) {
+    setActiveTab("trips");
+    setEditingTripId("");
+    setTripForm({
+      ...tripFormInitial,
+      title: booking.customerName?.trim() ? `Chuyến - ${booking.customerName.trim()}` : "Chuyến từ booking",
+      tripDate: toDateTimeLocalValue(booking.tripDate),
+      pickupLocation: booking.pickupLocation ?? "",
+      dropoffLocation: booking.dropoffLocation ?? "",
+      vehicleId: booking.assignedVehicleId ?? "",
+      driverId: booking.assignedDriverId ?? "",
+      bookingIds: [booking.id]
+    });
+  }
+
   function handleCloseDispatchVoucher() {
     setDispatchVoucher(null);
   }
@@ -1894,29 +2191,6 @@ export default function App() {
   function openVehicleMaintenancesTab() {
     setActiveTab("vehicle-maintenances");
     resetMaintenanceForm();
-  }
-
-  function handleCreateScheduleFromTrip(trip) {
-    setActiveTab("schedule-notes");
-    setEditingScheduleNoteId("");
-    setScheduleNoteForm({
-      vehicleId: trip.vehicleId ?? vehicles[0]?.id ?? "",
-      bookingRequestId: trip.bookings?.length === 1 ? trip.bookings[0].id : "",
-      title: trip.title?.trim() || "Ghi chú lịch xe",
-      customerName:
-        trip.bookings?.length === 1
-          ? trip.bookings[0].customerName ?? ""
-          : trip.title ?? "",
-      phoneNumber:
-        trip.bookings?.length === 1
-          ? trip.bookings[0].phoneNumber ?? ""
-          : "",
-      tripDate: toDateTimeLocalValue(trip.tripDate),
-      pickupLocation: trip.pickupLocation ?? "",
-      dropoffLocation: trip.dropoffLocation ?? "",
-      status: trip.status === "completed" ? "completed" : "scheduled",
-      note: trip.note ?? ""
-    });
   }
 
   function handleScheduleNoteFormChange(event) {
@@ -2195,6 +2469,7 @@ export default function App() {
     try {
       const payload = {
         ...tripPaymentForm,
+        tripDate: toIsoDateTimeLocalValue(tripPaymentForm.tripDate),
         scheduleNoteId: tripPaymentForm.scheduleNoteId || null,
         bookingRequestId: tripPaymentForm.bookingRequestId || null,
         title:
@@ -2270,6 +2545,7 @@ export default function App() {
       const { scheduleStatus, ...paymentPayload } = payload;
       const normalizedPayload = {
         ...paymentPayload,
+        tripDate: toIsoDateTimeLocalValue(paymentPayload.tripDate),
         scheduleNoteId: paymentPayload.scheduleNoteId || null,
         bookingRequestId: paymentPayload.bookingRequestId || null,
         title:
@@ -2303,6 +2579,7 @@ export default function App() {
       const { scheduleStatus, ...paymentPayload } = payload;
       const normalizedPayload = {
         ...paymentPayload,
+        tripDate: toIsoDateTimeLocalValue(paymentPayload.tripDate),
         scheduleNoteId: paymentPayload.scheduleNoteId || null,
         bookingRequestId: paymentPayload.bookingRequestId || null,
         title:
@@ -3513,12 +3790,23 @@ export default function App() {
           </header>
 
           {pageError ? (
-            <div className="shrink-0 rounded-[1.5rem] bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
-              {pageError}
+            <div className="flex shrink-0 items-center justify-between gap-3 rounded-[1.5rem] bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
+              <span>{pageError}</span>
+              {token ? (
+                <button type="button" onClick={retryActiveTabLoad} className="shrink-0 underline">
+                  Thử tải lại
+                </button>
+              ) : null}
             </div>
           ) : null}
 
           <div className="admin-scrollbar min-h-0 flex-1 overflow-y-auto pr-1">
+            {loadingTab === activeTab ? (
+              <div className="admin-card rounded-2xl p-8 text-center text-sm font-semibold text-slate-600">
+                Đang tải dữ liệu mục này…
+              </div>
+            ) : null}
+            <div className={loadingTab === activeTab ? "hidden" : ""}>
               {activeTab === "dashboard" ? (
                 <DashboardTab
                   stats={stats}
@@ -3533,8 +3821,8 @@ export default function App() {
                   reminders={reminders}
                   handleOpenBookings={openBookingsTab}
                   handleOpenScheduleNotes={openScheduleNotesTab}
+                  handleOpenTrips={openTripsTab}
                   handleOpenVehicleTripPayments={openVehicleTripPaymentsTab}
-                  handleOpenReminders={openRemindersTab}
                 />
               ) : null}
             {activeTab === "admin-users" ? (
@@ -3585,7 +3873,13 @@ export default function App() {
             ) : null}
             {activeTab === "bookings" ? (
                 <BookingsTab
-                    bookings={bookingTabItems}
+                    bookings={bookingPageData.items}
+                    bookingPageData={bookingPageData}
+                    bookingQuery={bookingQuery}
+                    bookingPageLoading={bookingPageLoading}
+                    onBookingQueryChange={handleBookingQueryChange}
+                    fetchAllFilteredBookings={fetchAllFilteredBookingRecords}
+                    handleBookingStatusChange={handleBookingStatusChange}
                     vehicles={vehicles}
                     drivers={drivers}
                     highlightedBookingIds={highlightedBookingIds}
@@ -3656,7 +3950,11 @@ export default function App() {
             ) : null}
             {activeTab === "customers" ? (
               <CustomersTab
-                customers={customers}
+                customers={customerPageData.items}
+                customerPageData={customerPageData}
+                customerQuery={customerQuery}
+                customerPageLoading={customerPageLoading}
+                onCustomerQueryChange={handleCustomerQueryChange}
                 customerForm={customerForm}
                 editingCustomerId={editingCustomerId}
                 savingCustomer={savingCustomer}
@@ -3669,7 +3967,12 @@ export default function App() {
             ) : null}
             {activeTab === "trips" ? (
               <TripsTab
-                trips={trips}
+                trips={tripPageData.items}
+                tripPageData={tripPageData}
+                tripQuery={tripQuery}
+                tripPageLoading={tripPageLoading}
+                onTripQueryChange={handleTripQueryChange}
+                fetchAllFilteredTrips={fetchAllFilteredTripRecords}
                 vehicles={vehicles}
                 drivers={drivers}
                 tripForm={tripForm}
@@ -3681,8 +3984,7 @@ export default function App() {
                 handleCreateTrip={handleCreateTrip}
                 handleEditTrip={handleEditTrip}
                 handleDeleteTrip={handleDeleteTrip}
-                handleCreateScheduleFromTrip={handleCreateScheduleFromTrip}
-                handleCreateTripPaymentFromTrip={handleCreateTripPaymentFromTrip}
+                handleTripNextStep={handleTripNextStep}
                 handleOpenTripVoucher={handleOpenTripVoucher}
                 resetTripForm={resetTripForm}
               />
@@ -3769,6 +4071,7 @@ export default function App() {
                   handleEditScheduleNote={handleEditScheduleNote}
                   handleInlineUpdateScheduleNote={handleInlineUpdateScheduleNote}
                   handleInlineUpdateBooking={handleInlineUpdateBooking}
+                  handleCreateTripFromBooking={handleCreateTripFromBooking}
                   handleDeleteScheduleNote={handleDeleteScheduleNote}
                   resetScheduleNoteForm={resetScheduleNoteForm}
                 handleDeleteBooking={handleDeleteBooking}
@@ -3841,6 +4144,7 @@ export default function App() {
                 handleTelegramTest={handleTelegramTest}
               />
             ) : null}
+            </div>
           </div>
         </main>
       </div>

@@ -9,7 +9,12 @@ const rawTurnstileSiteKey = (process.env.TURNSTILE_SITE_KEY ?? "").trim();
 const rawTurnstileSecretKey = (process.env.TURNSTILE_SECRET_KEY ?? "").trim();
 const rawTrustProxyHops = process.env.TRUST_PROXY_HOPS ?? (isProduction ? "2" : "1");
 const trustProxyHops = Number(rawTrustProxyHops);
-const defaultDevCorsOrigins = ["http://localhost:5173", "http://localhost:5174"];
+const defaultDevCorsOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174"
+];
 
 if (!rawJwtSecret || rawJwtSecret === "change-this-secret" || rawJwtSecret.length < 32) {
   throw new Error(

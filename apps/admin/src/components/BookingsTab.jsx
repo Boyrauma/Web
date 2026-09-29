@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import {
   BOOKING_STATUS_OPTIONS,
   getBookingStatusClass,
   getBookingStatusLabel
 } from "../utils/bookingStatus";
-import AdminPagination, { PAGE_SIZE, getPageSlice } from "./AdminPagination";
+import AdminPagination from "./AdminPagination";
 
 const bookingSortOptions = [
   { value: "newest", label: "Ngày mới nhất" },
@@ -41,19 +41,6 @@ function toDateTimeInputValue(value) {
     .slice(0, 16);
 }
 
-function toDateKey(value) {
-  if (!value) return "";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
-
 function matchesAssignmentFilter(booking, filterValue) {
   if (filterValue === "all") return true;
   if (filterValue === "unassigned") return !booking.assignedVehicleId && !booking.assignedDriverId;
@@ -75,7 +62,7 @@ function createInlineDraft(booking) {
     note: booking.note ?? "",
     internalNote: booking.internalNote ?? "",
     cancelReason: booking.cancelReason ?? "",
-    status: booking.status ?? "new",
+    status: booking.status === "contacted" ? "called_back" : booking.status === "cancelled" ? "canceled" : booking.status ?? "new",
     assignedVehicleId: booking.assignedVehicleId ?? "",
     assignedDriverId: booking.assignedDriverId ?? ""
   };
@@ -105,96 +92,22 @@ export default function BookingsTab({
   drivers,
   highlightedBookingIds,
   bookingStatusFilter,
+  bookingQuery,
+  bookingPageData,
+  bookingPageLoading,
+  onBookingQueryChange,
   handleBookingStatusFilterChange,
+  fetchAllFilteredBookings,
+  handleBookingStatusChange,
   handleInlineUpdateBooking,
   handleDeleteBooking
 }) {
   const [inlineEditingId, setInlineEditingId] = useState("");
   const [inlineDraft, setInlineDraft] = useState(null);
   const [savingInlineId, setSavingInlineId] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortOrder, setSortOrder] = useState("newest");
-  const [assignmentFilter, setAssignmentFilter] = useState("all");
-  const [tripDateFilter, setTripDateFilter] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-
-  const filteredBookings = useMemo(() => {
-    return bookings.filter((booking) => {
-      if (bookingStatusFilter !== "all" && booking.status !== bookingStatusFilter) {
-        return false;
-      }
-
-      if (!matchesAssignmentFilter(booking, assignmentFilter)) {
-        return false;
-      }
-
-      if (tripDateFilter && toDateKey(booking.tripDate) !== tripDateFilter) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [assignmentFilter, bookingStatusFilter, bookings, tripDateFilter]);
-
-  const visibleBookings = useMemo(() => {
-    const search = searchQuery.trim().toLowerCase();
-    const matchedItems = filteredBookings.filter((booking) => {
-      if (!search) return true;
-
-      const content = [
-        booking.customerName,
-        booking.phoneNumber,
-        booking.pickupLocation,
-        booking.dropoffLocation,
-        booking.note,
-        booking.internalNote,
-        booking.assignedVehicle?.name,
-        booking.assignedDriver?.fullName
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      return content.includes(search);
-    });
-
-    return [...matchedItems].sort((left, right) => {
-      const leftTime = new Date(left.tripDate ?? left.createdAt ?? 0).getTime();
-      const rightTime = new Date(right.tripDate ?? right.createdAt ?? 0).getTime();
-      return sortOrder === "oldest" ? leftTime - rightTime : rightTime - leftTime;
-    });
-  }, [filteredBookings, searchQuery, sortOrder]);
-
-  const totalPages = Math.max(1, Math.ceil(visibleBookings.length / PAGE_SIZE));
-  const paginatedBookings = useMemo(
-    () => getPageSlice(visibleBookings, currentPage, PAGE_SIZE),
-    [currentPage, visibleBookings]
-  );
-
-  const assignedCount = useMemo(
-    () => bookings.filter((booking) => booking.assignedVehicleId && booking.assignedDriverId).length,
-    [bookings]
-  );
-  const pendingCount = useMemo(
-    () =>
-      bookings.filter(
-        (booking) =>
-          !booking.assignedVehicleId ||
-          !booking.assignedDriverId ||
-          ["new", "contacted", "called_back", "confirmed"].includes(booking.status)
-      ).length,
-    [bookings]
-  );
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [assignmentFilter, bookingStatusFilter, searchQuery, sortOrder, tripDateFilter]);
-
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
+  const visibleBookings = bookings;
+  const paginatedBookings = bookings;
+  const totalFilteredBookings = bookingPageData.total;
 
   function handleInlineFieldChange(event) {
     const { name, value } = event.target;
@@ -223,7 +136,8 @@ export default function BookingsTab({
     }
   }
 
-  function handleExportCsv() {
+  async function handleExportCsv() {
+    const exportBookings = await fetchAllFilteredBookings();
     const rows = [
       [
         "Khach hang",
@@ -239,7 +153,7 @@ export default function BookingsTab({
         "Ghi chu noi bo",
         "Ly do huy"
       ],
-      ...visibleBookings.map((booking) => [
+      ...exportBookings.map((booking) => [
         booking.customerName,
         booking.phoneNumber,
         formatDateTime(booking.tripDate),
@@ -259,7 +173,7 @@ export default function BookingsTab({
       ])
     ];
 
-    downloadCsv(`booking-${tripDateFilter || "all"}-${Date.now()}.csv`, rows);
+    downloadCsv(`booking-${bookingQuery.tripDate || "all"}-${Date.now()}.csv`, rows);
   }
 
   return (
@@ -267,41 +181,41 @@ export default function BookingsTab({
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <div className="admin-card rounded-[1.25rem] p-6">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-admin-steel">
-            Tổng booking
+            Tổng đơn đặt xe
           </p>
-          <p className="admin-title mt-4 text-4xl font-extrabold text-admin-ink">{bookings.length}</p>
+          <p className="admin-title mt-4 text-4xl font-extrabold text-admin-ink">{bookingPageData.allTotal}</p>
         </div>
         <div className="admin-card rounded-[1.25rem] p-6">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-admin-steel">
             Đang hiển thị
           </p>
-          <p className="admin-title mt-4 text-4xl font-extrabold text-admin-ink">{visibleBookings.length}</p>
+          <p className="admin-title mt-4 text-4xl font-extrabold text-admin-ink">{totalFilteredBookings}</p>
         </div>
         <div className="admin-card rounded-[1.25rem] p-6">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-admin-steel">
             Đã gán đủ
           </p>
-          <p className="admin-title mt-4 text-4xl font-extrabold text-admin-ink">{assignedCount}</p>
+          <p className="admin-title mt-4 text-4xl font-extrabold text-admin-ink">{bookingPageData.assignedCount}</p>
         </div>
         <div className="admin-card rounded-[1.25rem] p-6">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-admin-steel">
             Cần xử lý
           </p>
-          <p className="admin-title mt-4 text-4xl font-extrabold text-admin-ink">{pendingCount}</p>
+          <p className="admin-title mt-4 text-4xl font-extrabold text-admin-ink">{bookingPageData.pendingCount}</p>
         </div>
       </div>
 
       <section className="admin-card rounded-[1.25rem] p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h3 className="admin-title text-2xl font-extrabold text-admin-ink">Quản lý booking</h3>
+            <h3 className="admin-title text-2xl font-extrabold text-admin-ink">Quản lý đơn đặt xe</h3>
             <p className="mt-2 text-sm text-admin-steel">
               Lọc theo trạng thái, ngày đi, phân công xe và tài xế ngay trong một màn hình.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <span className="admin-pill bg-slate-100 text-slate-700">{visibleBookings.length} mục</span>
-            <button type="button" className="admin-button-ghost" onClick={handleExportCsv}>
+            <span className="admin-pill bg-slate-100 text-slate-700">{totalFilteredBookings} mục</span>
+            <button type="button" className="admin-button-ghost" onClick={() => void handleExportCsv()} disabled={bookingPageLoading}>
               Xuất CSV
             </button>
           </div>
@@ -330,8 +244,8 @@ export default function BookingsTab({
               <input
                 className="admin-field"
                 placeholder="Tên khách, số điện thoại, lộ trình, tài xế..."
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
+                value={bookingQuery.search}
+                onChange={(event) => onBookingQueryChange("search", event.target.value)}
               />
             </label>
 
@@ -339,8 +253,8 @@ export default function BookingsTab({
               <span className="text-sm font-bold text-admin-ink">Sắp xếp</span>
               <select
                 className="admin-select"
-                value={sortOrder}
-                onChange={(event) => setSortOrder(event.target.value)}
+                value={bookingQuery.sort}
+                onChange={(event) => onBookingQueryChange("sort", event.target.value)}
               >
                 {bookingSortOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -356,8 +270,8 @@ export default function BookingsTab({
               <span className="text-sm font-bold text-admin-ink">Phân công</span>
               <select
                 className="admin-select"
-                value={assignmentFilter}
-                onChange={(event) => setAssignmentFilter(event.target.value)}
+                value={bookingQuery.assignment}
+                onChange={(event) => onBookingQueryChange("assignment", event.target.value)}
               >
                 {assignmentFilterOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -372,22 +286,19 @@ export default function BookingsTab({
               <input
                 className="admin-field"
                 type="date"
-                value={tripDateFilter}
-                onChange={(event) => setTripDateFilter(event.target.value)}
+                value={bookingQuery.tripDate}
+                onChange={(event) => onBookingQueryChange("tripDate", event.target.value)}
               />
             </label>
 
-            {(searchQuery || bookingStatusFilter !== "all" || assignmentFilter !== "all" || tripDateFilter) ? (
+            {(bookingQuery.search || bookingStatusFilter !== "all" || bookingQuery.assignment !== "all" || bookingQuery.tripDate) ? (
               <div className="flex flex-wrap gap-2 xl:justify-end">
                 <button
                   type="button"
                   className="admin-button-ghost"
                   onClick={() => {
                     handleBookingStatusFilterChange("all");
-                    setSearchQuery("");
-                    setSortOrder("newest");
-                    setAssignmentFilter("all");
-                    setTripDateFilter("");
+                    onBookingQueryChange("reset");
                   }}
                 >
                   Xóa bộ lọc
@@ -397,6 +308,7 @@ export default function BookingsTab({
           </div>
         </div>
 
+        {bookingPageLoading ? <p className="mt-4 text-sm font-semibold text-slate-500">Đang tải đơn đặt xe…</p> : null}
         <div className="mt-6 space-y-4">
           {paginatedBookings.map((booking) => {
             const isInlineEditing = inlineEditingId === booking.id && inlineDraft;
@@ -542,7 +454,7 @@ export default function BookingsTab({
                         name="note"
                         value={inlineDraft.note}
                         onChange={handleInlineFieldChange}
-                        placeholder="Ghi chú booking"
+                        placeholder="Ghi chú đơn đặt xe"
                       />
                       <textarea
                         className="admin-field admin-textarea"
@@ -676,6 +588,16 @@ export default function BookingsTab({
                       Hủy
                     </button>
                   ) : null}
+                  {!isInlineEditing && (booking.status === "new" || booking.status === "contacted" || booking.status === "called_back") ? (
+                    <button
+                      type="button"
+                      onClick={() => handleBookingStatusChange(booking.id, booking.status === "new" ? "called_back" : "confirmed")}
+                      className="admin-button-primary"
+                      disabled={savingInlineId === booking.id}
+                    >
+                      {booking.status === "new" ? "Đánh dấu đã liên hệ" : "Xác nhận đơn"}
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() => handleDeleteBooking(booking.id)}
@@ -689,18 +611,18 @@ export default function BookingsTab({
             );
           })}
 
-          {!visibleBookings.length ? (
+          {!visibleBookings.length && !bookingPageLoading ? (
             <div className="rounded-[1.5rem] border border-dashed border-slate-300 px-5 py-10 text-center text-sm text-admin-steel">
-              Không có booking nào khớp với bộ lọc hiện tại.
+              Không có đơn đặt xe nào khớp với bộ lọc hiện tại.
             </div>
           ) : null}
         </div>
 
         <AdminPagination
-          currentPage={currentPage}
-          onPageChange={setCurrentPage}
-          totalItems={visibleBookings.length}
-          itemLabel="booking"
+          currentPage={bookingPageData.page}
+          onPageChange={(page) => onBookingQueryChange("page", page)}
+          totalItems={totalFilteredBookings}
+          itemLabel="đơn đặt xe"
         />
       </section>
     </section>

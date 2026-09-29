@@ -332,6 +332,45 @@ export async function fetchAdminBookings(token) {
   return data;
 }
 
+export async function fetchAdminBookingPage(token, filters = {}) {
+  const searchParams = new URLSearchParams({
+    page: String(filters.page ?? 1),
+    pageSize: String(filters.pageSize ?? 10),
+    status: filters.status ?? "all",
+    assignment: filters.assignment ?? "all",
+    sort: filters.sort ?? "newest"
+  });
+
+  if (filters.search?.trim()) searchParams.set("search", filters.search.trim());
+  if (filters.dateStart) searchParams.set("dateStart", filters.dateStart);
+  if (filters.dateEnd) searchParams.set("dateEnd", filters.dateEnd);
+
+  const response = await apiFetch(`${API_URL}/admin/booking-requests/page?${searchParams}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  const data = await readJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(data?.message ?? "Không thể tải trang booking");
+  }
+
+  return data;
+}
+
+export async function fetchDashboardBookingHighlights(token, dateRange = {}) {
+  const searchParams = new URLSearchParams(dateRange);
+  const response = await apiFetch(`${API_URL}/admin/booking-requests/dashboard-highlights?${searchParams}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  const data = await readJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(data?.message ?? "Không thể tải booking trên Dashboard");
+  }
+
+  return data;
+}
+
 export async function fetchCustomers(token) {
   const response = await apiFetch(`${API_URL}/admin/customers`, {
     headers: {
@@ -344,6 +383,21 @@ export async function fetchCustomers(token) {
     throw new Error(data?.message ?? "Không thể tải khách hàng");
   }
 
+  return data;
+}
+
+export async function fetchCustomersPage(token, filters = {}) {
+  const searchParams = new URLSearchParams({
+    page: String(filters.page ?? 1),
+    pageSize: String(filters.pageSize ?? 10),
+    status: filters.status ?? "all"
+  });
+  if (filters.search?.trim()) searchParams.set("search", filters.search.trim());
+  const response = await apiFetch(`${API_URL}/admin/customers/page?${searchParams}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  const data = await readJsonResponse(response);
+  if (!response.ok) throw new Error(data?.message ?? "Không thể tải trang khách hàng");
   return data;
 }
 
@@ -1131,6 +1185,33 @@ export async function fetchTrips(token) {
     throw new Error(data?.message ?? "Không thể tải chuyến đi");
   }
 
+  return data;
+}
+
+export async function fetchTripsPage(token, filters = {}) {
+  const searchParams = new URLSearchParams({
+    page: String(filters.page ?? 1),
+    pageSize: String(filters.pageSize ?? 10),
+    status: filters.status ?? "all"
+  });
+  if (filters.search?.trim()) searchParams.set("search", filters.search.trim());
+  if (filters.dateStart) searchParams.set("dateStart", filters.dateStart);
+  if (filters.dateEnd) searchParams.set("dateEnd", filters.dateEnd);
+  const response = await apiFetch(`${API_URL}/admin/trips/page?${searchParams}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  const data = await readJsonResponse(response);
+  if (!response.ok) throw new Error(data?.message ?? "Không thể tải trang chuyến đi");
+  return data;
+}
+
+export async function fetchDashboardTripHighlights(token, dateRange = {}) {
+  const searchParams = new URLSearchParams(dateRange);
+  const response = await apiFetch(`${API_URL}/admin/trips/dashboard-highlights?${searchParams}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  const data = await readJsonResponse(response);
+  if (!response.ok) throw new Error(data?.message ?? "Không thể tải chuyến trên Dashboard");
   return data;
 }
 

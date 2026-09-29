@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import AdminPagination from "./AdminPagination";
 import { getBookingStatusClass, getBookingStatusLabel } from "../utils/bookingStatus";
 
 function formatDateTime(value) {
@@ -13,26 +13,13 @@ function formatDateTime(value) {
   });
 }
 
-function getDayKey(value) {
-  if (!value) return "";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
-
 const tripStatusOptions = [
   { value: "all", label: "Tất cả trạng thái" },
-  { value: "draft", label: "Nháp" },
-  { value: "confirmed", label: "Đã chốt" },
-  { value: "in_progress", label: "Đang chạy" },
+  { value: "draft", label: "Bản nháp" },
+  { value: "confirmed", label: "Đã xác nhận" },
+  { value: "in_progress", label: "Đang thực hiện" },
   { value: "completed", label: "Hoàn thành" },
-  { value: "canceled", label: "Hủy" }
+  { value: "canceled", label: "Đã hủy" }
 ];
 
 function getTripStatusClass(status) {
@@ -68,6 +55,11 @@ function downloadCsv(filename, rows) {
 
 export default function TripsTab({
   trips,
+  tripPageData,
+  tripQuery,
+  tripPageLoading,
+  onTripQueryChange,
+  fetchAllFilteredTrips,
   vehicles,
   drivers,
   tripForm,
@@ -79,53 +71,14 @@ export default function TripsTab({
   handleCreateTrip,
   handleEditTrip,
   handleDeleteTrip,
-  handleCreateScheduleFromTrip,
-  handleCreateTripPaymentFromTrip,
+  handleTripNextStep,
   handleOpenTripVoucher,
   resetTripForm
 }) {
-  const [searchValue, setSearchValue] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [dateFilter, setDateFilter] = useState("");
+  const filteredTrips = trips;
 
-  const filteredTrips = useMemo(() => {
-    const normalizedSearch = searchValue.trim().toLowerCase();
-
-    return trips.filter((trip) => {
-      if (statusFilter !== "all" && trip.status !== statusFilter) {
-        return false;
-      }
-
-      if (dateFilter && getDayKey(trip.tripDate) !== dateFilter) {
-        return false;
-      }
-
-      if (!normalizedSearch) {
-        return true;
-      }
-
-      const haystack = [
-        trip.title,
-        trip.pickupLocation,
-        trip.dropoffLocation,
-        trip.vehicle?.name,
-        trip.driver?.fullName,
-        ...(trip.bookings ?? []).flatMap((booking) => [
-          booking.customerName,
-          booking.phoneNumber,
-          booking.pickupLocation,
-          booking.dropoffLocation
-        ])
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      return haystack.includes(normalizedSearch);
-    });
-  }, [dateFilter, searchValue, statusFilter, trips]);
-
-  function handleExportCsv() {
+  async function handleExportCsv() {
+    const exportTrips = await fetchAllFilteredTrips();
     const rows = [
       [
         "Ten chuyen",
@@ -139,7 +92,7 @@ export default function TripsTab({
         "Danh sach khach",
         "Ghi chu"
       ],
-      ...filteredTrips.map((trip) => [
+      ...exportTrips.map((trip) => [
         trip.title,
         formatDateTime(trip.tripDate),
         getTripStatusLabel(trip.status),
@@ -153,7 +106,7 @@ export default function TripsTab({
       ])
     ];
 
-    downloadCsv(`trips-${dateFilter || "all"}-${Date.now()}.csv`, rows);
+    downloadCsv(`trips-${tripQuery.tripDate || "all"}-${Date.now()}.csv`, rows);
   }
 
   return (
@@ -353,9 +306,9 @@ export default function TripsTab({
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <span className="admin-pill bg-slate-100 text-slate-700">
-              {filteredTrips.length}/{trips.length} chuyến
+              {tripPageData.total}/{tripPageData.allTotal} chuyến
             </span>
-            <button type="button" className="admin-button-ghost" onClick={handleExportCsv}>
+            <button type="button" className="admin-button-ghost" onClick={() => void handleExportCsv()} disabled={tripPageLoading}>
               Xuất CSV
             </button>
           </div>
@@ -366,8 +319,8 @@ export default function TripsTab({
             <span className="text-sm font-bold text-admin-ink">Tìm chuyến</span>
             <input
               className="admin-field"
-              value={searchValue}
-              onChange={(event) => setSearchValue(event.target.value)}
+              value={tripQuery.search}
+              onChange={(event) => onTripQueryChange("search", event.target.value)}
               placeholder="Tên chuyến, xe, tài xế, khách..."
             />
           </label>
@@ -376,8 +329,8 @@ export default function TripsTab({
             <span className="text-sm font-bold text-admin-ink">Lọc trạng thái</span>
             <select
               className="admin-select"
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
+              value={tripQuery.status}
+              onChange={(event) => onTripQueryChange("status", event.target.value)}
             >
               {tripStatusOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -392,36 +345,34 @@ export default function TripsTab({
             <input
               className="admin-field"
               type="date"
-              value={dateFilter}
-              onChange={(event) => setDateFilter(event.target.value)}
+              value={tripQuery.tripDate}
+              onChange={(event) => onTripQueryChange("tripDate", event.target.value)}
             />
           </label>
         </div>
 
-        {(searchValue || statusFilter !== "all" || dateFilter) && (
+        {(tripQuery.search || tripQuery.status !== "all" || tripQuery.tripDate) && (
           <div className="mt-4 flex flex-wrap gap-3">
-            {searchValue ? (
+            {tripQuery.search ? (
               <span className="admin-pill bg-slate-100 text-slate-700">
-                Từ khóa: {searchValue}
+                Từ khóa: {tripQuery.search}
               </span>
             ) : null}
-            {statusFilter !== "all" ? (
+            {tripQuery.status !== "all" ? (
               <span className="admin-pill bg-slate-100 text-slate-700">
-                Trạng thái: {getTripStatusLabel(statusFilter)}
+                Trạng thái: {getTripStatusLabel(tripQuery.status)}
               </span>
             ) : null}
-            {dateFilter ? (
+            {tripQuery.tripDate ? (
               <span className="admin-pill bg-slate-100 text-slate-700">
-                Ngày: {dateFilter}
+                Ngày: {tripQuery.tripDate}
               </span>
             ) : null}
             <button
               type="button"
               className="admin-button-ghost !px-4 !py-2"
               onClick={() => {
-                setSearchValue("");
-                setStatusFilter("all");
-                setDateFilter("");
+                onTripQueryChange("reset");
               }}
             >
               Xóa bộ lọc
@@ -429,6 +380,7 @@ export default function TripsTab({
           </div>
         )}
 
+        {tripPageLoading ? <p className="mt-4 text-sm font-semibold text-slate-500">Đang tải chuyến đi…</p> : null}
         <div className="mt-6 space-y-4">
           {filteredTrips.map((trip) => (
             <article
@@ -531,20 +483,21 @@ export default function TripsTab({
                 >
                   In phiếu điều xe
                 </button>
-                <button
-                  type="button"
-                  className="admin-button-ghost"
-                  onClick={() => handleCreateScheduleFromTrip(trip)}
-                >
-                  Đẩy sang lịch xe
-                </button>
-                <button
-                  type="button"
-                  className="admin-button-ghost"
-                  onClick={() => handleCreateTripPaymentFromTrip(trip)}
-                >
-                  Đẩy sang tiền xe
-                </button>
+                {trip.status !== "canceled" ? (
+                  <button
+                    type="button"
+                    className="admin-button-primary"
+                    onClick={() => handleTripNextStep(trip)}
+                  >
+                    {trip.status === "draft"
+                      ? "Xác nhận chuyến"
+                      : trip.status === "confirmed"
+                        ? "Bắt đầu chuyến"
+                        : trip.status === "in_progress"
+                          ? "Hoàn tất chuyến"
+                          : "Ghi nhận tiền xe"}
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   className="admin-button-danger"
@@ -556,12 +509,19 @@ export default function TripsTab({
             </article>
           ))}
 
-          {!filteredTrips.length ? (
+          {!filteredTrips.length && !tripPageLoading ? (
             <div className="rounded-[1.5rem] border border-dashed border-slate-300 px-5 py-10 text-center text-sm text-admin-steel">
               Không có chuyến nào khớp với bộ lọc hiện tại.
             </div>
           ) : null}
         </div>
+        <AdminPagination
+          currentPage={tripPageData.page}
+          onPageChange={(page) => onTripQueryChange("page", page)}
+          totalItems={tripPageData.total}
+          pageSize={tripPageData.pageSize}
+          itemLabel="chuyến đi"
+        />
       </div>
     </section>
   );

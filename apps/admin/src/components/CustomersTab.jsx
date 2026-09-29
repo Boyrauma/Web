@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import AdminPagination, { PAGE_SIZE, getPageSlice } from "./AdminPagination";
+import AdminPagination from "./AdminPagination";
 import { getBookingStatusClass, getBookingStatusLabel } from "../utils/bookingStatus";
 
 const customerStatusOptions = [
@@ -51,6 +51,10 @@ function formatRoute(item) {
 
 export default function CustomersTab({
   customers,
+  customerPageData,
+  customerQuery,
+  customerPageLoading,
+  onCustomerQueryChange,
   customerForm,
   editingCustomerId,
   savingCustomer,
@@ -60,79 +64,27 @@ export default function CustomersTab({
   handleDeleteCustomer,
   resetCustomerForm
 }) {
-  const [keyword, setKeyword] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-
-  const filteredCustomers = useMemo(() => {
-    const search = keyword.trim().toLowerCase();
-
-    return customers.filter((customer) => {
-      if (statusFilter !== "all" && customer.status !== statusFilter) {
-        return false;
-      }
-
-      if (!search) {
-        return true;
-      }
-
-      const haystack = [
-        customer.fullName,
-        customer.phoneNumber,
-        customer.note,
-        customer.latestRoute,
-        customer.latestBooking?.pickupLocation,
-        customer.latestBooking?.dropoffLocation
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      return haystack.includes(search);
-    });
-  }, [customers, keyword, statusFilter]);
-
-  const visibleCustomers = useMemo(
-    () => getPageSlice(filteredCustomers, currentPage),
-    [currentPage, filteredCustomers]
-  );
+  const visibleCustomers = customers;
 
   const selectedCustomer = useMemo(
     () =>
       customers.find((customer) => customer.id === selectedCustomerId) ??
-      filteredCustomers[0] ??
+      customers[0] ??
       null,
-    [customers, filteredCustomers, selectedCustomerId]
+    [customers, selectedCustomerId]
   );
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [keyword, statusFilter]);
-
-  useEffect(() => {
-    if (!filteredCustomers.length) {
+    if (!customers.length) {
       setSelectedCustomerId("");
       return;
     }
 
-    if (!filteredCustomers.some((customer) => customer.id === selectedCustomerId)) {
-      setSelectedCustomerId(filteredCustomers[0].id);
+    if (!customers.some((customer) => customer.id === selectedCustomerId)) {
+      setSelectedCustomerId(customers[0].id);
     }
-  }, [filteredCustomers, selectedCustomerId]);
-
-  const vipCount = useMemo(
-    () => customers.filter((customer) => customer.status === "vip").length,
-    [customers]
-  );
-  const repeatCount = useMemo(
-    () => customers.filter((customer) => customer.bookingCount >= 2).length,
-    [customers]
-  );
-  const watchCount = useMemo(
-    () => customers.filter((customer) => customer.status === "watchlist").length,
-    [customers]
-  );
+  }, [customers, selectedCustomerId]);
 
   return (
     <section className="mt-8 space-y-6">
@@ -142,7 +94,7 @@ export default function CustomersTab({
             Tổng khách hàng
           </p>
           <p className="admin-title mt-4 text-4xl font-extrabold text-admin-ink">
-            {customers.length}
+            {customerPageData.allTotal}
           </p>
         </div>
         <div className="admin-card rounded-[1.25rem] p-6">
@@ -150,7 +102,7 @@ export default function CustomersTab({
             Khách quay lại
           </p>
           <p className="admin-title mt-4 text-4xl font-extrabold text-admin-ink">
-            {repeatCount}
+            {customerPageData.repeatCount}
           </p>
         </div>
         <div className="admin-card rounded-[1.25rem] p-6">
@@ -158,7 +110,7 @@ export default function CustomersTab({
             Khách VIP
           </p>
           <p className="admin-title mt-4 text-4xl font-extrabold text-admin-ink">
-            {vipCount}
+            {customerPageData.vipCount}
           </p>
         </div>
         <div className="admin-card rounded-[1.25rem] p-6">
@@ -166,7 +118,7 @@ export default function CustomersTab({
             Cần lưu ý
           </p>
           <p className="admin-title mt-4 text-4xl font-extrabold text-admin-ink">
-            {watchCount}
+            {customerPageData.watchCount}
           </p>
         </div>
       </div>
@@ -264,7 +216,7 @@ export default function CustomersTab({
                 </p>
               </div>
               <span className="admin-pill bg-slate-100 text-slate-700">
-                {filteredCustomers.length}/{customers.length} khách
+                {customerPageData.total}/{customerPageData.allTotal} khách
               </span>
             </div>
 
@@ -274,8 +226,8 @@ export default function CustomersTab({
                   <span className="text-sm font-bold text-admin-ink">Tìm khách</span>
                   <input
                     className="admin-field"
-                    value={keyword}
-                    onChange={(event) => setKeyword(event.target.value)}
+                    value={customerQuery.search}
+                    onChange={(event) => onCustomerQueryChange("search", event.target.value)}
                     placeholder="Tên, số điện thoại, tuyến đi, ghi chú..."
                   />
                 </label>
@@ -284,8 +236,8 @@ export default function CustomersTab({
                   <span className="text-sm font-bold text-admin-ink">Lọc phân loại</span>
                   <select
                     className="admin-select"
-                    value={statusFilter}
-                    onChange={(event) => setStatusFilter(event.target.value)}
+                    value={customerQuery.status}
+                    onChange={(event) => onCustomerQueryChange("status", event.target.value)}
                   >
                     {customerStatusOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -297,6 +249,7 @@ export default function CustomersTab({
               </div>
             </div>
 
+            {customerPageLoading ? <p className="mt-4 text-sm font-semibold text-slate-500">Đang tải khách hàng…</p> : null}
             <div className="mt-6 space-y-4">
               {visibleCustomers.map((customer) => (
                 <article
@@ -380,10 +333,10 @@ export default function CustomersTab({
             </div>
 
             <AdminPagination
-              currentPage={currentPage}
-              onPageChange={setCurrentPage}
-              totalItems={filteredCustomers.length}
-              pageSize={PAGE_SIZE}
+              currentPage={customerPageData.page}
+              onPageChange={(page) => onCustomerQueryChange("page", page)}
+              totalItems={customerPageData.total}
+              pageSize={customerPageData.pageSize}
               itemLabel="khách hàng"
             />
           </div>
