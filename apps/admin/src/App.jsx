@@ -79,6 +79,7 @@ import {
   fetchVehicleCategories,
   fetchVehicles,
   getStoredToken,
+  hasAdminTabSession,
   loginAdmin,
   logoutAdmin,
   resolveAdminAssetUrl,
@@ -771,6 +772,20 @@ export default function App() {
     let ignore = false;
 
     async function restoreAdminSession() {
+      if (!hasAdminTabSession()) {
+        clearToken();
+        try {
+          await logoutAdmin();
+        } catch {}
+        if (!ignore) {
+          setLoginForm({ email: "", password: "" });
+          setToken(null);
+          setCurrentAdmin(null);
+          setAuthReady(true);
+        }
+        return;
+      }
+
       try {
         const session = await fetchCurrentAdminSession();
 
@@ -1371,9 +1386,10 @@ export default function App() {
 
     try {
       const data = await loginAdmin(loginForm);
-      storeToken(null);
+      storeToken();
       setToken(data.admin ? SESSION_TOKEN : null);
       setCurrentAdmin(data.admin ?? null);
+      setLoginForm({ email: "", password: "" });
       setAuthReady(true);
       setAuthState({ loading: false, error: "" });
       notifySuccess("Đăng nhập thành công.");
@@ -1396,6 +1412,7 @@ export default function App() {
     setTripPageLoading(false);
     setToken(null);
     setCurrentAdmin(null);
+    setLoginForm({ email: "", password: "" });
     setDashboard(null);
     setAdminUsers([]);
     setActivityLogs([]);

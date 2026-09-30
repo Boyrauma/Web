@@ -51,6 +51,7 @@
 
         <form
           onSubmit={handleLoginSubmit}
+          autoComplete="off"
           className="admin-panel w-full rounded-[1.5rem] p-8 sm:p-9"
         >
           <p className="text-sm font-bold uppercase tracking-[0.3em] text-admin-ink">
@@ -76,7 +77,7 @@
                 name="email"
                 type="email"
                 placeholder="admin@example.com"
-                autoComplete="username"
+                autoComplete="off"
                 maxLength={254}
                 value={loginForm.email}
                 onChange={handleLoginChange}
@@ -91,7 +92,7 @@
                 name="password"
                 type="password"
                 placeholder="Nhập mật khẩu"
-                autoComplete="current-password"
+                autoComplete="new-password"
                 maxLength={128}
                 value={loginForm.password}
                 onChange={handleLoginChange}

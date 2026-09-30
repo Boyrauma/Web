@@ -1,5 +1,6 @@
 ﻿const API_URL = import.meta.env.VITE_API_URL ?? "/api";
 const TOKEN_KEY = "dinhdung_admin_token";
+const ADMIN_TAB_SESSION_KEY = "dinhdung_admin_tab_session";
 const API_BASE_URL = API_URL.replace(/\/api\/?$/, "");
 
 function withSessionCredentials(options = {}) {
@@ -145,12 +146,26 @@ export function getStoredToken() {
   return null;
 }
 
-export function storeToken(token) {
+export function hasAdminTabSession() {
+  try {
+    return window.sessionStorage.getItem(ADMIN_TAB_SESSION_KEY) === "active";
+  } catch {
+    return false;
+  }
+}
+
+export function storeToken() {
   window.localStorage.removeItem(TOKEN_KEY);
+  try {
+    window.sessionStorage.setItem(ADMIN_TAB_SESSION_KEY, "active");
+  } catch {}
 }
 
 export function clearToken() {
   window.localStorage.removeItem(TOKEN_KEY);
+  try {
+    window.sessionStorage.removeItem(ADMIN_TAB_SESSION_KEY);
+  } catch {}
 }
 
 export async function loginAdmin(payload) {
