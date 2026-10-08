@@ -8,7 +8,6 @@ import VehicleGalleryLightbox from "../components/VehicleGalleryLightbox";
 import { fetchSiteSettings, fetchVehicleBySlug, resolveAssetUrl } from "../services/api";
 import { applyDocumentBranding } from "../utils/branding";
 import { applySeo, buildVehicleSchema } from "../utils/seo";
-import { isInteriorVehicleImage } from "../utils/vehicleImages";
 
 function getVehicleNarrative(vehicle) {
   const slug = vehicle?.slug ?? "";
@@ -474,9 +473,7 @@ export default function VehicleDetailPage() {
                         Bộ ảnh chi tiết
                       </p>
                       <p className="mt-2 text-sm font-semibold text-white/90">
-                        {currentImageItem && isInteriorVehicleImage(currentImageItem)
-                          ? "Ảnh nội thất · Nhấn để xem kích thước lớn"
-                          : "Ảnh ngoại thất · Nhấn để xem kích thước lớn"}
+                        Nhấn để xem ảnh kích thước lớn
                       </p>
                     </div>
                     <span className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold backdrop-blur">

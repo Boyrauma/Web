@@ -1,7 +1,6 @@
 ﻿import { Link } from "react-router-dom";
 
 import AdaptiveVehicleImage from "./AdaptiveVehicleImage";
-import { isInteriorVehicleImage } from "../utils/vehicleImages";
 
 export default function VehicleShowcaseSection({
   flattenedVehicles,
@@ -70,11 +69,6 @@ export default function VehicleShowcaseSection({
               decoding="async"
               className="vehicle-stage-image-showcase"
             />
-            {currentSelectedImageItem ? (
-              <span className="pointer-events-none absolute left-4 top-4 z-10 rounded-full border border-white/30 bg-slate-950/70 px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.16em] text-white backdrop-blur">
-                {isInteriorVehicleImage(currentSelectedImageItem) ? "Nội thất" : "Ngoại thất"}
-              </span>
-            ) : null}
           </div>
 
           <div className="mt-4 flex flex-wrap gap-3">
